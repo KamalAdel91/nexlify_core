@@ -5,6 +5,9 @@ app_description = "Nexlify Core"
 app_email = "Kamal.adel@outlook.com"
 app_license = "mit"
 
+
+
+
 # Apps
 # ------------------
 
@@ -256,3 +259,9 @@ app_license = "mit"
 # List of apps whose translatable strings should be excluded from this app's translations.
 # ignore_translatable_strings_from = []
 
+
+
+
+
+extend_bootinfo = "nexlify_core.nexlify_core.utils.boot.extend_bootinfo"
+app_include_js = "/assets/nexlify_core/js/home_redirect.js"

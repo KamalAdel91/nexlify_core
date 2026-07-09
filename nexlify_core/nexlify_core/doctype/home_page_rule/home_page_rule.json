@@ -1,7 +1,7 @@
 {
  "actions": [],
  "autoname": "field:route",
- "creation": "2026-07-09 00:00:00.000000",
+ "creation": "2026-07-09 00:00:00",
  "doctype": "DocType",
  "editable_grid": 1,
  "engine": "InnoDB",
@@ -12,25 +12,26 @@
   "section_break_users",
   "users",
   "column_break_roles",
-  "roles"
+  "roles",
+  "allow_desktop_access"
  ],
  "fields": [
   {
+   "description": "e.g. app/selling, app/crm, app/hr",
    "fieldname": "route",
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "Route",
    "reqd": 1,
-   "unique": 1,
-   "description": "e.g. app/selling, app/crm, app/hr"
+   "unique": 1
   },
   {
    "default": "0",
+   "description": "Higher priority wins when a user matches multiple rules",
    "fieldname": "priority",
    "fieldtype": "Int",
    "in_list_view": 1,
-   "label": "Priority",
-   "description": "Higher priority wins when a user matches multiple rules"
+   "label": "Priority"
   },
   {
    "default": "1",
@@ -59,11 +60,18 @@
    "fieldtype": "Table MultiSelect",
    "label": "Roles",
    "options": "Home Page Rule Role"
+  },
+  {
+   "default": "0",
+   "description": "If checked, user/roles can manually navigate to Desktop without being auto-redirected back (still redirects once after login).",
+   "fieldname": "allow_desktop_access",
+   "fieldtype": "Check",
+   "label": "Allow Manual Desktop Access"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-07-09 00:00:00.000000",
+ "modified": "2026-07-09 16:48:03.946788",
  "modified_by": "Administrator",
  "module": "Nexlify Core",
  "name": "Home Page Rule",
@@ -83,6 +91,7 @@
    "write": 1
   }
  ],
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": []

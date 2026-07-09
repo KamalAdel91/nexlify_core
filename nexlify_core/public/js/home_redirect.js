@@ -39,7 +39,6 @@
 		redirecting = true;
 		if (with_cover) show_cover();
 
-		// let the current page transition finish rendering first
 		setTimeout(function () {
 			frappe.set_route(target.split("/"));
 			setTimeout(function () {
@@ -58,19 +57,21 @@
 
 	show_cover();
 
-	function init(target) {
+	function init(target, allow_desktop_access) {
+		// always redirect once on initial load/login
 		check_and_redirect(target, true);
 
-		if (frappe.router && typeof frappe.router.on === "function") {
-			frappe.router.on("change", function () {
+		// only keep enforcing on every navigation if desktop access is NOT allowed
+		if (!allow_desktop_access) {
+			if (frappe.router && typeof frappe.router.on === "function") {
+				frappe.router.on("change", function () {
+					check_and_redirect(target, false);
+				});
+			}
+			$(document).on("page-change", function () {
 				check_and_redirect(target, false);
 			});
 		}
-
-		// extra safety net: re-check after the page finishes rendering
-		$(document).on("page-change", function () {
-			check_and_redirect(target, false);
-		});
 	}
 
 	function wait_and_init() {
@@ -83,7 +84,7 @@
 			hide_cover();
 			return;
 		}
-		init(target);
+		init(target, !!frappe.boot.nexlify_allow_desktop_access);
 	}
 
 	wait_and_init();

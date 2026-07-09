@@ -2,9 +2,6 @@ import frappe
 
 CACHE_KEY = "nexlify_home_page_rules"
 
-# Paths that mean "user just landed on the desk with no specific route"
-BARE_DESK_PATHS = {"/app", "/app/", "/desk", "/desk/"}
-
 
 def get_home_page_rules():
 	rules = frappe.cache().get_value(CACHE_KEY)
@@ -18,7 +15,7 @@ def _build_rules_cache():
 	rule_names = frappe.get_all(
 		"Home Page Rule",
 		filters={"enabled": 1},
-		fields=["name", "route", "priority"],
+		fields=["name", "route", "priority", "allow_desktop_access"],
 		order_by="priority desc",
 	)
 
@@ -27,39 +24,37 @@ def _build_rules_cache():
 
 	for r in rule_names:
 		doc = frappe.get_cached_doc("Home Page Rule", r.name)
+		config = {"route": r.route, "allow_desktop_access": bool(r.allow_desktop_access)}
+
 		for row in doc.users:
-			users_map.setdefault(row.user, r.route)
+			users_map.setdefault(row.user, config)
+
 		for row in doc.roles:
-			roles_list.append((row.role, r.route))
+			roles_list.append((row.role, config))
 
 	return {"users": users_map, "roles": roles_list}
 
 
-def get_home_page():
+def get_home_page_config():
+	"""Returns dict {route, allow_desktop_access} or None"""
 	user = frappe.session.user
 	if user == "Guest":
 		return None
 
 	rules = get_home_page_rules()
 
-	user_route = rules["users"].get(user)
-	if user_route:
-		return user_route
+	user_config = rules["users"].get(user)
+	if user_config:
+		return user_config
 
 	user_roles = set(frappe.get_roles(user))
-	for role, route in rules["roles"]:
+	for role, config in rules["roles"]:
 		if role in user_roles:
-			return route
+			return config
 
 	return None
 
 
-def on_session_creation(login_manager):
-	"""Redirect to the configured home page right after a successful login."""
-	route = get_home_page()
-	if not route:
-		return
-
-	target = "/" + route.lstrip("/")
-	frappe.local.response["type"] = "redirect"
-	frappe.local.response["location"] = target
+def get_home_page():
+	config = get_home_page_config()
+	return config["route"] if config else None

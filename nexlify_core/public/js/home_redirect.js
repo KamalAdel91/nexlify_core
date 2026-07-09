@@ -10,7 +10,16 @@
 			.replace(/^app$/, "");
 	}
 
-	function current_route_str() {
+	// Reads the ACTUAL current path from the browser URL, not frappe's router
+	// (which may not be initialized yet on a fresh page load / hard refresh)
+	function path_route_str() {
+		var path = window.location.pathname || "";
+		path = path.replace(/^\/(app|desk)\/?/, ""); // strip /app/ or /desk/ prefix
+		path = path.replace(/\/$/, ""); // strip trailing slash
+		return decodeURIComponent(path).toLowerCase();
+	}
+
+	function router_route_str() {
 		var route = (frappe.get_route && frappe.get_route()) || [];
 		return route.join("/").toLowerCase();
 	}
@@ -48,29 +57,24 @@
 		}, 120);
 	}
 
-	function check_and_redirect(target, with_cover) {
-		var route_str = current_route_str();
-		if (is_desktop_home(route_str) && route_str !== target.toLowerCase()) {
-			redirect_now(target, with_cover);
-		}
-	}
-
-	show_cover();
-
 	function init(target, allow_desktop_access) {
-		// always redirect once on initial load/login
-		check_and_redirect(target, true);
+		// initial load: check the REAL browser URL, not the (possibly uninitialized) router
+		if (is_desktop_home(path_route_str()) && path_route_str() !== target.toLowerCase()) {
+			redirect_now(target, true);
+		} else {
+			hide_cover();
+		}
 
-		// only keep enforcing on every navigation if desktop access is NOT allowed
 		if (!allow_desktop_access) {
+			// subsequent in-app navigations: router is reliable here
 			if (frappe.router && typeof frappe.router.on === "function") {
 				frappe.router.on("change", function () {
-					check_and_redirect(target, false);
+					var route_str = router_route_str();
+					if (is_desktop_home(route_str) && route_str !== target.toLowerCase()) {
+						redirect_now(target, false);
+					}
 				});
 			}
-			$(document).on("page-change", function () {
-				check_and_redirect(target, false);
-			});
 		}
 	}
 

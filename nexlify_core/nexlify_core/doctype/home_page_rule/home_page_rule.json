@@ -1,29 +1,36 @@
 {
  "actions": [],
- "autoname": "field:route",
+ "autoname": "naming_series:",
  "creation": "2026-07-09 00:00:00",
  "doctype": "DocType",
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
+  "naming_series",
   "route",
   "priority",
   "enabled",
+  "allow_desktop_access",
   "section_break_users",
   "users",
   "column_break_roles",
-  "roles",
-  "allow_desktop_access"
+  "roles"
  ],
  "fields": [
+  {
+   "default": "HPR-.#####",
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "label": "Series",
+   "options": "HPR-.#####"
+  },
   {
    "description": "e.g. app/selling, app/crm, app/hr",
    "fieldname": "route",
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "Route",
-   "reqd": 1,
-   "unique": 1
+   "reqd": 1
   },
   {
    "default": "0",
@@ -39,6 +46,13 @@
    "fieldtype": "Check",
    "in_list_view": 1,
    "label": "Enabled"
+  },
+  {
+   "default": "0",
+   "description": "If checked, user/roles can manually navigate to Desktop without being auto-redirected back (still redirects once after login).",
+   "fieldname": "allow_desktop_access",
+   "fieldtype": "Check",
+   "label": "Allow Manual Desktop Access"
   },
   {
    "fieldname": "section_break_users",
@@ -60,22 +74,15 @@
    "fieldtype": "Table MultiSelect",
    "label": "Roles",
    "options": "Home Page Rule Role"
-  },
-  {
-   "default": "0",
-   "description": "If checked, user/roles can manually navigate to Desktop without being auto-redirected back (still redirects once after login).",
-   "fieldname": "allow_desktop_access",
-   "fieldtype": "Check",
-   "label": "Allow Manual Desktop Access"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-07-09 16:48:03.946788",
+ "modified": "2026-07-09 19:06:12.879282",
  "modified_by": "Administrator",
  "module": "Nexlify Core",
  "name": "Home Page Rule",
- "naming_rule": "By fieldname",
+ "naming_rule": "By \"Naming Series\" field",
  "owner": "Administrator",
  "permissions": [
   {

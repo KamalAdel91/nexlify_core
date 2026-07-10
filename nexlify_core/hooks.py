@@ -141,13 +141,14 @@ app_license = "mit"
 # ---------------
 # Hook on document methods and events
 
-# doc_events = {
-# 	"*": {
-# 		"on_update": "method",
-# 		"on_cancel": "method",
-# 		"on_trash": "method"
-# 	}
-# }
+doc_events = {
+    "Number Card": {
+        "on_update": "nexlify_core.dashboard_filter_injector.on_number_card_save"
+    },
+    "Dashboard Chart": {
+        "on_update": "nexlify_core.dashboard_filter_injector.on_dashboard_chart_save"
+    }
+}
 
 # Scheduled Tasks
 # ---------------

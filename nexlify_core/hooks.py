@@ -8,10 +8,10 @@ app_license = "mit"
 
 doc_events = {
     "Number Card": {
-        "on_update": "nexlify_core.dashboard_filter_injector.on_number_card_save"
+        "before_save": "nexlify_core.dashboard_filter_injector.on_number_card_save"
     },
     "Dashboard Chart": {
-        "on_update": "nexlify_core.dashboard_filter_injector.on_dashboard_chart_save"
+        "before_save": "nexlify_core.dashboard_filter_injector.on_dashboard_chart_save"
     }
 }
 
@@ -23,4 +23,4 @@ extend_bootinfo = "nexlify_core.nexlify_core.utils.boot.extend_bootinfo"
 app_include_js = ["/assets/nexlify_core/js/home_redirect.js", "/assets/nexlify_core/js/nexlify_dashboard_filter.js"]
 
 # Fixtures for Nexlify Core settings (Workspace Sidebar, Dashboard Filter)
-fixtures = ["Workspace Sidebar", "Nexlify Dashboard Filter"]
+fixtures = [{"dt": "Workspace", "filters": [["module", "=", "Nexlify Core"]]}]

@@ -1,0 +1,155 @@
+import frappe
+import json
+
+# Custom-type Dashboard Charts where we've verified the underlying source
+# function accepts a "company" key in its filters dict. Custom charts can't
+# be handled generically since each one runs its own Python function, so
+# any newly discovered one needs to be added here after checking its source.
+KNOWN_CUSTOM_CHART_SOURCES = {
+	"Warehouse wise Stock Value",
+}
+
+
+def has_field(doctype, fieldname):
+	if not doctype:
+		return False
+	return bool(frappe.get_meta(doctype).get_field(fieldname))
+
+
+def build_expr(filter_key):
+	return f"window.nexlify_dash_filters && window.nexlify_dash_filters['{filter_key}']"
+
+
+def replace_list_filter(existing, target_fieldname, doctype, filter_key):
+	cleaned = [f for f in existing if not (len(f) > 1 and f[1] == target_fieldname)]
+	cleaned.append([doctype, target_fieldname, "=", build_expr(filter_key)])
+	return cleaned
+
+
+def get_active_filter_rows():
+	if not frappe.db.exists("Nexlify Dashboard Filter", "Nexlify Dashboard Filter"):
+		return []
+	doc = frappe.get_single("Nexlify Dashboard Filter")
+	return list(doc.filters)
+
+
+def compute_number_card_filters(doc, rows=None):
+	"""Pure computation - mutates doc.dynamic_filters_json in memory only.
+	Returns True if a change was made, False otherwise. Does not write to the DB."""
+	rows = rows if rows is not None else get_active_filter_rows()
+	if not doc.document_type:
+		return False
+
+	changed = False
+	existing = json.loads(doc.dynamic_filters_json or "[]")
+	for row in rows:
+		if not has_field(doc.document_type, row.target_fieldname):
+			continue
+		existing = replace_list_filter(existing, row.target_fieldname, doc.document_type, row.filter_key)
+		changed = True
+
+	if changed:
+		new_json = json.dumps(existing)
+		if new_json != (doc.dynamic_filters_json or "[]"):
+			doc.dynamic_filters_json = new_json
+		else:
+			changed = False
+	return changed
+
+
+def compute_dashboard_chart_filters(doc, rows=None):
+	"""Pure computation - mutates doc.dynamic_filters_json in memory only.
+	Returns True if a change was made, False otherwise. Does not write to the DB."""
+	rows = rows if rows is not None else get_active_filter_rows()
+
+	if doc.chart_type == "Report":
+		existing = frappe.parse_json(doc.dynamic_filters_json or "{}")
+		if not isinstance(existing, dict):
+			return False
+		changed = False
+		for row in rows:
+			if row.target_fieldname not in existing:
+				continue
+			existing[row.target_fieldname] = build_expr(row.filter_key)
+			changed = True
+		if changed:
+			doc.dynamic_filters_json = json.dumps(existing)
+		return changed
+
+	if doc.chart_type == "Custom":
+		if doc.source not in KNOWN_CUSTOM_CHART_SOURCES:
+			frappe.log_error(
+				title="nexlify_core: unrecognized Custom chart source",
+				message=(
+					f"Dashboard Chart '{doc.name}' uses Custom source '{doc.source}', "
+					f"which is not in KNOWN_CUSTOM_CHART_SOURCES. Dashboard filters will "
+					f"not be applied to this chart until its source is verified and added."
+				),
+			)
+			return False
+		existing = frappe.parse_json(doc.dynamic_filters_json or "{}")
+		if not isinstance(existing, dict):
+			existing = {}
+		changed = False
+		for row in rows:
+			existing[row.target_fieldname] = build_expr(row.filter_key)
+			changed = True
+		if changed:
+			doc.dynamic_filters_json = json.dumps(existing)
+		return changed
+
+	# Count / Sum / Group By - list-based dynamic_filters_json
+	if not doc.document_type:
+		return False
+
+	changed = False
+	existing = json.loads(doc.dynamic_filters_json or "[]")
+	for row in rows:
+		if not has_field(doc.document_type, row.target_fieldname):
+			continue
+		existing = replace_list_filter(existing, row.target_fieldname, doc.document_type, row.filter_key)
+		changed = True
+
+	if changed:
+		new_json = json.dumps(existing)
+		if new_json != (doc.dynamic_filters_json or "[]"):
+			doc.dynamic_filters_json = new_json
+		else:
+			changed = False
+	return changed
+
+
+def inject_number_card(doc, rows=None):
+	"""Used by the manual sweep script (setup/inject_dashboard_filters.py). The doc
+	here is not being saved through doc.save(), so we persist the change explicitly."""
+	changed = compute_number_card_filters(doc, rows=rows)
+	if changed:
+		frappe.db.set_value("Number Card", doc.name, "dynamic_filters_json", doc.dynamic_filters_json, update_modified=False)
+	return changed
+
+
+def inject_dashboard_chart(doc, rows=None):
+	"""Used by the manual sweep script (setup/inject_dashboard_filters.py). The doc
+	here is not being saved through doc.save(), so we persist the change explicitly."""
+	changed = compute_dashboard_chart_filters(doc, rows=rows)
+	if changed:
+		frappe.db.set_value("Dashboard Chart", doc.name, "dynamic_filters_json", doc.dynamic_filters_json, update_modified=False)
+	return changed
+
+
+def on_number_card_save(doc, method=None):
+	"""doc_events hook (before_save) - mutates the doc in memory before Frappe
+	writes it, so no extra DB write is needed."""
+	try:
+		compute_number_card_filters(doc)
+	except Exception:
+		frappe.log_error(title="nexlify_core: failed to auto-inject dashboard filter on Number Card")
+
+
+def on_dashboard_chart_save(doc, method=None):
+	"""doc_events hook (before_save) - mutates the doc in memory before Frappe
+	writes it, so no extra DB write is needed."""
+	try:
+		compute_dashboard_chart_filters(doc)
+	except Exception:
+		frappe.log_error(title="nexlify_core: failed to auto-inject dashboard filter on Dashboard Chart")

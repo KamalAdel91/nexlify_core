@@ -29,7 +29,7 @@ app_license = "mit"
 
 # include js, css files in header of desk.html
 # app_include_css = "/assets/nexlify_core/css/nexlify_core.css"
-# app_include_js = "/assets/nexlify_core/js/nexlify_core.js"
+# app_include_js = ["/assets/nexlify_core/js/nexlify_core.js", "/assets/nexlify_core/js/nexlify_dashboard_filter.js"]
 
 # include js, css files in header of web template
 # web_include_css = "/assets/nexlify_core/css/nexlify_core.css"
@@ -186,9 +186,7 @@ app_license = "mit"
 # Overriding Methods
 # ------------------------------
 #
-# override_whitelisted_methods = {
-# 	"frappe.desk.doctype.event.event.get_events": "nexlify_core.event.get_events"
-# }
+# override_whitelisted_methods removed - replaced by dynamic_filters_json approach (see nexlify_core.dashboard_filter_api)
 #
 # each overriding function accepts a `data` argument;
 # generated from the base implementation of the doctype dashboard,
@@ -264,4 +262,6 @@ app_license = "mit"
 
 
 extend_bootinfo = "nexlify_core.nexlify_core.utils.boot.extend_bootinfo"
-app_include_js = "/assets/nexlify_core/js/home_redirect.js"
+
+# Include JS files in desk
+app_include_js = ["/assets/nexlify_core/js/home_redirect.js", "/assets/nexlify_core/js/nexlify_dashboard_filter.js"]

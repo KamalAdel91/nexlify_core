@@ -10,12 +10,10 @@
 			.replace(/^app$/, "");
 	}
 
-	// Reads the ACTUAL current path from the browser URL, not frappe's router
-	// (which may not be initialized yet on a fresh page load / hard refresh)
 	function path_route_str() {
 		var path = window.location.pathname || "";
-		path = path.replace(/^\/(app|desk)\/?/, ""); // strip /app/ or /desk/ prefix
-		path = path.replace(/\/$/, ""); // strip trailing slash
+		path = path.replace(/^\/(app|desk)\/?/, "");
+		path = path.replace(/\/$/, "");
 		return decodeURIComponent(path).toLowerCase();
 	}
 
@@ -58,7 +56,6 @@
 	}
 
 	function init(target, allow_desktop_access) {
-		// initial load: check the REAL browser URL, not the (possibly uninitialized) router
 		if (is_desktop_home(path_route_str()) && path_route_str() !== target.toLowerCase()) {
 			redirect_now(target, true);
 		} else {
@@ -66,7 +63,6 @@
 		}
 
 		if (!allow_desktop_access) {
-			// subsequent in-app navigations: router is reliable here
 			if (frappe.router && typeof frappe.router.on === "function") {
 				frappe.router.on("change", function () {
 					var route_str = router_route_str();

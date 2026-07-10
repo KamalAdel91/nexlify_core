@@ -19,6 +19,8 @@ doc_events = {
 
 extend_bootinfo = "nexlify_core.nexlify_core.utils.boot.extend_bootinfo"
 
+after_migrate = "nexlify_core.dashboard_filter_injector.run_after_migrate"
+
 # Include JS files in desk
 app_include_js = ["/assets/nexlify_core/js/home_redirect.js", "/assets/nexlify_core/js/nexlify_dashboard_filter.js"]
 

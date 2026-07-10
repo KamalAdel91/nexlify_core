@@ -153,3 +153,16 @@ def on_dashboard_chart_save(doc, method=None):
 		compute_dashboard_chart_filters(doc)
 	except Exception:
 		frappe.log_error(title="nexlify_core: failed to auto-inject dashboard filter on Dashboard Chart")
+
+
+def run_after_migrate():
+	"""Runs automatically after every `bench migrate` (including Frappe Cloud
+	deploys). Sweeps all existing Number Cards / Dashboard Charts and injects
+	the configured dashboard filters, so a fresh install or a redeploy never
+	needs a manual script run. Safe to run even if no filters are configured
+	yet (e.g. a brand new site) - it just does nothing in that case."""
+	try:
+		from nexlify_core.setup.inject_dashboard_filters import run
+		run()
+	except Exception:
+		frappe.log_error(title="nexlify_core: after_migrate filter sweep failed")

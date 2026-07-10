@@ -267,5 +267,5 @@ extend_bootinfo = "nexlify_core.nexlify_core.utils.boot.extend_bootinfo"
 # Include JS files in desk
 app_include_js = ["/assets/nexlify_core/js/home_redirect.js", "/assets/nexlify_core/js/nexlify_dashboard_filter.js"]
 
-# Fixtures for Nexlify Core settings (Workspace, Dashboard Filter)
-fixtures = ["Nexlify Workspace", "Nexlify Dashboard Filter"]
+# Fixtures for Nexlify Core settings (Workspace Sidebar, Dashboard Filter)
+fixtures = ["Workspace Sidebar", "Nexlify Dashboard Filter"]

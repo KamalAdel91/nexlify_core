@@ -1,12 +1,32 @@
 [
   {
     "doctype": "Workspace",
-    "module": "Nexlify Core",
     "name": "Nexlify",
     "title": "Nexlify",
+    "label": "Nexlify",
+    "module": "Nexlify Core",
     "parent_page": "",
-    "is_default": 0,
-    "public": 0,
-    "content": "[]"
+    "public": 1,
+    "icon": "settings",
+    "sequence_id": 10,
+    "is_hidden": 0,
+    "links": [
+      {
+        "type": "Card Break",
+        "label": "Home Page Rules",
+        "idx": 1
+      },
+      {
+        "type": "Card Break",
+        "label": "Dashboard Filters",
+        "idx": 2
+      }
+    ],
+    "roles": [
+      {
+        "role": "System Manager",
+        "idx": 1
+      }
+    ]
   }
 ]

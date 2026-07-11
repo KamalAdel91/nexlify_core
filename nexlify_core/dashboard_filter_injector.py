@@ -10,10 +10,10 @@ KNOWN_CUSTOM_CHART_SOURCES = {
 }
 
 
-def has_field(doctype, fieldname):
+def get_target_field(doctype, fieldname):
 	if not doctype:
-		return False
-	return bool(frappe.get_meta(doctype).get_field(fieldname))
+		return None
+	return frappe.get_meta(doctype).get_field(fieldname)
 
 
 def build_expr(filter_key):
@@ -43,7 +43,7 @@ def compute_number_card_filters(doc, rows=None):
 	changed = False
 	existing = json.loads(doc.dynamic_filters_json or "[]")
 	for row in rows:
-		if not has_field(doc.document_type, row.target_fieldname):
+		if not get_target_field(doc.document_type, row.target_fieldname):
 			continue
 		existing = replace_list_filter(existing, row.target_fieldname, doc.document_type, row.filter_key)
 		changed = True
@@ -105,7 +105,7 @@ def compute_dashboard_chart_filters(doc, rows=None):
 	changed = False
 	existing = json.loads(doc.dynamic_filters_json or "[]")
 	for row in rows:
-		if not has_field(doc.document_type, row.target_fieldname):
+		if not get_target_field(doc.document_type, row.target_fieldname):
 			continue
 		existing = replace_list_filter(existing, row.target_fieldname, doc.document_type, row.filter_key)
 		changed = True

@@ -45,14 +45,14 @@
 		if (redirecting) return;
 		redirecting = true;
 		if (with_cover) show_cover();
-
+		// Use a real browser navigation instead of the SPA router. Calling
+		// frappe.set_route() can resolve its promise once the route state is
+		// updated without the page component actually finishing render,
+		// leaving the old page visible under the new URL. A full navigation
+		// guarantees the target page actually renders.
 		setTimeout(function () {
-			frappe.set_route(target.split("/"));
-			setTimeout(function () {
-				hide_cover();
-				redirecting = false;
-			}, 200);
-		}, 120);
+			window.location.href = "/" + (window.location.pathname.indexOf("/desk/") === 0 ? "desk" : "app") + "/" + target;
+		}, 50);
 	}
 
 	function init(target, allow_desktop_access) {

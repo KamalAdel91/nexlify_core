@@ -56,13 +56,62 @@
             }, target_parent);
             nx_field_wrappers.push($(field.wrapper));
             if (saved[f.filter_key]) field.set_value(saved[f.filter_key]);
+
+            // page.add_field toolbar fields don't get the usual Link clear
+            // (x) button, so add an explicit small clear button inside the
+            // input itself, positioned absolutely over its right edge.
+            const $input_wrapper = $(field.wrapper).find('.control-input, .awesomplete').first();
+            if ($input_wrapper.length) {
+                $input_wrapper.css('position', 'relative');
+                const clear_btn = $(`<span class="nx-clear-filter" title="Clear" style="position:absolute; right:6px; top:50%; transform:translateY(-50%); cursor:pointer; color: var(--text-muted); font-size:14px; line-height:1; z-index:5;">&times;</span>`);
+                clear_btn.on('click', (e) => {
+                    e.stopPropagation();
+                    field.set_value('');
+                });
+                $input_wrapper.append(clear_btn);
+                nx_field_wrappers.push(clear_btn);
+            }
         });
 
         target_parent.show();
+
+        // Hide the manual filter icon on any chart we manage, even before
+        // the user changes anything, so a stale saved filter never has a
+        // chance to override our injected one.
+        if (frappe.dashboard.chart_group) {
+            frappe.dashboard.chart_group.widgets_list.forEach(c => {
+                setTimeout(() => nx_hide_manual_filter_button(c), 300);
+            });
+        }
+    }
+
+    function nx_is_managed_report_or_custom(c) {
+        if (!c.chart_doc) return false;
+        if (c.chart_doc.chart_type !== 'Report' && c.chart_doc.chart_type !== 'Custom') return false;
+        const df = c.chart_doc.dynamic_filters_json || '';
+        return df.includes('nexlify_dash_filters');
+    }
+
+    function nx_hide_manual_filter_button(c) {
+        // Report/Custom charts save their filter dialog values into a
+        // per-user Dashboard Settings record, which then permanently
+        // overrides our injected filter on every future refresh. Hiding
+        // the manual filter icon on charts we manage prevents that.
+        if (nx_is_managed_report_or_custom(c) && c.filter_button) {
+            c.filter_button.hide();
+        }
     }
 
     function nx_refresh_widgets() {
-        frappe.dashboard.chart_group && frappe.dashboard.chart_group.widgets_list.forEach(c => { delete c.filters; delete c.filter_group; delete c.chart_settings; c.refresh(); });
+        if (frappe.dashboard.chart_group) {
+            frappe.dashboard.chart_group.widgets_list.forEach(c => {
+                delete c.filters;
+                delete c.filter_group;
+                delete c.chart_settings;
+                c.refresh();
+                setTimeout(() => nx_hide_manual_filter_button(c), 300);
+            });
+        }
         frappe.dashboard.number_card_group && frappe.dashboard.number_card_group.widgets_list.forEach(c => c.render_card());
     }
 })();

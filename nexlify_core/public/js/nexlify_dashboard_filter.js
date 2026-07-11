@@ -21,6 +21,19 @@
         }, 150);
     });
 
+    async function nx_apply_filter_value(filter_key, raw_value) {
+        // Keep the raw single value (used by Report/Custom charts, which only
+        // ever accept one value), and separately compute the expanded list
+        // (self + descendants, or everything when empty) for tree filters
+        // used by regular Count/Sum/Group By charts.
+        window.nexlify_dash_filters[filter_key] = raw_value || '';
+        const expanded = await frappe.xcall('nexlify_core.dashboard_filter_api.get_expanded_filter_values', {
+            filter_key: filter_key,
+            value: raw_value || '',
+        });
+        window.nexlify_dash_filters[filter_key + '__expanded'] = expanded;
+    }
+
     async function nx_render_filter_bar() {
         const dashboard_name = frappe.dashboard.dashboard_name;
         if (nx_current_dashboard === dashboard_name) return;
@@ -35,10 +48,13 @@
         ]);
 
         window.nexlify_dash_filters = window.nexlify_dash_filters || {};
-        Object.assign(window.nexlify_dash_filters, saved);
 
         const relevant = config.filter(f => !f.dashboard || f.dashboard === dashboard_name);
         const target_parent = frappe.dashboard.page.filters;
+
+        // Pre-expand every relevant filter's saved (or empty) value before any
+        // chart renders, so tree filters always start as a proper array.
+        await Promise.all(relevant.map(f => nx_apply_filter_value(f.filter_key, saved[f.filter_key] || '')));
 
         relevant.forEach(f => {
             const field = frappe.dashboard.page.add_field({
@@ -49,9 +65,8 @@
                 default: saved[f.filter_key] || '',
                 change() {
                     const val = field.get_value();
-                    window.nexlify_dash_filters[f.filter_key] = val || '';
                     frappe.xcall('nexlify_core.dashboard_filter_api.set_dash_filter', { key: f.filter_key, value: val });
-                    nx_refresh_widgets();
+                    nx_apply_filter_value(f.filter_key, val).then(nx_refresh_widgets);
                 }
             }, target_parent);
             nx_field_wrappers.push($(field.wrapper));

@@ -95,8 +95,6 @@ def compute_dashboard_chart_filters(doc, rows=None):
             return False
         changed = False
         for row in rows:
-            if row.target_fieldname not in existing:
-                continue
             existing[row.target_fieldname] = simple_expr(row.filter_key)
             changed = True
         if changed:

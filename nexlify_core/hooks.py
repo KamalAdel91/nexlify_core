@@ -12,6 +12,9 @@ doc_events = {
     },
     "Dashboard Chart": {
         "before_save": "nexlify_core.dashboard_filter_injector.on_dashboard_chart_save"
+    },
+    "Nexlify Dashboard Filter": {
+        "on_update": "nexlify_core.dashboard_filter_injector.on_dashboard_filter_config_save"
     }
 }
 

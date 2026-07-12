@@ -66,7 +66,18 @@
                 change() {
                     const val = field.get_value();
                     frappe.xcall('nexlify_core.dashboard_filter_api.set_dash_filter', { key: f.filter_key, value: val });
-                    nx_apply_filter_value(f.filter_key, val).then(nx_refresh_widgets);
+                    Promise.all([
+                        nx_apply_filter_value(f.filter_key, val),
+                        // Whenever our filter changes, keep any manually
+                        // saved filter dialog on this dashboard's Report/
+                        // Custom charts in sync, so opening it never shows a
+                        // stale value while the chart itself uses our filter.
+                        frappe.xcall('nexlify_core.dashboard_filter_api.sync_manual_chart_filters', {
+                            dashboard_name: dashboard_name,
+                            target_fieldname: f.target_fieldname,
+                            value: val,
+                        }),
+                    ]).then(nx_refresh_widgets);
                 }
             }, target_parent);
             nx_field_wrappers.push($(field.wrapper));
@@ -89,42 +100,32 @@
         });
 
         target_parent.show();
-
-        // Hide the manual filter icon on any chart we manage, even before
-        // the user changes anything, so a stale saved filter never has a
-        // chance to override our injected one.
-        if (frappe.dashboard.chart_group) {
-            frappe.dashboard.chart_group.widgets_list.forEach(c => {
-                setTimeout(() => nx_hide_manual_filter_button(c), 300);
-            });
-        }
     }
 
-    function nx_is_managed_report_or_custom(c) {
-        if (!c.chart_doc) return false;
-        if (c.chart_doc.chart_type !== 'Report' && c.chart_doc.chart_type !== 'Custom') return false;
-        const df = c.chart_doc.dynamic_filters_json || '';
-        return df.includes('nexlify_dash_filters');
-    }
-
-    function nx_hide_manual_filter_button(c) {
-        // Report/Custom charts save their filter dialog values into a
-        // per-user Dashboard Settings record, which then permanently
-        // overrides our injected filter on every future refresh. Hiding
-        // the manual filter icon on charts we manage prevents that.
-        if (nx_is_managed_report_or_custom(c) && c.filter_button) {
-            c.filter_button.hide();
+    function nx_reset_filter_group(c) {
+        // The filter_group's dialog/fields remember whatever was last set
+        // inside them, even after we delete the filter_group reference
+        // itself and it gets rebuilt - because a fresh FilterGroup pulls its
+        // initial values from this.filters, which we've already cleared, but
+        // any already-open dialog DOM can still show stale values. Destroy
+        // the dialog explicitly so the next open is built fresh.
+        if (c.filter_group && c.filter_group.wrapper) {
+            try {
+                c.filter_group.wrapper.remove();
+            } catch (e) {
+                // ignore
+            }
         }
     }
 
     function nx_refresh_widgets() {
         if (frappe.dashboard.chart_group) {
             frappe.dashboard.chart_group.widgets_list.forEach(c => {
+                nx_reset_filter_group(c);
                 delete c.filters;
                 delete c.filter_group;
                 delete c.chart_settings;
                 c.refresh();
-                setTimeout(() => nx_hide_manual_filter_button(c), 300);
             });
         }
         frappe.dashboard.number_card_group && frappe.dashboard.number_card_group.widgets_list.forEach(c => c.render_card());

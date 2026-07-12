@@ -7,6 +7,7 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
+  "enable_dashboard_filters",
   "filters"
  ],
  "fields": [
@@ -15,13 +16,20 @@
    "fieldtype": "Table",
    "label": "Filters",
    "options": "Nexlify Dashboard Filter Item"
+  },
+  {
+   "default": "1",
+   "description": "Turn off to fully disable the dashboard filter system - no filter bar, no filter injection, as if the app didn't add it.",
+   "fieldname": "enable_dashboard_filters",
+   "fieldtype": "Check",
+   "label": "Enable Dashboard Filter Bar"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2026-07-10 03:00:02.912820",
+ "modified": "2026-07-12 15:28:50.833744",
  "modified_by": "Administrator",
  "module": "Nexlify Core",
  "name": "Nexlify Dashboard Filter",

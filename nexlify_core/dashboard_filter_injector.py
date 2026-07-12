@@ -1,6 +1,16 @@
 import frappe
 import json
 
+
+def is_dashboard_filters_enabled():
+    """Single source of truth for whether the whole dashboard filter system
+    is active. Checked before any filter injection - if disabled, this app
+    behaves as if it never touched Number Cards / Dashboard Charts at all."""
+    if not frappe.db.exists("Nexlify Dashboard Filter", "Nexlify Dashboard Filter"):
+        return True
+    value = frappe.db.get_single_value("Nexlify Dashboard Filter", "enable_dashboard_filters")
+    return bool(value) if value is not None else True
+
 # Custom-type Dashboard Charts where we've verified the underlying source
 # function accepts a "company" key in its filters dict. Custom charts can't
 # be handled generically since each one runs its own Python function, so
@@ -165,6 +175,8 @@ def inject_dashboard_chart(doc, rows=None):
 def on_number_card_save(doc, method=None):
     """doc_events hook (before_save) - mutates the doc in memory before Frappe
     writes it, so no extra DB write is needed."""
+    if not is_dashboard_filters_enabled():
+        return
     try:
         compute_number_card_filters(doc)
     except Exception:
@@ -174,10 +186,90 @@ def on_number_card_save(doc, method=None):
 def on_dashboard_chart_save(doc, method=None):
     """doc_events hook (before_save) - mutates the doc in memory before Frappe
     writes it, so no extra DB write is needed."""
+    if not is_dashboard_filters_enabled():
+        return
     try:
         compute_dashboard_chart_filters(doc)
     except Exception:
         frappe.log_error(title="nexlify_core: failed to auto-inject dashboard filter on Dashboard Chart")
+
+
+def strip_nexlify_filters_list(existing):
+    """Removes any filter row whose value expression references our
+    window.nexlify_dash_filters global, leaving everything else untouched."""
+    return [f for f in existing if not (len(f) > 3 and "nexlify_dash_filters" in str(f[3]))]
+
+
+def strip_nexlify_filters_dict(existing):
+    """Same idea as strip_nexlify_filters_list, but for the dict-shaped
+    dynamic_filters_json used by Report/Custom charts."""
+    return {k: v for k, v in existing.items() if "nexlify_dash_filters" not in str(v)}
+
+
+def remove_number_card_filters(doc):
+    """Pure computation - strips any of our injected filters from
+    doc.dynamic_filters_json in memory only. Returns True if changed."""
+    existing = json.loads(doc.dynamic_filters_json or "[]")
+    cleaned = strip_nexlify_filters_list(existing)
+    if cleaned == existing:
+        return False
+    doc.dynamic_filters_json = json.dumps(cleaned)
+    return True
+
+
+def remove_dashboard_chart_filters(doc):
+    """Pure computation - strips any of our injected filters from
+    doc.dynamic_filters_json in memory only. Returns True if changed."""
+    if doc.chart_type in ("Report", "Custom"):
+        existing = frappe.parse_json(doc.dynamic_filters_json or "{}")
+        if not isinstance(existing, dict):
+            return False
+        cleaned = strip_nexlify_filters_dict(existing)
+        if cleaned == existing:
+            return False
+        doc.dynamic_filters_json = json.dumps(cleaned)
+        return True
+
+    existing = json.loads(doc.dynamic_filters_json or "[]")
+    cleaned = strip_nexlify_filters_list(existing)
+    if cleaned == existing:
+        return False
+    doc.dynamic_filters_json = json.dumps(cleaned)
+    return True
+
+
+def remove_all_filters():
+    """Sweeps every Number Card / Dashboard Chart in the system and strips
+    out any filter we previously injected, restoring them to their original
+    state as if this app had never touched them. Used when the dashboard
+    filter system is turned off via the Enable Dashboard Filter Bar checkbox."""
+    for card in frappe.get_all("Number Card", pluck="name"):
+        doc = frappe.get_doc("Number Card", card)
+        if remove_number_card_filters(doc):
+            frappe.db.set_value("Number Card", card, "dynamic_filters_json", doc.dynamic_filters_json, update_modified=False)
+
+    for chart in frappe.get_all("Dashboard Chart", pluck="name"):
+        doc = frappe.get_doc("Dashboard Chart", chart)
+        if remove_dashboard_chart_filters(doc):
+            frappe.db.set_value("Dashboard Chart", chart, "dynamic_filters_json", doc.dynamic_filters_json, update_modified=False)
+
+    frappe.db.commit()
+
+
+def on_dashboard_filter_config_save(doc, method=None):
+    """doc_events hook on Nexlify Dashboard Filter itself. If the filter
+    system was just turned off, strips our injected filters from every
+    chart/card so the dashboards return to their original, untouched state.
+    If it was just turned on (or filters config changed), re-runs the normal
+    injection sweep."""
+    try:
+        if not bool(doc.get("enable_dashboard_filters")):
+            remove_all_filters()
+        else:
+            from nexlify_core.setup.inject_dashboard_filters import run
+            run()
+    except Exception:
+        frappe.log_error(title="nexlify_core: failed to sync dashboard filter state on save")
 
 
 def run_after_migrate():
@@ -186,6 +278,8 @@ def run_after_migrate():
     the configured dashboard filters, so a fresh install or a redeploy never
     needs a manual script run. Safe to run even if no filters are configured
     yet (e.g. a brand new site) - it just does nothing in that case."""
+    if not is_dashboard_filters_enabled():
+        return
     try:
         from nexlify_core.setup.inject_dashboard_filters import run
         run()

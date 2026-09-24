@@ -4,7 +4,7 @@
 
 	function get_target() {
 		if (typeof frappe === "undefined" || !frappe.boot || !frappe.boot.nexlify_home_route) return null;
-		return frappe.boot.nexlify_home_route
+		return String(frappe.boot.nexlify_home_route).replace(/^\/+/, "").replace(/^(app|desk)\//i, "")
 			.replace(/^\//, "")
 			.replace(/^app\//, "")
 			.replace(/^app$/, "");

@@ -28,4 +28,3 @@ after_migrate = "nexlify_core.dashboard_filter_injector.run_after_migrate"
 app_include_js = ["/assets/nexlify_core/js/home_redirect.js", "/assets/nexlify_core/js/nexlify_dashboard_filter.js"]
 
 # Fixtures for Nexlify Core settings (Workspace Sidebar, Dashboard Filter)
-fixtures = [{"dt": "Workspace", "filters": [["module", "=", "Nexlify Core"]]}]

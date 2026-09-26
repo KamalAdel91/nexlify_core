@@ -1,0 +1,44 @@
+{
+ "app": "nexlify_core",
+ "creation": "2026-09-26 04:20:00.000000",
+ "docstatus": 0,
+ "doctype": "Workspace Sidebar",
+ "header_icon": "blocks",
+ "idx": 0,
+ "items": [
+  {
+   "child": 0, "collapsible": 1, "icon": "shield-check", "indent": 1, "keep_closed": 0,
+   "label": "Access & Privacy", "link_type": "DocType", "show_arrow": 0, "type": "Section Break"
+  },
+  {
+   "child": 1, "collapsible": 1, "indent": 0, "keep_closed": 0,
+   "label": "Visibility Field Setup", "link_to": "Visibility Field Setup",
+   "link_type": "DocType", "show_arrow": 0, "type": "Link"
+  },
+  {
+   "child": 0, "collapsible": 1, "icon": "house", "indent": 1, "keep_closed": 0,
+   "label": "Navigation", "link_type": "DocType", "show_arrow": 0, "type": "Section Break"
+  },
+  {
+   "child": 1, "collapsible": 1, "indent": 0, "keep_closed": 0,
+   "label": "Home Page Rule", "link_to": "Home Page Rule",
+   "link_type": "DocType", "show_arrow": 0, "type": "Link"
+  },
+  {
+   "child": 0, "collapsible": 1, "icon": "layout-dashboard", "indent": 1, "keep_closed": 0,
+   "label": "Dashboards", "link_type": "DocType", "show_arrow": 0, "type": "Section Break"
+  },
+  {
+   "child": 1, "collapsible": 1, "indent": 0, "keep_closed": 0,
+   "label": "Dashboard Filters", "link_to": "Nexlify Dashboard Filter",
+   "link_type": "DocType", "show_arrow": 0, "type": "Link"
+  }
+ ],
+ "modified": "2026-09-26 04:20:00.000000",
+ "modified_by": "Administrator",
+ "module": "Nexlify Core",
+ "name": "Nexlify Core",
+ "owner": "Administrator",
+ "standard": 1,
+ "title": "Nexlify Core"
+}

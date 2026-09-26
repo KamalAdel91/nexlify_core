@@ -28,3 +28,11 @@ after_migrate = "nexlify_core.dashboard_filter_injector.run_after_migrate"
 app_include_js = ["/assets/nexlify_core/js/home_redirect.js", "/assets/nexlify_core/js/nexlify_dashboard_filter.js"]
 
 # Fixtures for Nexlify Core settings (Workspace Sidebar, Dashboard Filter)
+
+# ===== Nexlify Access: restrict to owner =====
+has_permission = {
+    "*": "nexlify_core.nexlify_access.visibility_permissions.has_visibility_permission"
+}
+permission_query_conditions = {
+    "*": "nexlify_core.nexlify_access.visibility_permissions.visibility_query_conditions"
+}

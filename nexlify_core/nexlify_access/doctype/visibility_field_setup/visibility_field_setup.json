@@ -1,0 +1,91 @@
+{
+ "actions": [],
+ "creation": "2026-09-13 12:00:00",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "target_doctype",
+  "column_break_1",
+  "grant_access_to",
+  "role",
+  "user",
+  "column_break_2",
+  "field_created",
+  "auto_generated_role"
+ ],
+ "fields": [
+  {
+   "fieldname": "target_doctype",
+   "fieldtype": "Link",
+   "label": "Target Doctype",
+   "options": "DocType",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "grant_access_to",
+   "fieldtype": "Select",
+   "label": "Grant Access To",
+   "options": "Role\nUser",
+   "reqd": 1,
+   "default": "Role"
+  },
+  {
+   "fieldname": "role",
+   "fieldtype": "Link",
+   "label": "Role",
+   "options": "Role",
+   "depends_on": "eval:doc.grant_access_to=='Role'",
+   "mandatory_depends_on": "eval:doc.grant_access_to=='Role'"
+  },
+  {
+   "fieldname": "user",
+   "fieldtype": "Link",
+   "label": "User",
+   "options": "User",
+   "depends_on": "eval:doc.grant_access_to=='User'",
+   "mandatory_depends_on": "eval:doc.grant_access_to=='User'"
+  },
+  {
+   "fieldname": "column_break_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "field_created",
+   "fieldtype": "Check",
+   "label": "Field Created",
+   "read_only": 1
+  },
+  {
+   "fieldname": "auto_generated_role",
+   "fieldtype": "Link",
+   "label": "Auto-Generated Role",
+   "options": "Role",
+   "read_only": 1,
+   "depends_on": "eval:doc.grant_access_to=='User'"
+  }
+ ],
+ "istable": 0,
+ "issingle": 0,
+ "links": [],
+ "modified": "2026-09-13 12:00:00",
+ "modified_by": "Administrator",
+ "module": "Nexlify Access",
+ "name": "Visibility Field Setup",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC"
+}

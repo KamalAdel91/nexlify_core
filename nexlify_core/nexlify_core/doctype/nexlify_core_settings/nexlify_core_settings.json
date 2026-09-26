@@ -3,23 +3,58 @@
  "creation": "2026-09-27 00:00:00.000000",
  "doctype": "DocType",
  "engine": "InnoDB",
- "field_order": ["enable_raven_chat_button"],
+ "field_order": [
+  "enable_raven_chat_button",
+  "notification_sound_type",
+  "notification_sound",
+  "notification_volume"
+ ],
  "fields": [
   {
    "default": "0",
    "fieldname": "enable_raven_chat_button",
    "fieldtype": "Check",
    "label": "Enable Floating Raven Chat Button"
+  },
+  {
+   "fieldname": "notification_sound_type",
+   "fieldtype": "Select",
+   "label": "Chat Notification Sound",
+   "options": "Raven Default\nDing\nChime\nPop\nBell\nTriple Beep\nSoft\nMarimba\nCustom",
+   "default": "Raven Default",
+   "depends_on": "eval:doc.enable_raven_chat_button"
+  },
+  {
+   "fieldname": "notification_sound",
+   "fieldtype": "Attach",
+   "label": "Custom Sound File",
+   "description": "mp3 / wav / ogg — short (1-2 sec)",
+   "depends_on": "eval:doc.enable_raven_chat_button && doc.notification_sound_type=='Custom'"
+  },
+  {
+   "fieldname": "notification_volume",
+   "fieldtype": "Int",
+   "label": "Notification Volume (0-100)",
+   "default": "50",
+   "depends_on": "eval:doc.enable_raven_chat_button"
   }
  ],
  "issingle": 1,
- "modified": "2026-09-27 00:00:00.000000",
+ "modified": "2026-09-27 01:41:38.204295",
  "modified_by": "Administrator",
  "module": "Nexlify Core",
  "name": "Nexlify Core Settings",
  "owner": "Administrator",
  "permissions": [
-  {"create": 1, "read": 1, "write": 1, "email": 1, "print": 1, "share": 1, "role": "System Manager"}
+  {
+   "create": 1,
+   "read": 1,
+   "write": 1,
+   "email": 1,
+   "print": 1,
+   "share": 1,
+   "role": "System Manager"
+  }
  ],
  "sort_field": "modified",
  "sort_order": "DESC",

@@ -1,3 +1,43 @@
+window.nxRavenSounds = (() => {
+	let ctx;
+	const ac = () => (ctx = ctx || new (window.AudioContext || window.webkitAudioContext)());
+	const tone = (freq, start, dur, vol, type = "sine", toFreq) => {
+		const c = ac(), t = c.currentTime + start;
+		const o = c.createOscillator(), g = c.createGain();
+		o.type = type;
+		o.frequency.setValueAtTime(freq, t);
+		if (toFreq) o.frequency.exponentialRampToValueAtTime(toFreq, t + dur);
+		g.gain.setValueAtTime(0.0001, t);
+		g.gain.exponentialRampToValueAtTime(vol, t + 0.01);
+		g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+		o.connect(g).connect(c.destination);
+		o.start(t); o.stop(t + dur + 0.05);
+	};
+	const sounds = {
+		"Ding": (v) => tone(880, 0, 0.5, v),
+		"Chime": (v) => { tone(659, 0, 0.35, v); tone(988, 0.15, 0.6, v); },
+		"Pop": (v) => tone(400, 0, 0.09, v, "sine", 900),
+		"Bell": (v) => { tone(523, 0, 1.4, v); tone(1046, 0, 1, v * 0.5); tone(1568, 0, 0.6, v * 0.25); },
+		"Triple Beep": (v) => [0, 0.14, 0.28].forEach((s) => tone(1000, s, 0.09, v * 0.35, "square")),
+		"Soft": (v) => { tone(523, 0, 0.4, v * 0.8, "triangle"); tone(659, 0.12, 0.5, v * 0.8, "triangle"); },
+		"Marimba": (v) => { tone(440, 0, 0.35, v); tone(1760, 0, 0.08, v * 0.4); },
+	};
+	const play = (name, volume = 50, customUrl = "") => {
+		if (!volume) return;
+		const v = volume / 100;
+		if (name === "Custom" && customUrl) {
+			const a = new Audio(customUrl); a.volume = v;
+			return a.play().catch(() => {});
+		}
+		if (sounds[name]) {
+			try { ac().resume(); sounds[name](v); } catch (e) {}
+			return;
+		}
+		frappe.utils.play_sound("raven_notification");
+	};
+	return { names: Object.keys(sounds), play };
+})();
+
 $(document).on("app_ready", () => {
 	if (!frappe.boot.nx_raven_float) return;
 	if (frappe.session.user === "Guest" || $("#nx-raven-btn").length) return;
@@ -90,7 +130,7 @@ $(document).on("app_ready", () => {
 		refreshUnread();
 		if (data && data.sent_by !== frappe.session.user && data.event_type !== "message_edited"
 			&& data.event_type !== "message_deleted") {
-			if (data.play_sound || !data.is_dm_channel) frappe.utils.play_sound("raven_notification");
+			if (data.play_sound || !data.is_dm_channel) nxRavenSounds.play(frappe.boot.nx_raven_sound_type, frappe.boot.nx_raven_volume, frappe.boot.nx_raven_sound);
 			notify(data);
 		}
 	});

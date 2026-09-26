@@ -31,8 +31,8 @@ app_include_js = ["/assets/nexlify_core/js/home_redirect.js", "/assets/nexlify_c
 
 # ===== Nexlify Access: restrict to owner =====
 has_permission = {
-    "*": "nexlify_core.nexlify_access.visibility_permissions.has_visibility_permission"
+    "*": "nexlify_core.nexlify_core.visibility_permissions.has_visibility_permission"
 }
 permission_query_conditions = {
-    "*": "nexlify_core.nexlify_access.visibility_permissions.visibility_query_conditions"
+    "*": "nexlify_core.nexlify_core.visibility_permissions.visibility_query_conditions"
 }

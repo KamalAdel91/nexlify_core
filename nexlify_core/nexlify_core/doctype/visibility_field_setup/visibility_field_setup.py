@@ -64,6 +64,7 @@ def apply_visibility_field(name):
 		"label": "Restrict To Owner",
 		"fieldtype": "Check",
 		"permlevel": 1,
+		"allow_on_submit": 1,
 	}).insert(ignore_permissions=True)
 
 	_grant_permlevel_access(doc.target_doctype, target_role, permlevel=1)

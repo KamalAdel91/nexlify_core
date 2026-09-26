@@ -8,7 +8,7 @@ frappe.ui.form.on('Visibility Field Setup', {
 					وسيكون مرئياً فقط لـ <b>${grantee}</b>. هل تريد المتابعة؟`,
 					function() {
 						frappe.call({
-							method: 'nexlify_core.nexlify_access.doctype.visibility_field_setup.visibility_field_setup.apply_visibility_field',
+							method: 'nexlify_core.nexlify_core.doctype.visibility_field_setup.visibility_field_setup.apply_visibility_field',
 							args: { name: frm.doc.name },
 							freeze: true,
 							freeze_message: 'Applying...',

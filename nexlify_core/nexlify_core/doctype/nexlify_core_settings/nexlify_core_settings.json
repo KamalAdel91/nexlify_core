@@ -1,0 +1,28 @@
+{
+ "actions": [],
+ "creation": "2026-09-27 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": ["enable_raven_chat_button"],
+ "fields": [
+  {
+   "default": "0",
+   "fieldname": "enable_raven_chat_button",
+   "fieldtype": "Check",
+   "label": "Enable Floating Raven Chat Button"
+  }
+ ],
+ "issingle": 1,
+ "modified": "2026-09-27 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Nexlify Core",
+ "name": "Nexlify Core Settings",
+ "owner": "Administrator",
+ "permissions": [
+  {"create": 1, "read": 1, "write": 1, "email": 1, "print": 1, "share": 1, "role": "System Manager"}
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

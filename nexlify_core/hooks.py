@@ -36,3 +36,9 @@ has_permission = {
 permission_query_conditions = {
     "*": "nexlify_core.nexlify_core.visibility_permissions.visibility_query_conditions"
 }
+
+# --- Nexlify: floating Raven chat button (extends existing hooks, doesn't override) ---
+_nx_js = globals().get("app_include_js") or []
+app_include_js = (_nx_js if isinstance(_nx_js, list) else [_nx_js]) + ["/assets/nexlify_core/js/raven_float.js"]
+_nx_boot = globals().get("extend_bootinfo") or []
+extend_bootinfo = (_nx_boot if isinstance(_nx_boot, list) else [_nx_boot]) + ["nexlify_core.raven_float.extend_boot"]

@@ -42,3 +42,18 @@ _nx_js = globals().get("app_include_js") or []
 app_include_js = (_nx_js if isinstance(_nx_js, list) else [_nx_js]) + ["/assets/nexlify_core/js/raven_float.js"]
 _nx_boot = globals().get("extend_bootinfo") or []
 extend_bootinfo = (_nx_boot if isinstance(_nx_boot, list) else [_nx_boot]) + ["nexlify_core.raven_float.extend_boot"]
+
+# ---- nexlify transition rules + kanban by any field ----
+def _nx_list(value):
+	return [value] if isinstance(value, str) else list(value or [])
+
+app_include_js = [
+	js for js in _nx_list(globals().get("app_include_js")) if "nexlify_kanban_guard" not in js
+] + ["nexlify_transition_rules.bundle.js", "nexlify_kanban_fields.bundle.js"]
+
+doctype_js = dict(globals().get("doctype_js") or {})
+doctype_js["Kanban Board"] = _nx_list(doctype_js.get("Kanban Board")) + ["public/js/kanban_board_any_field.js"]
+
+doc_events = dict(globals().get("doc_events") or {})
+doc_events["*"] = dict(doc_events.get("*") or {})
+doc_events["*"]["validate"] = _nx_list(doc_events["*"].get("validate")) + ["nexlify_core.transition_rules.validate"]

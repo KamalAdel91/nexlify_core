@@ -57,3 +57,8 @@ doctype_js["Kanban Board"] = _nx_list(doctype_js.get("Kanban Board")) + ["public
 doc_events = dict(globals().get("doc_events") or {})
 doc_events["*"] = dict(doc_events.get("*") or {})
 doc_events["*"]["validate"] = _nx_list(doc_events["*"].get("validate")) + ["nexlify_core.transition_rules.validate"]
+
+# Organizational Chart: "All Companies" option on the HRMS page (merged from nexlify_org_chart)
+required_apps = _nx_list(globals().get("required_apps")) + ["hrms"]
+page_js = dict(globals().get("page_js") or {})
+page_js["organizational-chart"] = _nx_list(page_js.get("organizational-chart")) + ["public/js/organizational_chart_override.js"]

@@ -9,7 +9,7 @@ import re
 
 import frappe
 from frappe import _
-from frappe.utils import cint, cstr, strip_html
+from frappe.utils import cint, cstr, flt, strip_html
 
 CACHE_KEY = "nexlify_transition_rules"
 
@@ -69,8 +69,8 @@ def applicable_rules(rules, field, old, new):
 
 
 def is_empty(value, df=None):
-	if df and df.fieldtype == "Check":
-		return not cint(value)
+	if df and df.fieldtype in ("Check", "Int", "Float", "Currency", "Percent"):
+		return not flt(value)
 	if isinstance(value, list | tuple):
 		return not value
 	text = cstr(value)
@@ -197,6 +197,7 @@ def _field_info(meta, fieldname):
 		"options": df.options,
 		"description": _(df.description) if df.description else None,
 		"read_only": cint(df.read_only),
+		"fetch_from": df.fetch_from,
 	}
 
 

@@ -4,7 +4,7 @@
 // with only the fields that move still needs.
 const API = "nexlify_core.transition_rules.";
 const BULK = "frappe.desk.doctype.bulk_update.bulk_update.submit_cancel_or_update_docs";
-const FORM_ONLY = new Set(["Table", "Table MultiSelect", "Dynamic Link"]);
+const FORM_ONLY = new Set(["Table", "Dynamic Link"]); // Table MultiSelect (Lost Reasons…) fits in the popup
 const infos = {}; // doctype -> { at, promise }, refreshed after a minute
 const board_fields = {};
 const pending = new Map(); // "doctype::name" -> { to, values }, read by the Kanban provider
@@ -33,12 +33,20 @@ async function ask_for_move(doctype, names, field, to, allow_form = true) {
 	if (!needed().size) return {};
 
 	const single = names.length === 1;
-	const form_only = (f) => FORM_ONLY.has(check.fields[f].fieldtype) || check.fields[f].read_only;
+	// read-only fields are set by the server too (ERPNext's Lost Reasons are read-only);
+	// only a fetched field has to come from the form
+	const form_only = (f) => FORM_ONLY.has(check.fields[f].fieldtype) || check.fields[f].fetch_from;
 	if (check.candidates.some(form_only)) {
 		if (single && allow_form) return "form";
 		frappe.msgprint(__("Some required fields can only be filled in the form. Move these one at a time."));
 		return null;
 	}
+	// a Table MultiSelect in a dialog needs its child DocType loaded
+	await Promise.all(
+		check.candidates
+			.filter((f) => check.fields[f].fieldtype === "Table MultiSelect")
+			.map((f) => frappe.model.with_doctype(check.fields[f].options))
+	);
 
 	return new Promise((resolve) => {
 		let done = false;

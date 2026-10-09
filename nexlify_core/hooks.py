@@ -63,5 +63,3 @@ required_apps = _nx_list(globals().get("required_apps")) + ["hrms"]
 page_js = dict(globals().get("page_js") or {})
 page_js["organizational-chart"] = _nx_list(page_js.get("organizational-chart")) + ["public/js/organizational_chart_override.js"]
 
-# Group Org Chart link in the HR Setup sidebar (re-applied after HRMS syncs its standard sidebar)
-after_migrate = _nx_list(globals().get("after_migrate")) + ["nexlify_core.sidebar_setup.ensure_hr_org_chart"]

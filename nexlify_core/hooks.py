@@ -49,7 +49,7 @@ def _nx_list(value):
 
 app_include_js = [
 	js for js in _nx_list(globals().get("app_include_js")) if "nexlify_kanban_guard" not in js
-] + ["nexlify_transition_rules.bundle.js", "nexlify_kanban_fields.bundle.js"]
+] + ["nexlify_kanban_api.bundle.js", "nexlify_transition_rules.bundle.js", "nexlify_kanban_fields.bundle.js"]
 
 doctype_js = dict(globals().get("doctype_js") or {})
 doctype_js["Kanban Board"] = _nx_list(doctype_js.get("Kanban Board")) + ["public/js/kanban_board_any_field.js"]

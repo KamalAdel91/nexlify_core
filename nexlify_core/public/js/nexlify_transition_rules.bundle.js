@@ -29,6 +29,11 @@ async function has_rules(doctype, field) {
 // { name: { fieldname: value } }, "form" (open the full form) or null (cancelled).
 async function ask_for_move(doctype, names, field, to, allow_form = true) {
 	let check = await frappe.xcall(API + "check_move", { doctype, names, field, to });
+	if (check.open_form) {
+		if (names.length === 1 && allow_form) return "form";
+		frappe.msgprint(__("Moving to {0} opens the form. Move these one at a time.", [__(to)]));
+		return null;
+	}
 	const needed = () => new Set(Object.values(check.docs || {}).flat());
 	if (!needed().size) return {};
 

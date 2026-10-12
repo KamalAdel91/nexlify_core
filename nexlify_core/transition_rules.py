@@ -45,7 +45,7 @@ def _load_rules():
 	for rule in frappe.get_all(
 		"Transition Rule",
 		filters={"enabled": 1},
-		fields=["name", "reference_doctype", "stage_field", "from_value", "to_value", "message", "bypass_role"],
+		fields=["name", "reference_doctype", "stage_field", "from_value", "to_value", "message", "bypass_role", "open_form"],
 	):
 		rule.fields = fields.get(rule.name, [])
 		out.setdefault(rule.reference_doctype, []).append(rule)
@@ -157,9 +157,10 @@ def check_move(doctype: str, names, field: str, to: str, values=None):
 	values = frappe.parse_json(values) or {}
 	rules = [r for r in get_rules(doctype) if r.stage_field == field]
 	if not rules:
-		return {"docs": {}}
+		return {"docs": {}, "open_form": False}
 	meta = frappe.get_meta(doctype)
 	docs, titles, candidates = {}, {}, []
+	open_form = False
 	for name in names:
 		doc = frappe.get_doc(doctype, name)
 		doc.check_permission("read")
@@ -167,6 +168,7 @@ def check_move(doctype: str, names, field: str, to: str, values=None):
 		docs[name] = []
 		if not active:
 			continue
+		open_form = open_form or any(cint(r.get("open_form")) for r in active)
 		data = frappe._dict(doc.as_dict())
 		for key, value in values.items():
 			if meta.get_field(key) and is_empty(data.get(key), meta.get_field(key)):
@@ -179,6 +181,7 @@ def check_move(doctype: str, names, field: str, to: str, values=None):
 				if f.fieldname not in candidates and is_empty(doc.get(f.fieldname), meta.get_field(f.fieldname)):
 					candidates.append(f.fieldname)
 	return {
+		"open_form": open_form,
 		"docs": docs,
 		"titles": titles,
 		"candidates": candidates,

@@ -6,6 +6,7 @@
  "field_order": [
   "enabled",
   "auto_select_single_company",
+  "allow_group_companies",
   "section_access",
   "exempt_roles",
   "column_break_access",
@@ -26,6 +27,14 @@
    "fieldname": "auto_select_single_company",
    "fieldtype": "Check",
    "label": "Auto-select When Only One Company"
+  },
+  {
+   "default": "1",
+   "depends_on": "eval:doc.enabled",
+   "description": "Picking a group company shows it and every company under it. User Permissions still apply.",
+   "fieldname": "allow_group_companies",
+   "fieldtype": "Check",
+   "label": "Allow Group Companies"
   },
   {
    "depends_on": "eval:doc.enabled",
@@ -54,7 +63,7 @@
  ],
  "issingle": 1,
  "links": [],
- "modified": "2026-10-19 00:00:00.000000",
+ "modified": "2026-10-19 12:00:00.000000",
  "modified_by": "Administrator",
  "module": "Nexlify Core",
  "name": "Active Company Settings",

@@ -15,6 +15,10 @@ Enforcement is on the server:
 - query reports: the `company` filter is forced to the active company before
   the report runs (override_whitelisted_methods in hooks.py).
 
+Group companies: when Allow Group Companies is on and the user picks a group,
+the session's scope is the group plus every company under it. The User
+Permissions of ERPNext still apply on top (our conditions are ANDed with them).
+
 Nothing applies when the feature is off in Active Company Settings, for
 Administrator, for exempt roles, for website users, or while migrating.
 """
@@ -48,13 +52,18 @@ def get_settings():
 		cached = frappe._dict(
 			enabled=bool(doc.enabled),
 			auto_select_single_company=bool(doc.auto_select_single_company),
+			allow_group_companies=bool(doc.get("allow_group_companies")),
 			exempt_roles={row.role for row in doc.exempt_roles},
 			excluded_doctypes={row.document_type for row in doc.excluded_doctypes},
 		)
 	except Exception:
 		# DocType not migrated yet: behave as disabled instead of breaking every query
 		cached = frappe._dict(
-			enabled=False, auto_select_single_company=False, exempt_roles=set(), excluded_doctypes=set()
+			enabled=False,
+			auto_select_single_company=False,
+			allow_group_companies=False,
+			exempt_roles=set(),
+			excluded_doctypes=set(),
 		)
 
 	frappe.local.nx_active_company_settings = cached
@@ -104,6 +113,32 @@ def get_active_company(user=None):
 	return _session_data().get(SESSION_KEY) or None
 
 
+def is_group_company(company):
+	return bool(company and frappe.get_cached_value("Company", company, "is_group"))
+
+
+def get_scope(company):
+	"""The companies a session locked to `company` may see: itself, plus every
+	company under it when it is a group and groups are allowed."""
+	if not company:
+		return []
+	if not (get_settings().allow_group_companies and is_group_company(company)):
+		return [company]
+
+	cache = getattr(frappe.local, "nx_active_company_scope", None)
+	if cache is None:
+		cache = frappe.local.nx_active_company_scope = {}
+	if company not in cache:
+		from frappe.utils.nestedset import get_descendants_of
+
+		cache[company] = [company, *get_descendants_of("Company", company, ignore_permissions=True)]
+	return cache[company]
+
+
+def get_active_scope(user=None):
+	return get_scope(get_active_company(user))
+
+
 def get_company_field(doctype):
 	"""The doctype's `company` Link-to-Company field, if isolation can use it."""
 	if doctype in get_settings().excluded_doctypes:
@@ -123,22 +158,23 @@ def get_company_field(doctype):
 def query_conditions(user=None, doctype=None):
 	if not doctype:
 		return ""
-	company = get_active_company(user)
-	if not company or not get_company_field(doctype):
+	scope = get_active_scope(user)
+	if not scope or not get_company_field(doctype):
 		return ""
 
 	# Rows with no company stay visible: they are shared, not another company's.
-	return f"ifnull(`tab{doctype}`.`company`, '') in ('', {frappe.db.escape(company)})"
+	values = ", ".join(frappe.db.escape(c) for c in scope)
+	return f"ifnull(`tab{doctype}`.`company`, '') in ('', {values})"
 
 
 def has_permission(doc, ptype=None, user=None, debug=False):
 	# Must return True explicitly: Frappe treats None as a denial.
-	company = get_active_company(user)
-	if not company or not get_company_field(doc.doctype):
+	scope = get_active_scope(user)
+	if not scope or not get_company_field(doc.doctype):
 		return True
 
 	value = doc.get("company")
-	return not value or value == company
+	return not value or value in scope
 
 
 # ---------- companies the user may pick ----------
@@ -154,8 +190,8 @@ def get_allowed_companies(user=None):
 	return frappe.get_all(
 		"Company",
 		filters=filters,
-		fields=["name", "company_name", "abbr", "country", "default_currency"],
-		order_by="company_name asc",
+		fields=["name", "company_name", "abbr", "country", "default_currency", "is_group", "parent_company", "lft"],
+		order_by="lft asc, company_name asc",
 	)
 
 
@@ -257,9 +293,12 @@ def before_request():
 
 def extend_bootinfo(bootinfo):
 	company = get_active_company()
+	scope = get_scope(company)
 	bootinfo["nexlify_active_company"] = {
 		"applies": bool(company),
 		"company": company,
+		"scope": scope,
+		"is_group": len(scope) > 1,
 		"abbr": frappe.get_cached_value("Company", company, "abbr") if company else None,
 		"excluded_doctypes": sorted(get_settings().excluded_doctypes),
 	}
@@ -278,6 +317,7 @@ def _force_company_filter(report_name, filters):
 	company = get_active_company()
 	if not company or not report_name:
 		return filters
+	scope = get_scope(company)
 
 	parsed = frappe.parse_json(filters) if isinstance(filters, str) else (filters or {})
 	if not isinstance(parsed, dict):
@@ -285,7 +325,10 @@ def _force_company_filter(report_name, filters):
 
 	ref_doctype = frappe.get_cached_value("Report", report_name, "ref_doctype")
 	if "company" in parsed or (ref_doctype and get_company_field(ref_doctype)):
-		parsed["company"] = company
+		# A group session may report on any company in its scope; anything else
+		# (or nothing) falls back to the session's company.
+		if len(scope) == 1 or parsed.get("company") not in scope:
+			parsed["company"] = company
 
 	return frappe.as_json(parsed) if isinstance(filters, str) else parsed
 

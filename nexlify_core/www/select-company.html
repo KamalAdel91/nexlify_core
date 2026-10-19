@@ -18,6 +18,7 @@
 	.nxac-abbr { width: 44px; height: 44px; border-radius: 10px; background: #e0e7ff; color: #1e3a8a; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 14px; flex-shrink: 0; }
 	.nxac-name { font-size: 16px; font-weight: 600; display: block; }
 	.nxac-meta { font-size: 13px; color: var(--text-muted, #4b5563); display: block; }
+	.nxac-badge { display: inline-block; margin-inline-start: 6px; padding: 1px 8px; border-radius: 10px; background: #e0e7ff; color: #1e3a8a; font-size: 11px; font-weight: 600; vertical-align: middle; }
 	.nxac-note { font-size: 13px; color: var(--text-muted, #4b5563); }
 	.nxac-go { height: 48px; border-radius: 10px; border: 0; background: #1d4ed8; color: #fff; font: inherit; font-size: 16px; font-weight: 600; cursor: pointer; }
 	.nxac-go[disabled] { opacity: .6; cursor: default; }
@@ -36,10 +37,11 @@
 		<div class="nxac-list" role="group" aria-label="{{ _('Companies') }}">
 			{% for c in companies %}
 			<button type="button" class="nxac-item" data-company="{{ c.name | e }}"
+				style="margin-inline-start: {{ c.depth * 24 }}px; width: calc(100% - {{ c.depth * 24 }}px);"
 				aria-pressed="{{ 'true' if (active == c.name or (not active and loop.first)) else 'false' }}">
 				<span class="nxac-abbr">{{ (c.abbr or c.name[:2]) | e }}</span>
 				<span>
-					<span class="nxac-name">{{ (c.company_name or c.name) | e }}</span>
+					<span class="nxac-name">{{ (c.company_name or c.name) | e }}{% if c.group_scope %}<span class="nxac-badge">{{ _("All companies under it") }}</span>{% endif %}</span>
 					<span class="nxac-meta">{{ ([c.country, c.default_currency] | select | join(" · ")) | e }}</span>
 				</span>
 			</button>

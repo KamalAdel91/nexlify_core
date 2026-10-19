@@ -10,13 +10,26 @@
 	if (!state || !state.applies || !state.company) return;
 
 	const company = state.company;
+	const scope = state.scope && state.scope.length ? state.scope : [company];
+	const is_group = scope.length > 1;
 	const excluded = new Set(state.excluded_doctypes || []);
+	const company_query = () => ({ filters: { name: ["in", scope] } });
 
 	// ---------- forms: Company follows the active company ----------
 	$(document).on("form-refresh", (e, frm) => {
 		if (!frm || excluded.has(frm.doctype)) return;
 		const field = frm.fields_dict && frm.fields_dict.company;
 		if (!field || field.df.fieldtype !== "Link" || field.df.options !== "Company") return;
+
+		if (is_group) {
+			// A group session: documents still belong to one real company, so
+			// the field stays open but only offers companies in the group.
+			frm.set_query("company", company_query);
+			if (frm.is_new() && frm.doc.company && !scope.includes(frm.doc.company)) {
+				frm.set_value("company", "");
+			}
+			return;
+		}
 
 		if (frm.is_new() && frm.doc.company !== company) {
 			frm.set_value("company", company);
@@ -41,6 +54,12 @@
 			if (filter) {
 				clearInterval(poll);
 				if (filter.df.fieldtype !== "Link") return;
+				if (is_group) {
+					// Any company in the group; the server enforces the same rule.
+					filter.df.get_query = company_query;
+					if (!scope.includes(filter.get_value())) filter.set_value(company);
+					return;
+				}
 				if (filter.get_value() !== company) filter.set_value(company);
 				filter.df.read_only = 1;
 				filter.refresh();
@@ -60,7 +79,7 @@
 		if (frappe.ui.button && frappe.ui.button.dress) {
 			pill = frappe.ui.button({ css_class: "ellipsis nx-ac-pill" });
 			frappe.ui.button.dress(pill, {
-				label: company,
+				label: is_group ? __("{0} · {1} companies", [company, scope.length]) : company,
 				icon: "building-2",
 				icon_right: "chevrons-up-down",
 			});

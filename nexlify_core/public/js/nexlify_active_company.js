@@ -57,20 +57,28 @@
 		const page = frappe.container && frappe.container.page;
 		if (!page) return;
 		const $section = $(page).find(".page-head .standard-items-section").first();
-		if (!$section.length || $section.find(".nx-ac-pill").length) return;
+		if (!$section.length || $section.find(".nx-ac-group").length) return;
 
-		const name = frappe.utils.escape_html(company);
-		const pill = $(`
-			<button type="button" class="btn btn-default btn-sm nx-ac-pill"
-				title="${__("Active company: {0}. Click to switch", [name])}"
-				aria-label="${__("Active company: {0}. Switch company", [name])}">
-				<span class="nx-ac-abbr">${frappe.utils.escape_html(state.abbr || company.slice(0, 2))}</span>
-				<span class="nx-ac-name">${name}</span>
-				${frappe.utils.icon("chevron-down", "xs")}
-			</button>
-		`);
+		// Built exactly like the List View switcher (frappe.ui.button + dress),
+		// so it takes the theme's button look in light and dark mode.
+		let pill;
+		if (frappe.ui.button && frappe.ui.button.dress) {
+			pill = frappe.ui.button({ css_class: "ellipsis nx-ac-pill" });
+			frappe.ui.button.dress(pill, {
+				label: company,
+				icon: "building-2",
+				icon_right: "chevrons-up-down",
+			});
+			pill.find(".es-button__label").addClass("hidden-xs");
+		} else {
+			pill = $(`<button type="button" class="btn btn-default btn-sm ellipsis nx-ac-pill">${frappe.utils.escape_html(company)}</button>`);
+		}
+		pill.attr({
+			title: __("Active company: {0}. Click to switch", [company]),
+			"aria-label": __("Active company: {0}. Switch company", [company]),
+		});
 		pill.on("click", open_switcher);
-		$section.prepend(pill);
+		$section.prepend($('<div class="custom-btn-group nx-ac-group"></div>').append(pill));
 	}
 
 	function open_switcher() {
@@ -119,13 +127,8 @@
 
 	const style = document.createElement("style");
 	style.textContent = `
-		.nx-ac-pill { display: inline-flex; align-items: center; gap: 6px; margin-inline-end: 8px;
-			padding-inline-start: 4px; border-radius: 999px; font-weight: 600; flex-shrink: 0; }
-		.nx-ac-abbr { min-width: 22px; height: 22px; padding: 0 5px; border-radius: 11px;
-			background: var(--primary, #1d4ed8); color: #fff;
-			display: inline-flex; align-items: center; justify-content: center; font-size: 10px; }
-		.nx-ac-name { max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-		@media (max-width: 768px) { .nx-ac-name { display: none; } }
+		.nx-ac-group { margin-inline-end: 8px; flex-shrink: 0; }
+		.nx-ac-pill .es-button__label { max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 	`;
 	document.head.appendChild(style);
 

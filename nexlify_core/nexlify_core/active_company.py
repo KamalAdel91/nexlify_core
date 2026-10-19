@@ -15,9 +15,10 @@ Enforcement is on the server:
 - query reports: the `company` filter is forced to the active company before
   the report runs (override_whitelisted_methods in hooks.py).
 
-Group companies: when Allow Group Companies is on and the user picks a group,
-the session's scope is the group plus every company under it. The User
-Permissions of ERPNext still apply on top (our conditions are ANDed with them).
+Group companies: picking a group makes the session's scope the group plus
+every company under it. Whether a user can pick the group at all is decided by
+their User Permissions on Company, and ERPNext keeps applying those on top
+(our conditions are ANDed with them).
 
 Nothing applies when the feature is off in Active Company Settings, for
 Administrator, for exempt roles, for website users, or while migrating.
@@ -52,7 +53,6 @@ def get_settings():
 		cached = frappe._dict(
 			enabled=bool(doc.enabled),
 			auto_select_single_company=bool(doc.auto_select_single_company),
-			allow_group_companies=bool(doc.get("allow_group_companies")),
 			exempt_roles={row.role for row in doc.exempt_roles},
 			excluded_doctypes={row.document_type for row in doc.excluded_doctypes},
 		)
@@ -61,7 +61,6 @@ def get_settings():
 		cached = frappe._dict(
 			enabled=False,
 			auto_select_single_company=False,
-			allow_group_companies=False,
 			exempt_roles=set(),
 			excluded_doctypes=set(),
 		)
@@ -119,10 +118,10 @@ def is_group_company(company):
 
 def get_scope(company):
 	"""The companies a session locked to `company` may see: itself, plus every
-	company under it when it is a group and groups are allowed."""
+	company under it when it is a group."""
 	if not company:
 		return []
-	if not (get_settings().allow_group_companies and is_group_company(company)):
+	if not is_group_company(company):
 		return [company]
 
 	cache = getattr(frappe.local, "nx_active_company_scope", None)

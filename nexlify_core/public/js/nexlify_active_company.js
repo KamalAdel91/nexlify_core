@@ -79,7 +79,7 @@
 		if (frappe.ui.button && frappe.ui.button.dress) {
 			pill = frappe.ui.button({ css_class: "ellipsis nx-ac-pill" });
 			frappe.ui.button.dress(pill, {
-				label: is_group ? __("{0} · {1} companies", [company, scope.length]) : company,
+				label: company,
 				icon: "building-2",
 				icon_right: "chevrons-up-down",
 			});

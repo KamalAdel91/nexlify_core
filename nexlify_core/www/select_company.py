@@ -6,7 +6,6 @@ from nexlify_core.nexlify_core.active_company import (
 	SESSION_KEY,
 	applies_to,
 	get_allowed_companies,
-	get_settings,
 	safe_redirect_target,
 )
 
@@ -31,14 +30,13 @@ def get_context(context):
 	companies = get_allowed_companies()
 	# Indent each company under its parent, when the parent is in the list too.
 	by_name = {c.name: c for c in companies}
-	allow_groups = get_settings().allow_group_companies
 	for c in companies:
 		depth, parent = 0, c.parent_company
 		while parent in by_name and depth < 6:
 			depth += 1
 			parent = by_name[parent].parent_company
 		c.depth = depth
-		c.group_scope = bool(allow_groups and c.is_group)
+		c.group_scope = bool(c.is_group)
 	context.companies = companies
 	context.active = (frappe.session.data or {}).get(SESSION_KEY)
 	context.redirect_to = redirect_to

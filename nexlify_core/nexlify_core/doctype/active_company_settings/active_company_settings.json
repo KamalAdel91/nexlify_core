@@ -1,0 +1,74 @@
+{
+ "actions": [],
+ "creation": "2026-10-19 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "enabled",
+  "auto_select_single_company",
+  "section_access",
+  "exempt_roles",
+  "column_break_access",
+  "excluded_doctypes"
+ ],
+ "fields": [
+  {
+   "default": "0",
+   "description": "Users pick a company after login and see only that company's records until they switch.",
+   "fieldname": "enabled",
+   "fieldtype": "Check",
+   "label": "Enable Active Company"
+  },
+  {
+   "default": "1",
+   "depends_on": "eval:doc.enabled",
+   "description": "Skip the picker for users who can access only one company.",
+   "fieldname": "auto_select_single_company",
+   "fieldtype": "Check",
+   "label": "Auto-select When Only One Company"
+  },
+  {
+   "depends_on": "eval:doc.enabled",
+   "fieldname": "section_access",
+   "fieldtype": "Section Break",
+   "label": "Scope"
+  },
+  {
+   "description": "Users with any of these roles see all companies and never get the picker. Administrator is always exempt.",
+   "fieldname": "exempt_roles",
+   "fieldtype": "Table MultiSelect",
+   "label": "Exempt Roles",
+   "options": "Active Company Exempt Role"
+  },
+  {
+   "fieldname": "column_break_access",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "Document types that stay shared across companies even though they have a Company field.",
+   "fieldname": "excluded_doctypes",
+   "fieldtype": "Table MultiSelect",
+   "label": "Excluded DocTypes",
+   "options": "Active Company Excluded DocType"
+  }
+ ],
+ "issingle": 1,
+ "links": [],
+ "modified": "2026-10-19 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Nexlify Core",
+ "name": "Active Company Settings",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "read": 1,
+   "write": 1,
+   "role": "System Manager"
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

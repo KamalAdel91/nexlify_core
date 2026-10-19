@@ -1,0 +1,99 @@
+{% extends "templates/web.html" %}
+
+{% block title %}{{ _("Choose company") }}{% endblock %}
+
+{%- block navbar -%}{%- endblock -%}
+{%- block footer -%}{%- endblock -%}
+
+{% block content %}
+<style>
+	.nxac-wrap { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 48px 20px; box-sizing: border-box; background: var(--bg-color, #f3f4f6); }
+	.nxac-card { width: 100%; max-width: 560px; background: var(--card-bg, #fff); border: 1px solid var(--border-color, #e5e7eb); border-radius: 14px; padding: 36px; box-sizing: border-box; display: flex; flex-direction: column; gap: 24px; }
+	.nxac-user { font-size: 13px; color: var(--text-muted, #4b5563); font-weight: 500; }
+	.nxac-card h1 { margin: 6px 0 6px; font-size: 26px; font-weight: 600; }
+	.nxac-card p { margin: 0; font-size: 15px; color: var(--text-muted, #4b5563); line-height: 1.5; }
+	.nxac-list { display: flex; flex-direction: column; gap: 10px; }
+	.nxac-item { display: flex; align-items: center; gap: 14px; width: 100%; min-height: 72px; padding: 12px 16px; border-radius: 12px; border: 1px solid var(--border-color, #d1d5db); background: var(--card-bg, #fff); cursor: pointer; text-align: left; font: inherit; color: inherit; }
+	.nxac-item[aria-pressed="true"] { border: 2px solid #1d4ed8; background: #eff6ff; }
+	.nxac-abbr { width: 44px; height: 44px; border-radius: 10px; background: #e0e7ff; color: #1e3a8a; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 14px; flex-shrink: 0; }
+	.nxac-name { font-size: 16px; font-weight: 600; display: block; }
+	.nxac-meta { font-size: 13px; color: var(--text-muted, #4b5563); display: block; }
+	.nxac-note { font-size: 13px; color: var(--text-muted, #4b5563); }
+	.nxac-go { height: 48px; border-radius: 10px; border: 0; background: #1d4ed8; color: #fff; font: inherit; font-size: 16px; font-weight: 600; cursor: pointer; }
+	.nxac-go[disabled] { opacity: .6; cursor: default; }
+	.nxac-error { color: #b91c1c; font-size: 14px; display: none; }
+</style>
+
+<div class="nxac-wrap">
+	<div class="nxac-card">
+		<div>
+			<div class="nxac-user">{{ _("Signed in as") }} {{ user | e }}</div>
+			<h1>{{ _("Which company are you working in?") }}</h1>
+			<p>{{ _("You'll only see this company's documents, reports and records until you switch.") }}</p>
+		</div>
+
+		{% if companies %}
+		<div class="nxac-list" role="group" aria-label="{{ _('Companies') }}">
+			{% for c in companies %}
+			<button type="button" class="nxac-item" data-company="{{ c.name | e }}"
+				aria-pressed="{{ 'true' if (active == c.name or (not active and loop.first)) else 'false' }}">
+				<span class="nxac-abbr">{{ (c.abbr or c.name[:2]) | e }}</span>
+				<span>
+					<span class="nxac-name">{{ (c.company_name or c.name) | e }}</span>
+					<span class="nxac-meta">{{ ([c.country, c.default_currency] | select | join(" · ")) | e }}</span>
+				</span>
+			</button>
+			{% endfor %}
+		</div>
+		<div class="nxac-note">{{ _("Only companies you have access to are listed. Your choice applies to this session only.") }}</div>
+		<div class="nxac-error" id="nxac-error"></div>
+		<button type="button" class="nxac-go" id="nxac-go">{{ _("Continue") }}</button>
+		{% else %}
+		<p>{{ _("You don't have access to any company. Please contact your system manager.") }}</p>
+		{% endif %}
+	</div>
+</div>
+
+<script>
+(function () {
+	var items = document.querySelectorAll(".nxac-item");
+	var go = document.getElementById("nxac-go");
+	var err = document.getElementById("nxac-error");
+	if (!go) return;
+
+	items.forEach(function (btn) {
+		btn.addEventListener("click", function () {
+			items.forEach(function (b) { b.setAttribute("aria-pressed", "false"); });
+			btn.setAttribute("aria-pressed", "true");
+		});
+	});
+
+	go.addEventListener("click", function () {
+		var picked = document.querySelector('.nxac-item[aria-pressed="true"]');
+		if (!picked) return;
+		go.disabled = true;
+		err.style.display = "none";
+
+		fetch("/api/method/nexlify_core.nexlify_core.active_company.set_active_company", {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json",
+				"Accept": "application/json",
+				"X-Frappe-CSRF-Token": {{ csrf | tojson }}
+			},
+			body: JSON.stringify({ company: picked.getAttribute("data-company") })
+		})
+			.then(function (r) { return r.json().then(function (body) { return { ok: r.ok, body: body }; }); })
+			.then(function (res) {
+				if (!res.ok) throw new Error((res.body && res.body.exception) || "Could not switch company");
+				window.location.href = {{ redirect_to | tojson }};
+			})
+			.catch(function (e) {
+				err.textContent = e.message;
+				err.style.display = "block";
+				go.disabled = false;
+			});
+	});
+})();
+</script>
+{% endblock %}

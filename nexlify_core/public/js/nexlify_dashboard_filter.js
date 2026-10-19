@@ -5,6 +5,15 @@
 
     const NX_MAX_POLL_ATTEMPTS = 40; // 40 * 150ms = 6s safety cutoff
 
+    // Active Company: a Company filter is locked to the session's company.
+    // The server enforces it anyway; this keeps the bar honest about it.
+    const nx_ac = (frappe.boot && frappe.boot.nexlify_active_company) || {};
+    function nx_locked_value(f) {
+        return nx_ac.applies && nx_ac.company && f.field_type === 'Link' && f.link_doctype === 'Company'
+            ? nx_ac.company
+            : null;
+    }
+
     $(document).on('page-change', () => {
         if (frappe.get_route()[0] !== 'dashboard-view') return;
         clearInterval(nx_poll);
@@ -54,16 +63,19 @@
 
         // Pre-expand every relevant filter's saved (or empty) value before any
         // chart renders, so tree filters always start as a proper array.
-        await Promise.all(relevant.map(f => nx_apply_filter_value(f.filter_key, saved[f.filter_key] || '')));
+        await Promise.all(relevant.map(f => nx_apply_filter_value(f.filter_key, nx_locked_value(f) || saved[f.filter_key] || '')));
 
         relevant.forEach(f => {
+            const locked = nx_locked_value(f);
             const field = frappe.dashboard.page.add_field({
                 fieldname: f.filter_key,
                 fieldtype: f.field_type,
                 options: f.field_type === 'Link' ? f.link_doctype : f.select_options,
                 label: f.label,
-                default: saved[f.filter_key] || '',
+                default: locked || saved[f.filter_key] || '',
+                read_only: locked ? 1 : 0,
                 change() {
+                    if (locked) return;
                     const val = field.get_value();
                     frappe.xcall('nexlify_core.dashboard_filter_api.set_dash_filter', { key: f.filter_key, value: val });
                     Promise.all([
@@ -81,6 +93,7 @@
                 }
             }, target_parent);
             nx_field_wrappers.push($(field.wrapper));
+            if (locked) return;
             if (saved[f.filter_key]) field.set_value(saved[f.filter_key]);
 
             // page.add_field toolbar fields don't get the usual Link clear

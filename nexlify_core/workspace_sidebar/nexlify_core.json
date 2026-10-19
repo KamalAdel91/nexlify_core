@@ -29,6 +29,17 @@
    "type": "Link"
   },
   {
+   "child": 1,
+   "collapsible": 1,
+   "indent": 0,
+   "keep_closed": 0,
+   "label": "Active Company Settings",
+   "link_to": "Active Company Settings",
+   "link_type": "DocType",
+   "show_arrow": 0,
+   "type": "Link"
+  },
+  {
    "child": 0,
    "collapsible": 1,
    "icon": "house",
@@ -95,7 +106,7 @@
    "type": "Link"
   }
  ],
- "modified": "2026-09-27 01:20:03.422044",
+ "modified": "2026-10-19 00:00:00.000000",
  "modified_by": "Administrator",
  "module": "Nexlify Core",
  "name": "Nexlify Core",

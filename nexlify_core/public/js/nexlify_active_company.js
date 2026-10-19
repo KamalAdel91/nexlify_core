@@ -1,0 +1,129 @@
+// Active Company (desk side).
+//
+// Everything that keeps records apart is on the server
+// (nexlify_core/nexlify_core/active_company.py). This file only makes the desk
+// reflect it: a pill showing the active company with a switcher, the Company
+// field filled and locked on forms, and the Company filter locked on query
+// reports. The dashboard filter bar locks itself in nexlify_dashboard_filter.js.
+(function () {
+	const state = (window.frappe && frappe.boot && frappe.boot.nexlify_active_company) || null;
+	if (!state || !state.applies || !state.company) return;
+
+	const company = state.company;
+	const excluded = new Set(state.excluded_doctypes || []);
+
+	// ---------- forms: Company follows the active company ----------
+	$(document).on("form-refresh", (e, frm) => {
+		if (!frm || excluded.has(frm.doctype)) return;
+		const field = frm.fields_dict && frm.fields_dict.company;
+		if (!field || field.df.fieldtype !== "Link" || field.df.options !== "Company") return;
+
+		if (frm.is_new() && frm.doc.company !== company) {
+			frm.set_value("company", company);
+		}
+		frm.set_df_property("company", "read_only", 1);
+	});
+
+	// ---------- query reports: lock the Company filter ----------
+	$(document).on("page-change", () => {
+		const route = frappe.get_route();
+		if (route[0] !== "query-report") return;
+
+		let attempts = 0;
+		const poll = setInterval(() => {
+			attempts++;
+			const qr = frappe.query_report;
+			const filter =
+				qr && qr.report_name === route[1]
+					? (qr.filters || []).find((f) => f.df && f.df.fieldname === "company")
+					: null;
+
+			if (filter) {
+				clearInterval(poll);
+				if (filter.df.fieldtype !== "Link") return;
+				if (filter.get_value() !== company) filter.set_value(company);
+				filter.df.read_only = 1;
+				filter.refresh();
+			} else if (attempts >= 40) {
+				clearInterval(poll);
+			}
+		}, 150);
+	});
+
+	// ---------- the pill and the switcher ----------
+	function render_pill() {
+		if (document.getElementById("nx-active-company")) return;
+
+		const pill = $(`
+			<button type="button" id="nx-active-company" class="nx-ac-pill"
+				aria-label="${__("Active company: {0}. Switch company", [frappe.utils.escape_html(company)])}">
+				<span class="nx-ac-abbr">${frappe.utils.escape_html(state.abbr || company.slice(0, 2))}</span>
+				<span class="nx-ac-name">${frappe.utils.escape_html(company)}</span>
+				${frappe.utils.icon("down", "xs")}
+			</button>
+		`);
+		pill.on("click", open_switcher);
+		$("body").append(pill);
+	}
+
+	function open_switcher() {
+		frappe
+			.xcall("nexlify_core.nexlify_core.active_company.get_picker_state")
+			.then((res) => {
+				const others = (res.companies || []).filter((c) => c.name !== company);
+				if (!others.length) {
+					frappe.msgprint(__("You only have access to {0}.", [company]));
+					return;
+				}
+
+				const d = new frappe.ui.Dialog({
+					title: __("Switch company"),
+					fields: [
+						{
+							fieldtype: "HTML",
+							options: `<p class="text-muted">${__("Working in")} <b>${frappe.utils.escape_html(company)}</b>. ${__("Switching reloads the page; unsaved changes will be lost.")}</p>`,
+						},
+						{
+							fieldname: "company",
+							fieldtype: "Select",
+							label: __("Switch to"),
+							options: others.map((c) => c.name),
+							default: others[0].name,
+							reqd: 1,
+						},
+					],
+					primary_action_label: __("Switch"),
+					primary_action(values) {
+						d.get_primary_btn().prop("disabled", true);
+						frappe
+							.xcall("nexlify_core.nexlify_core.active_company.set_active_company", {
+								company: values.company,
+							})
+							.then(() => {
+								// The route may point at a record of the old company: start from the desk.
+								window.location.href = "/desk";
+							})
+							.catch(() => d.get_primary_btn().prop("disabled", false));
+					},
+				});
+				d.show();
+			});
+	}
+
+	const style = document.createElement("style");
+	style.textContent = `
+		.nx-ac-pill { position: fixed; inset-inline-start: 16px; bottom: 20px; z-index: 1030;
+			display: flex; align-items: center; gap: 8px; height: 40px; padding: 0 14px 0 6px;
+			border-radius: 20px; border: 1px solid #1d4ed8; background: #eff6ff; color: #1e3a8a;
+			font-size: 13px; font-weight: 600; cursor: pointer; box-shadow: 0 4px 14px rgba(17,24,39,.12); }
+		.nx-ac-pill:hover { background: #dbeafe; }
+		.nx-ac-abbr { width: 28px; height: 28px; border-radius: 14px; background: #1d4ed8; color: #fff;
+			display: flex; align-items: center; justify-content: center; font-size: 11px; }
+		.nx-ac-name { max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+		.nx-ac-pill .icon { stroke: currentColor; }
+		@media (max-width: 576px) { .nx-ac-name { max-width: 120px; } }
+	`;
+	document.head.appendChild(style);
+
+	$(render_pill);
+})();

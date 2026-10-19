@@ -51,19 +51,26 @@
 	});
 
 	// ---------- the pill and the switcher ----------
+	// v16 has no top navbar, so the pill sits in each page's own head, before
+	// the page actions: a slot Frappe keeps for buttons, so nothing shifts.
 	function render_pill() {
-		if (document.getElementById("nx-active-company")) return;
+		const page = frappe.container && frappe.container.page;
+		if (!page) return;
+		const $section = $(page).find(".page-head .standard-items-section").first();
+		if (!$section.length || $section.find(".nx-ac-pill").length) return;
 
+		const name = frappe.utils.escape_html(company);
 		const pill = $(`
-			<button type="button" id="nx-active-company" class="nx-ac-pill"
-				aria-label="${__("Active company: {0}. Switch company", [frappe.utils.escape_html(company)])}">
+			<button type="button" class="btn btn-default btn-sm nx-ac-pill"
+				title="${__("Active company: {0}. Click to switch", [name])}"
+				aria-label="${__("Active company: {0}. Switch company", [name])}">
 				<span class="nx-ac-abbr">${frappe.utils.escape_html(state.abbr || company.slice(0, 2))}</span>
-				<span class="nx-ac-name">${frappe.utils.escape_html(company)}</span>
-				${frappe.utils.icon("down", "xs")}
+				<span class="nx-ac-name">${name}</span>
+				${frappe.utils.icon("chevron-down", "xs")}
 			</button>
 		`);
 		pill.on("click", open_switcher);
-		$("body").append(pill);
+		$section.prepend(pill);
 	}
 
 	function open_switcher() {
@@ -112,18 +119,16 @@
 
 	const style = document.createElement("style");
 	style.textContent = `
-		.nx-ac-pill { position: fixed; inset-inline-start: 16px; bottom: 20px; z-index: 1030;
-			display: flex; align-items: center; gap: 8px; height: 40px; padding: 0 14px 0 6px;
-			border-radius: 20px; border: 1px solid #1d4ed8; background: #eff6ff; color: #1e3a8a;
-			font-size: 13px; font-weight: 600; cursor: pointer; box-shadow: 0 4px 14px rgba(17,24,39,.12); }
-		.nx-ac-pill:hover { background: #dbeafe; }
-		.nx-ac-abbr { width: 28px; height: 28px; border-radius: 14px; background: #1d4ed8; color: #fff;
-			display: flex; align-items: center; justify-content: center; font-size: 11px; }
-		.nx-ac-name { max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-		.nx-ac-pill .icon { stroke: currentColor; }
-		@media (max-width: 576px) { .nx-ac-name { max-width: 120px; } }
+		.nx-ac-pill { display: inline-flex; align-items: center; gap: 6px; margin-inline-end: 8px;
+			padding-inline-start: 4px; border-radius: 999px; font-weight: 600; flex-shrink: 0; }
+		.nx-ac-abbr { min-width: 22px; height: 22px; padding: 0 5px; border-radius: 11px;
+			background: var(--primary, #1d4ed8); color: #fff;
+			display: inline-flex; align-items: center; justify-content: center; font-size: 10px; }
+		.nx-ac-name { max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+		@media (max-width: 768px) { .nx-ac-name { display: none; } }
 	`;
 	document.head.appendChild(style);
 
-	$(render_pill);
+	$(document).on("page-change", () => setTimeout(render_pill, 0));
+	$(() => setTimeout(render_pill, 0));
 })();

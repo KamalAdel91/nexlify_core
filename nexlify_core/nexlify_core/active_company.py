@@ -52,7 +52,6 @@ def get_settings():
 		doc = frappe.get_cached_doc(SETTINGS)
 		cached = frappe._dict(
 			enabled=bool(doc.enabled),
-			auto_select_single_company=bool(doc.auto_select_single_company),
 			exempt_roles={row.role for row in doc.exempt_roles},
 			excluded_doctypes={row.document_type for row in doc.excluded_doctypes},
 		)
@@ -60,7 +59,6 @@ def get_settings():
 		# DocType not migrated yet: behave as disabled instead of breaking every query
 		cached = frappe._dict(
 			enabled=False,
-			auto_select_single_company=False,
 			exempt_roles=set(),
 			excluded_doctypes=set(),
 		)
@@ -237,8 +235,7 @@ def safe_redirect_target(target):
 
 
 def _auto_select_single():
-	if not get_settings().auto_select_single_company:
-		return False
+	"""One allowed company means nothing to pick: take it and skip the picker."""
 	companies = get_allowed_companies()
 	if len(companies) == 1:
 		_store(companies[0].name)

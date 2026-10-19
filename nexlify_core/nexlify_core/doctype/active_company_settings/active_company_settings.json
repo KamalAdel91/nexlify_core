@@ -5,7 +5,6 @@
  "engine": "InnoDB",
  "field_order": [
   "enabled",
-  "auto_select_single_company",
   "section_access",
   "exempt_roles",
   "column_break_access",
@@ -18,14 +17,6 @@
    "fieldname": "enabled",
    "fieldtype": "Check",
    "label": "Enable Active Company"
-  },
-  {
-   "default": "1",
-   "depends_on": "eval:doc.enabled",
-   "description": "Skip the picker for users who can access only one company.",
-   "fieldname": "auto_select_single_company",
-   "fieldtype": "Check",
-   "label": "Auto-select When Only One Company"
   },
   {
    "depends_on": "eval:doc.enabled",
@@ -54,7 +45,7 @@
  ],
  "issingle": 1,
  "links": [],
- "modified": "2026-10-19 13:00:00.000000",
+ "modified": "2026-10-19 14:00:00.000000",
  "modified_by": "Administrator",
  "module": "Nexlify Core",
  "name": "Active Company Settings",

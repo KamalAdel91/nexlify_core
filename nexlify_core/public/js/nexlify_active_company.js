@@ -53,12 +53,7 @@
 	// ---------- the pill and the switcher ----------
 	// v16 has no top navbar, so the pill sits in each page's own head, before
 	// the page actions: a slot Frappe keeps for buttons, so nothing shifts.
-	function render_pill() {
-		const page = frappe.container && frappe.container.page;
-		if (!page) return;
-		const $section = $(page).find(".page-head .standard-items-section").first();
-		if (!$section.length || $section.find(".nx-ac-group").length) return;
-
+	function make_button() {
 		// Built exactly like the List View switcher (frappe.ui.button + dress),
 		// so it takes the theme's button look in light and dark mode.
 		let pill;
@@ -78,7 +73,40 @@
 			"aria-label": __("Active company: {0}. Switch company", [company]),
 		});
 		pill.on("click", open_switcher);
-		$section.prepend($('<div class="custom-btn-group nx-ac-group"></div>').append(pill));
+		return $('<div class="custom-btn-group nx-ac-group"></div>').append(pill);
+	}
+
+	// Returns true once the button is in place (or there is nowhere to put it).
+	function render_pill() {
+		const page = frappe.container && frappe.container.page;
+		if (!page) return false;
+		const $page = $(page);
+		if ($page.find(".nx-ac-group").length) return true;
+
+		// Desk pages: before the page actions, a slot Frappe keeps for buttons.
+		const $section = $page.find(".page-head .standard-items-section").first();
+		if ($section.length) {
+			$section.prepend(make_button());
+			return true;
+		}
+
+		// The apps screen (/desk): its own top bar, before the notifications bell.
+		const $bell = $page.find(".desktop-navbar .desktop-notifications").first();
+		if ($bell.length) {
+			$bell.before(make_button());
+			return true;
+		}
+		return false;
+	}
+
+	// The apps screen renders its bar after page-change, and re-renders it on
+	// every visit, so keep trying briefly instead of a single attempt.
+	function place_pill() {
+		let attempts = 0;
+		const poll = setInterval(() => {
+			attempts++;
+			if (render_pill() || attempts >= 20) clearInterval(poll);
+		}, 150);
 	}
 
 	function open_switcher() {
@@ -132,6 +160,6 @@
 	`;
 	document.head.appendChild(style);
 
-	$(document).on("page-change", () => setTimeout(render_pill, 0));
-	$(() => setTimeout(render_pill, 0));
+	$(document).on("page-change", place_pill);
+	$(place_pill);
 })();

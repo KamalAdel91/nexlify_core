@@ -21,7 +21,8 @@ their User Permissions on Company, and ERPNext keeps applying those on top
 (our conditions are ANDed with them).
 
 Nothing applies when the feature is off in Active Company Settings, for
-Administrator, for exempt roles, for website users, or while migrating.
+exempt roles (the Administrator role exempts the Administrator user), for
+website users, or while migrating.
 """
 
 from urllib.parse import quote
@@ -36,7 +37,7 @@ SETTINGS = "Active Company Settings"
 SESSION_KEY = "nx_active_company"
 PICKER_PATH = "/select-company"
 DESK_PREFIXES = ("/desk", "/app", "/apps")
-ALWAYS_EXEMPT = {"Administrator", "Guest"}
+ALWAYS_EXEMPT = {"Guest"}
 
 
 # ---------- settings ----------

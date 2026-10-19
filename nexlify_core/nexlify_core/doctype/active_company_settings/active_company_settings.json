@@ -25,7 +25,7 @@
    "label": "Scope"
   },
   {
-   "description": "Users with any of these roles see all companies and never get the picker. Administrator is always exempt.",
+   "description": "Users with any of these roles see all companies and never get the picker. Add the Administrator role to exempt the Administrator user.",
    "fieldname": "exempt_roles",
    "fieldtype": "Table MultiSelect",
    "label": "Exempt Roles",
@@ -45,7 +45,7 @@
  ],
  "issingle": 1,
  "links": [],
- "modified": "2026-10-19 14:00:00.000000",
+ "modified": "2026-10-19 15:00:00.000000",
  "modified_by": "Administrator",
  "module": "Nexlify Core",
  "name": "Active Company Settings",

@@ -83,17 +83,18 @@
 		const $page = $(page);
 		if ($page.find(".nx-ac-group").length) return true;
 
-		// Desk pages: before the page actions, a slot Frappe keeps for buttons.
-		const $section = $page.find(".page-head .standard-items-section").first();
-		if ($section.length) {
-			$section.prepend(make_button());
-			return true;
-		}
-
-		// The apps screen (/desk): its own top bar, before the notifications bell.
+		// The apps screen (/desk) first: it also carries a page head, but a hidden
+		// one, so its own top bar is the only place a button can be seen.
 		const $bell = $page.find(".desktop-navbar .desktop-notifications").first();
 		if ($bell.length) {
 			$bell.before(make_button());
+			return true;
+		}
+
+		// Desk pages: before the page actions, a slot Frappe keeps for buttons.
+		const $section = $page.find(".page-head .standard-items-section").first();
+		if ($section.length && $section.is(":visible")) {
+			$section.prepend(make_button());
 			return true;
 		}
 		return false;

@@ -1,0 +1,253 @@
+/* ================================================================
+   Nexlify Reports — Minimal Tweaks
+   ================================================================
+   Every color here comes from the user's Nexlify theme (--nxt-*, set by
+   css/nexlify_themes.bundle.css), so a report looks like the rest of the
+   desk. Without a theme each falls back to the color it had before. */
+
+/* ---- Negative numbers ---- */
+.nexlify-negative {
+    color: var(--red) !important;
+    font-weight: 600 !important;
+}
+
+/* ---- Header centered ---- */
+.dt-row-header .dt-cell {
+    justify-content: center !important;
+}
+.dt-row-header .dt-cell__content {
+    text-align: center !important;
+}
+
+/* ---- Thin scrollbar ---- */
+.datatable .dt-scrollable::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+.datatable .dt-scrollable::-webkit-scrollbar-track {
+    background: transparent;
+}
+.datatable .dt-scrollable::-webkit-scrollbar-thumb {
+    background: var(--scrollbar-thumb-color, var(--border-color));
+    border-radius: 3px;
+}
+.datatable .dt-scrollable::-webkit-scrollbar-thumb:hover {
+    background: var(--nxt-accent, var(--text-muted));
+}
+.datatable .dt-scrollable {
+    scrollbar-width: thin;
+    scrollbar-color: var(--scrollbar-thumb-color, var(--border-color)) transparent;
+}
+
+/* ---- Print ---- */
+@media print {
+    .nexlify-negative { font-weight: 700 !important; }
+    .datatable .dt-scrollable { max-height: none !important; overflow: visible !important; }
+}
+
+/* ---- Header text: the theme's accent, clearly different from the plain
+   body text, in both light and dark mode ---- */
+.dt-row-header .dt-cell__content {
+    color: var(--nxt-accent, #1e3a8a) !important;
+    font-weight: 700 !important;
+}
+
+[data-theme="dark"] .dt-row-header .dt-cell__content {
+    color: var(--nxt-accent, #5b93ff) !important;
+}
+
+/* ---- In a theme: the header row on a wash of the accent, like the lists'
+   heads, and the table's lines in the theme's border ---- */
+html[data-nexlify-theme] .dt-row-header .dt-cell {
+    background-color: color-mix(in srgb, var(--nxt-accent) 6%, var(--surface-base, var(--bg-color))) !important;
+}
+html[data-nexlify-theme] .datatable {
+    --dt-border-color: var(--border-color);
+    font-variant-numeric: tabular-nums;
+}
+html[data-nexlify-theme] .datatable .dt-cell {
+    border-color: color-mix(in srgb, var(--border-color) 80%, transparent);
+}
+
+/* ---- Floating Autofit / Reset toolbar above generic tables ---- */
+.nexlify-floating-toolbar {
+    display: flex;
+    justify-content: flex-end;
+    gap: 6px;
+    margin-bottom: 6px;
+}
+
+.nexlify-floating-toolbar .btn {
+    font-size: 11px !important;
+    padding: 3px 10px !important;
+}
+
+/* ---- Search/filter input: consistent height everywhere, regardless
+   of which page context (Report View, dialogs, custom pages) renders
+   the table - Frappe's own CSS gives Report View a shorter box by
+   default, so we pin an explicit height here to match. ---- */
+.dt-filter {
+    height: 22px !important;
+    box-sizing: border-box !important;
+   border-radius: 5px !important;
+   transition: border-color 0.12s ease, box-shadow 0.12s ease;
+}
+
+.dt-filter:focus,
+.dt-filter:focus-visible {
+   outline: none !important;
+   border-color: var(--nxt-accent, var(--primary, #007bff)) !important;
+   box-shadow: 0 0 0 2px color-mix(in srgb, var(--nxt-accent, #2563eb) 14%, transparent) !important;
+}
+
+.nexlify-floating-toolbar .btn:focus,
+.nexlify-floating-toolbar .btn:focus-visible {
+   outline: 2px solid var(--nxt-accent, var(--primary, #007bff)) !important;
+   outline-offset: 2px !important;
+}
+
+/* ---- Reports sometimes hardcode an inline text color (e.g. green for
+   positive quantities) regardless of theme. That's fine in light mode
+   but reads as near-invisible against a dark background. Brighten any
+   inline-colored text inside cells in dark mode only, without touching
+   its actual hue - still green stays green, red stays red. ---- */
+[data-theme="dark"] .dt-cell__content span[style*="color"] {
+    filter: brightness(1.8) saturate(1.15);
+}
+
+[data-theme="dark"] .dt-row-totalRow .dt-cell {
+    background-color: #1f2937 !important;
+}
+
+[data-theme="dark"] .dt-row-totalRow .dt-cell__content {
+    color: #f3f4f6 !important;
+    font-weight: 700 !important;
+}
+
+[data-theme="dark"] .dt-row-totalRow .dt-cell__content div {
+    color: #f3f4f6 !important;
+}
+
+/* ---- In a theme the total row is a firmer wash of the accent, in both
+   modes, with the heading's ink ---- */
+html[data-nexlify-theme] .dt-row-totalRow .dt-cell {
+    background-color: color-mix(in srgb, var(--nxt-accent) 10%, var(--surface-base, var(--bg-color))) !important;
+    border-top: 1px solid color-mix(in srgb, var(--nxt-accent) 30%, transparent);
+}
+html[data-nexlify-theme] .dt-row-totalRow .dt-cell__content,
+html[data-nexlify-theme] .dt-row-totalRow .dt-cell__content div {
+    color: var(--heading-color) !important;
+    font-weight: 700 !important;
+}
+
+
+/* Keep native Frappe datatable sizing so the table can grow/shrink with the
+   available space instead of forcing a width that causes jitter during scroll. */
+.dt-scrollable {
+   width: auto !important;
+   max-width: 100% !important;
+}
+
+/* ---- Hover feedback (pointer devices only, avoids touch sticky-hover
+   repaints and keeps mouse users' row tracking). ---- */
+@media (hover: hover) and (pointer: fine) {
+body:not(.nexlify-is-scrolling) .datatable .dt-scrollable .dt-row[data-row-index]:hover {
+    background: color-mix(in srgb, var(--nxt-accent, #2563eb) 8%, transparent) !important;
+}
+}
+
+/* Wrap text in Child Tables (read mode only, not while editing a row) */
+.form-grid .grid-body .grid-static-col:not(.row-index) {
+	height: auto !important;
+	min-height: 34px;
+	overflow: hidden !important;
+	min-width: 0;
+}
+
+.form-grid .grid-body .grid-static-col .static-area,
+.form-grid .grid-body .grid-static-col .static-area *:not(.indicator-pill) {
+	white-space: normal !important;
+	text-overflow: clip !important;
+	overflow-wrap: anywhere;
+	max-width: 100%;
+}
+
+.form-grid .grid-body .grid-row > .data-row {
+	align-items: stretch;
+	height: auto !important;
+}
+
+/* ---- Child table: currency symbol in the row being edited (Frappe 16.50+)
+   Frappe draws the symbol over the input with room for one character only,
+   so 2-3 character symbols (EGP, SAR) cover the amount. Put the symbol beside
+   the input; the wrapper takes over the background and focus ring. ---- */
+.form-grid .grid-row .grid-currency-input.grid-currency-has-value {
+    background-color: var(--control-bg);
+}
+.form-grid .grid-row .grid-currency-input.grid-currency-has-value:has(> .form-control:disabled, > .form-control[readonly]) {
+    background-color: var(--input-disabled-bg);
+}
+.form-grid .grid-row .grid-currency-input.grid-currency-has-value:has(> .form-control.invalid) {
+    background-color: var(--error-bg);
+}
+.form-grid .grid-row .grid-currency-input.grid-currency-has-value:focus-within {
+    box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--nxt-accent, #7c7c7c) 30%, transparent);
+}
+.form-grid .grid-row .grid-currency-input.grid-currency-has-value > .grid-currency-prefix,
+.form-grid .grid-row .grid-currency-input.grid-currency-has-value > .grid-currency-suffix {
+    position: static;
+    flex: none;
+    white-space: nowrap;
+    unicode-bidi: plaintext;
+}
+.form-grid .grid-row .grid-currency-input.grid-currency-has-value > .grid-currency-prefix {
+    padding-inline-start: 8px;
+}
+.form-grid .grid-row .grid-currency-input.grid-currency-has-value > .grid-currency-suffix {
+    padding-inline-end: 8px;
+}
+.form-grid .grid-row .grid-currency-input.grid-currency-has-value > .form-control {
+    flex: 1 1 0;
+    min-width: 0;
+    background-color: transparent;
+    box-shadow: none;
+}
+.form-grid .grid-row .grid-currency-input.grid-currency-has-value:not(.grid-currency-symbol-right) > .form-control {
+    padding-inline-start: 4px;
+}
+.form-grid .grid-row .grid-currency-input.grid-currency-has-value.grid-currency-symbol-right > .form-control {
+    padding-inline-end: 4px;
+}
+
+/* ---- Child table: when a cell wraps to more lines, centre every cell of
+   the row vertically (checkbox, No. and values) ---- */
+.form-grid .grid-body .data-row > .row-check,
+.form-grid .grid-body .data-row > .row-index {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    justify-content: safe center;
+}
+.form-grid .grid-body .data-row > .row-check {
+    align-items: center;
+}
+.form-grid .grid-body .data-row > .row-check > .grid-row-check {
+    margin-top: 0;
+    margin-bottom: 0;
+}
+.form-grid .grid-body .data-row > .row-index {
+    height: auto !important;
+    min-height: 43px;
+}
+.form-grid .grid-body .data-row:not(.editable-row) > .grid-static-col[data-fieldname]:not([data-fieldtype="Button"]) {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    justify-content: safe center;
+}
+.form-grid .grid-body .data-row:not(.editable-row) > .grid-static-col[data-fieldname] > .static-area {
+    flex-shrink: 0;
+}
+.form-grid .grid-row .grid-currency-input.grid-currency-has-value:not(.grid-currency-symbol-right) > .form-control {
+    text-align: end;
+}

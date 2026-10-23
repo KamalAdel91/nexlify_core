@@ -1,0 +1,3142 @@
+/* Nexlify Core: the Nexlify themes (js/nexlify_themes.bundle.js lists them and draws the scenes).
+ *
+ * A theme is one of three kinds. A *business* theme is a bookkeeping app's desk: a dark sidebar,
+ * white pages, hairlines, small corners and one clear accent. A *style* re-colors the desk itself: the page, the cards, the
+ * sidebar, the buttons and the Kanban, with rounder corners and warmer surfaces, and nothing
+ * drawn behind it. A *scene* keeps Frappe's surfaces and adds an accent, a sky and a drawing at
+ * the foot of the page. Both have a light and a dark version, and both make the Kanban's columns
+ * glass over the page.
+ *
+ * Each theme names its colors once for light and once for dark, as --nxt-* properties on whatever
+ * carries `data-nexlify-theme`: the page's root (with `data-nexlify-kind` saying style or scene), or
+ * a preview card in Switch Theme. On the root they take the place of Frappe's own tokens.
+ *
+ * The desk's tokens, every theme: accent, accent2 (the second color of gradients), btn, tint (a
+ * wash of the accent, for what is selected), sidebar, sidebar2, sky-top, sky-bottom (the page's
+ * background, top to bottom), card (the Kanban's cards; for a style, every card). A style also
+ * names: bg (the surfaces under the cards), card2 (a raised card), text, heading, muted, border.
+ * A scene also names what its drawing uses: horizon, mist, sun, s1 (far) .. s4 (near), and its own.
+ */
+
+/* ---------------------------------------------------------------- the scenes' colors */
+
+
+[data-nexlify-theme="sakura"] {
+	--nxt-accent: #c93c74;
+	--nxt-accent2: #e86aa0;
+	--nxt-btn: #d14a80;
+	--nxt-tint: #fde6ef;
+	--nxt-sidebar: #fff4f8;
+	--nxt-sidebar2: #fde8f1;
+	--nxt-sky-top: #fff6fa;
+	--nxt-sky-bottom: #ffeef5;
+	--nxt-horizon: #ffd9e8;
+	--nxt-mist: #fff6fa;
+	--nxt-sun: #ffbcd3;
+	--nxt-s1: #f6d7e5;
+	--nxt-s2: #f7c3d8;
+	--nxt-s3: #f0a5c4;
+	--nxt-s4: #e486b0;
+	--nxt-deco: #8b5a6b;
+	--nxt-deco2: #f39abd;
+	--nxt-bloom: #f28db7;
+	--nxt-bloom2: #ffd6e5;
+	--nxt-star: #f29cbf;
+	--nxt-petal: #f59bbf;
+	--nxt-snow: #ffffff;
+}
+[data-theme="dark"][data-nexlify-theme="sakura"],
+[data-theme="dark"] [data-nexlify-theme="sakura"] {
+	--nxt-accent: #f27aa9;
+	--nxt-accent2: #ff9cc4;
+	--nxt-tint: #3c1b2c;
+	--nxt-sidebar: #1c1017;
+	--nxt-sidebar2: #25131d;
+	--nxt-sky-top: #170d13;
+	--nxt-sky-bottom: #24121c;
+	--nxt-horizon: #3a1a2c;
+	--nxt-mist: #2a1621;
+	--nxt-sun: #e9b7cb;
+	--nxt-s1: #2e1824;
+	--nxt-s2: #3a1d2d;
+	--nxt-s3: #4e2540;
+	--nxt-s4: #6b2f55;
+	--nxt-deco: #3d2532;
+	--nxt-deco2: #b24f7b;
+	--nxt-bloom: #b9507f;
+	--nxt-bloom2: #e88bb2;
+	--nxt-star: #d76f9c;
+	--nxt-petal: #d8709d;
+	--nxt-snow: #c99bb2;
+}
+
+[data-nexlify-theme="candy"] {
+	--nxt-accent: #d94f9b;
+	--nxt-accent2: #8f7cf5;
+	--nxt-btn: #d94f9b;
+	--nxt-tint: #fde7f3;
+	--nxt-sidebar: #fff6fb;
+	--nxt-sidebar2: #f2efff;
+	--nxt-sky-top: #fdf5ff;
+	--nxt-sky-bottom: #fff0f7;
+	--nxt-horizon: #ffe0ef;
+	--nxt-mist: #fff6fb;
+	--nxt-sun: #fff0a8;
+	--nxt-s3: #f8cde4;
+	--nxt-s4: #eaa9d0;
+	--nxt-cloud: #ffffff;
+	--nxt-cloud2: #f3e6ff;
+	--nxt-rb1: #ffadc6;
+	--nxt-rb2: #ffcf9e;
+	--nxt-rb3: #fff1a6;
+	--nxt-rb4: #b8f0c2;
+	--nxt-rb5: #a9d8ff;
+	--nxt-rb6: #cdb5ff;
+	--nxt-b1: #ff8cbf;
+	--nxt-b2: #9fd6ff;
+	--nxt-b3: #ffe58a;
+	--nxt-b4: #c7b2ff;
+	--nxt-deco: #b07a5a;
+	--nxt-deco2: #ff9cc8;
+	--nxt-star: #f7a6d4;
+	--nxt-petal: #ffb6d9;
+	--nxt-line: #c79aae;
+}
+[data-theme="dark"][data-nexlify-theme="candy"],
+[data-theme="dark"] [data-nexlify-theme="candy"] {
+	--nxt-accent: #ff8cc6;
+	--nxt-accent2: #b7a6ff;
+	--nxt-tint: #3b1c33;
+	--nxt-sidebar: #1b1119;
+	--nxt-sidebar2: #171329;
+	--nxt-sky-top: #140f1e;
+	--nxt-sky-bottom: #22172e;
+	--nxt-horizon: #36203f;
+	--nxt-mist: #22172e;
+	--nxt-sun: #f6e2a8;
+	--nxt-s3: #3e2440;
+	--nxt-s4: #552f55;
+	--nxt-cloud: #4f3a5c;
+	--nxt-cloud2: #3a2a47;
+	--nxt-rb1: #a65a78;
+	--nxt-rb2: #a6764f;
+	--nxt-rb3: #a69a5a;
+	--nxt-rb4: #5f9a6a;
+	--nxt-rb5: #5a84a8;
+	--nxt-rb6: #7a64a8;
+	--nxt-b1: #d0609a;
+	--nxt-b2: #5e93c9;
+	--nxt-b3: #c9b766;
+	--nxt-b4: #8a74d6;
+	--nxt-deco: #6b4a3a;
+	--nxt-deco2: #e070a8;
+	--nxt-star: #f4b7e6;
+	--nxt-petal: #e58fc1;
+	--nxt-line: #7a5f70;
+}
+
+[data-nexlify-theme="lavender"] {
+	--nxt-accent: #7d4fd0;
+	--nxt-accent2: #a873e8;
+	--nxt-btn: #8a5cd6;
+	--nxt-tint: #efe7fc;
+	--nxt-sidebar: #f9f5ff;
+	--nxt-sidebar2: #f1e9ff;
+	--nxt-sky-top: #faf7ff;
+	--nxt-sky-bottom: #f3ecff;
+	--nxt-horizon: #e9dcff;
+	--nxt-mist: #f8f3ff;
+	--nxt-sun: #fff0bf;
+	--nxt-s1: #e6dbfa;
+	--nxt-s2: #d6c4f6;
+	--nxt-s3: #b796ec;
+	--nxt-s4: #8f68d8;
+	--nxt-row: #b48cf0;
+	--nxt-deco: #8d73c4;
+	--nxt-deco2: #e79fd6;
+	--nxt-win: #ffd98a;
+	--nxt-star: #c3a8f3;
+	--nxt-petal: #c9b0f5;
+}
+[data-theme="dark"][data-nexlify-theme="lavender"],
+[data-theme="dark"] [data-nexlify-theme="lavender"] {
+	--nxt-accent: #ab8bf0;
+	--nxt-accent2: #c9a6ff;
+	--nxt-tint: #2d2148;
+	--nxt-sidebar: #15111e;
+	--nxt-sidebar2: #1c1529;
+	--nxt-sky-top: #120e1b;
+	--nxt-sky-bottom: #1d1630;
+	--nxt-horizon: #2c2048;
+	--nxt-mist: #241b3a;
+	--nxt-sun: #f1e6bd;
+	--nxt-s1: #201831;
+	--nxt-s2: #2a2042;
+	--nxt-s3: #372957;
+	--nxt-s4: #3e2d66;
+	--nxt-row: #8a63d6;
+	--nxt-deco: #120e1b;
+	--nxt-deco2: #c27bb5;
+	--nxt-win: #ffd27a;
+	--nxt-star: #cdb8f5;
+	--nxt-petal: #d6c2ff;
+}
+
+[data-nexlify-theme="nile"] {
+	--nxt-accent: #0e7cb8;
+	--nxt-accent2: #19a7c9;
+	--nxt-btn: #0e7cb8;
+	--nxt-tint: #e3f2fa;
+	--nxt-sidebar: #f2f9fd;
+	--nxt-sidebar2: #e6f4fb;
+	--nxt-sky-top: #f4fbff;
+	--nxt-sky-bottom: #fff6e8;
+	--nxt-horizon: #ffe6c2;
+	--nxt-mist: #fff6e8;
+	--nxt-sun: #ffbe5c;
+	--nxt-s1: #cfe7ef;
+	--nxt-s2: #8fcbe8;
+	--nxt-s3: #4ea9d9;
+	--nxt-s4: #1f7fb5;
+	--nxt-deco: #4e7f5e;
+	--nxt-sail: #ffffff;
+	--nxt-sail2: #f1dcb4;
+	--nxt-line: #6a8499;
+}
+[data-theme="dark"][data-nexlify-theme="nile"],
+[data-theme="dark"] [data-nexlify-theme="nile"] {
+	--nxt-accent: #4fb3e6;
+	--nxt-accent2: #6fd0f0;
+	--nxt-tint: #13324a;
+	--nxt-sidebar: #0f1b24;
+	--nxt-sidebar2: #0c2030;
+	--nxt-sky-top: #0b1620;
+	--nxt-sky-bottom: #132a3a;
+	--nxt-horizon: #1d3a50;
+	--nxt-mist: #16304a;
+	--nxt-sun: #f2e6b8;
+	--nxt-s1: #163248;
+	--nxt-s2: #1a4566;
+	--nxt-s3: #1f5a85;
+	--nxt-s4: #1d5f8a;
+	--nxt-deco: #1b3628;
+	--nxt-sail: #d5dee6;
+	--nxt-sail2: #9aa8b4;
+	--nxt-line: #7b93a6;
+}
+
+[data-nexlify-theme="sahel"] {
+	--nxt-accent: #0a8f9c;
+	--nxt-accent2: #20b5c4;
+	--nxt-btn: #0a8f9c;
+	--nxt-tint: #dff5f6;
+	--nxt-sidebar: #f3fbfb;
+	--nxt-sidebar2: #e6f7f7;
+	--nxt-sky-top: #f2fbff;
+	--nxt-sky-bottom: #fff5e6;
+	--nxt-horizon: #ffe6bf;
+	--nxt-mist: #fffaf0;
+	--nxt-sun: #ffc861;
+	--nxt-s1: #bfe7f0;
+	--nxt-s2: #6fcadb;
+	--nxt-s3: #2aa9c2;
+	--nxt-sand: #f8e2bb;
+	--nxt-sand2: #ecc890;
+	--nxt-foam: #ffffff;
+	--nxt-umb1: #ff6b6b;
+	--nxt-umb2: #ffffff;
+	--nxt-umb3: #ffb347;
+	--nxt-umb4: #4fb3e6;
+	--nxt-deco: #5f8f63;
+	--nxt-line: #6d7f8a;
+}
+[data-theme="dark"][data-nexlify-theme="sahel"],
+[data-theme="dark"] [data-nexlify-theme="sahel"] {
+	--nxt-accent: #3fd0d6;
+	--nxt-accent2: #7de8ea;
+	--nxt-tint: #103a3f;
+	--nxt-sidebar: #0d1a1c;
+	--nxt-sidebar2: #0f2326;
+	--nxt-sky-top: #0b161b;
+	--nxt-sky-bottom: #13262c;
+	--nxt-horizon: #1d3b42;
+	--nxt-mist: #13262c;
+	--nxt-sun: #f0d99a;
+	--nxt-s1: #163a45;
+	--nxt-s2: #1b5161;
+	--nxt-s3: #1f6a7e;
+	--nxt-sand: #5b4a35;
+	--nxt-sand2: #45372a;
+	--nxt-foam: #bfe3ea;
+	--nxt-umb1: #c25555;
+	--nxt-umb2: #d9d9d9;
+	--nxt-umb3: #cf9440;
+	--nxt-umb4: #3e8fb8;
+	--nxt-deco: #22402a;
+	--nxt-line: #8aa0ab;
+}
+
+[data-nexlify-theme="desert"] {
+	--nxt-accent: #b85620;
+	--nxt-accent2: #e0892f;
+	--nxt-btn: #c9632b;
+	--nxt-tint: #fcebdf;
+	--nxt-sidebar: #fff8f2;
+	--nxt-sidebar2: #fdeedf;
+	--nxt-sky-top: #fff7ef;
+	--nxt-sky-bottom: #ffe9d2;
+	--nxt-horizon: #ffd2a1;
+	--nxt-mist: #fff1e2;
+	--nxt-sun: #ffad42;
+	--nxt-s1: #f8dcbf;
+	--nxt-s2: #f1c08e;
+	--nxt-s3: #e5a568;
+	--nxt-s4: #cf864c;
+	--nxt-deco: #e8ae72;
+	--nxt-deco2: #c07a3f;
+	--nxt-ridge: #fff1dd;
+	--nxt-line: #8a5a35;
+}
+[data-theme="dark"][data-nexlify-theme="desert"],
+[data-theme="dark"] [data-nexlify-theme="desert"] {
+	--nxt-accent: #ee9560;
+	--nxt-accent2: #ffb877;
+	--nxt-tint: #3d2616;
+	--nxt-sidebar: #1b130e;
+	--nxt-sidebar2: #23180f;
+	--nxt-sky-top: #17100b;
+	--nxt-sky-bottom: #2a1a10;
+	--nxt-horizon: #4a2a16;
+	--nxt-mist: #2f1d12;
+	--nxt-sun: #f0a050;
+	--nxt-s1: #2c1e15;
+	--nxt-s2: #3b281b;
+	--nxt-s3: #4d3322;
+	--nxt-s4: #61402a;
+	--nxt-deco: #7a5132;
+	--nxt-deco2: #4a2e1b;
+	--nxt-ridge: #8a6040;
+	--nxt-line: #1d130c;
+}
+
+[data-nexlify-theme="ramadan"] {
+	--nxt-accent: #7b3fa0;
+	--nxt-accent2: #c9932e;
+	--nxt-btn: #7b3fa0;
+	--nxt-tint: #f3e8f8;
+	--nxt-sidebar: #fdf8f0;
+	--nxt-sidebar2: #f8eedc;
+	--nxt-sky-top: #fffaf2;
+	--nxt-sky-bottom: #fbefd9;
+	--nxt-horizon: #f8dca6;
+	--nxt-mist: #fdf4e4;
+	--nxt-sun: #f2c464;
+	--nxt-s1: #ecdcf0;
+	--nxt-s2: #dcc3e6;
+	--nxt-s3: #b48ac9;
+	--nxt-s4: #8a5aa8;
+	--nxt-deco: #6b3f8a;
+	--nxt-deco2: #c9932e;
+	--nxt-glass: #ffe08a;
+	--nxt-glass2: #ff9a5a;
+	--nxt-frame: #a87420;
+	--nxt-flag1: #e05a7a;
+	--nxt-flag2: #3fa7a0;
+	--nxt-flag3: #f2b43b;
+	--nxt-star: #e2b85a;
+	--nxt-petal: #f2c464;
+	--nxt-line: #9c7c56;
+}
+[data-theme="dark"][data-nexlify-theme="ramadan"],
+[data-theme="dark"] [data-nexlify-theme="ramadan"] {
+	--nxt-accent: #c08ae6;
+	--nxt-accent2: #f2c464;
+	--nxt-tint: #2e1d3d;
+	--nxt-sidebar: #140f1c;
+	--nxt-sidebar2: #1b1426;
+	--nxt-sky-top: #0f0b18;
+	--nxt-sky-bottom: #221735;
+	--nxt-horizon: #3a2552;
+	--nxt-mist: #2a1c40;
+	--nxt-sun: #f2cd72;
+	--nxt-s1: #241a38;
+	--nxt-s2: #2a1d40;
+	--nxt-s3: #36254f;
+	--nxt-s4: #1c1430;
+	--nxt-deco: #0d0915;
+	--nxt-deco2: #e0a93e;
+	--nxt-glass: #ffcf5a;
+	--nxt-glass2: #ff7a3c;
+	--nxt-frame: #c8902e;
+	--nxt-flag1: #c4506c;
+	--nxt-flag2: #36918b;
+	--nxt-flag3: #d4a034;
+	--nxt-star: #f2d48a;
+	--nxt-petal: #f2cd72;
+	--nxt-line: #8a7356;
+}
+
+[data-nexlify-theme="forest"] {
+	--nxt-accent: #23784a;
+	--nxt-accent2: #3aa36b;
+	--nxt-btn: #2f8a57;
+	--nxt-tint: #e2f3e8;
+	--nxt-sidebar: #f4faf6;
+	--nxt-sidebar2: #e8f5ec;
+	--nxt-sky-top: #f5fbf7;
+	--nxt-sky-bottom: #eef8f1;
+	--nxt-horizon: #fff1c9;
+	--nxt-mist: #f2faf5;
+	--nxt-sun: #ffd77a;
+	--nxt-s1: #cfe5dc;
+	--nxt-s2: #a9d5bc;
+	--nxt-s3: #78bb93;
+	--nxt-s4: #3f9363;
+	--nxt-deco: #5ea87f;
+	--nxt-deco2: #276b45;
+	--nxt-snow: #ffffff;
+	--nxt-line: #4d6b5a;
+}
+[data-theme="dark"][data-nexlify-theme="forest"],
+[data-theme="dark"] [data-nexlify-theme="forest"] {
+	--nxt-accent: #5cc08a;
+	--nxt-accent2: #86dcaa;
+	--nxt-tint: #173a27;
+	--nxt-sidebar: #0f1813;
+	--nxt-sidebar2: #13201a;
+	--nxt-sky-top: #0c140f;
+	--nxt-sky-bottom: #13211a;
+	--nxt-horizon: #1d3326;
+	--nxt-mist: #182b21;
+	--nxt-sun: #e3dfc0;
+	--nxt-s1: #17271f;
+	--nxt-s2: #1b3326;
+	--nxt-s3: #1f4530;
+	--nxt-s4: #255a3d;
+	--nxt-deco: #1e4a32;
+	--nxt-deco2: #143524;
+	--nxt-snow: #a6b8ad;
+	--nxt-line: #8fa598;
+}
+
+[data-nexlify-theme="aurora"] {
+	--nxt-accent: #148f7f;
+	--nxt-accent2: #7a5cf0;
+	--nxt-btn: #148f7f;
+	--nxt-tint: #e0f5f1;
+	--nxt-sidebar: #f3fbf9;
+	--nxt-sidebar2: #ecf3fb;
+	--nxt-sky-top: #f3faf9;
+	--nxt-sky-bottom: #eef0fb;
+	--nxt-horizon: #dff3ff;
+	--nxt-mist: #eef6fb;
+	--nxt-sun: #ffffff;
+	--nxt-r1: #5be3c2;
+	--nxt-r2: #a08cf7;
+	--nxt-r3: #6cc9f4;
+	--nxt-s2: #b3c8dc;
+	--nxt-s3: #8aa7c2;
+	--nxt-s4: #a9d4e6;
+	--nxt-snow: #ffffff;
+	--nxt-deco: #46707f;
+	--nxt-star: #9fb3d9;
+}
+[data-theme="dark"][data-nexlify-theme="aurora"],
+[data-theme="dark"] [data-nexlify-theme="aurora"] {
+	--nxt-accent: #4fe0c2;
+	--nxt-accent2: #a990ff;
+	--nxt-tint: #10352f;
+	--nxt-sidebar: #0b1615;
+	--nxt-sidebar2: #0e1626;
+	--nxt-sky-top: #070d16;
+	--nxt-sky-bottom: #0d1830;
+	--nxt-horizon: #13284a;
+	--nxt-mist: #102040;
+	--nxt-sun: #eef3ff;
+	--nxt-r1: #3df5c4;
+	--nxt-r2: #8f6cff;
+	--nxt-r3: #3fb8ff;
+	--nxt-s2: #16233a;
+	--nxt-s3: #1b2c48;
+	--nxt-s4: #0d2238;
+	--nxt-snow: #b9c6d8;
+	--nxt-deco: #0c1a24;
+	--nxt-star: #dfe8ff;
+}
+
+[data-nexlify-theme="night"] {
+	--nxt-accent: #4552c9;
+	--nxt-accent2: #7a5cf0;
+	--nxt-btn: #4f5bd5;
+	--nxt-tint: #e8eafc;
+	--nxt-sidebar: #f5f6fe;
+	--nxt-sidebar2: #eceefe;
+	--nxt-sky-top: #f6f7ff;
+	--nxt-sky-bottom: #ece9ff;
+	--nxt-horizon: #ffe3c4;
+	--nxt-mist: #f3f1ff;
+	--nxt-sun: #ffe39a;
+	--nxt-s1: #dfe1fb;
+	--nxt-s2: #c3c7f3;
+	--nxt-s3: #8f96e6;
+	--nxt-s4: #6f77d6;
+	--nxt-deco: #7a81dc;
+	--nxt-star: #b9bff3;
+	--nxt-win: #ffe7a0;
+}
+[data-theme="dark"][data-nexlify-theme="night"],
+[data-theme="dark"] [data-nexlify-theme="night"] {
+	--nxt-accent: #8a93f5;
+	--nxt-accent2: #b19cff;
+	--nxt-tint: #232857;
+	--nxt-sidebar: #0f1124;
+	--nxt-sidebar2: #141734;
+	--nxt-sky-top: #0b0d1f;
+	--nxt-sky-bottom: #1a1c48;
+	--nxt-horizon: #2b2466;
+	--nxt-mist: #1f2152;
+	--nxt-sun: #f5e9b8;
+	--nxt-s1: #1b1e48;
+	--nxt-s2: #252a66;
+	--nxt-s3: #151839;
+	--nxt-s4: #0f1230;
+	--nxt-deco: #12152f;
+	--nxt-star: #d4d8fa;
+	--nxt-win: #ffd873;
+}
+
+
+/* ---------------------------------------------------------------- the styles' colors */
+
+/* Warm: cream paper, navy ink and terracotta, like a well-made consumer app */
+[data-nexlify-theme="warm"] {
+	--nxt-accent: #c4582c;
+	--nxt-accent2: #e2804f;
+	--nxt-btn: #c95b2e;
+	--nxt-tint: #f6e3d4;
+	--nxt-sidebar: #f6ecde;
+	--nxt-sidebar2: #f1e4d2;
+	--nxt-sky-top: #f3e8d9;
+	--nxt-sky-bottom: #efe2d0;
+	--nxt-bg: #f3e8d9;
+	--nxt-card: #fbf6ee;
+	--nxt-card2: #ffffff;
+	--nxt-text: #2b3d57;
+	--nxt-heading: #1b2b45;
+	--nxt-muted: #4c5b70;
+	--nxt-border: #e3d5c2;
+}
+[data-theme="dark"][data-nexlify-theme="warm"],
+[data-theme="dark"] [data-nexlify-theme="warm"] {
+	--nxt-accent: #e8875a;
+	--nxt-accent2: #f2a97f;
+	--nxt-btn: #d9703f;
+	--nxt-tint: #3d2a1f;
+	--nxt-sidebar: #1f1912;
+	--nxt-sidebar2: #241c14;
+	--nxt-sky-top: #1a1510;
+	--nxt-sky-bottom: #1f1912;
+	--nxt-bg: #1a1510;
+	--nxt-card: #272019;
+	--nxt-card2: #2f271e;
+	--nxt-text: #e6dccb;
+	--nxt-heading: #f5ede0;
+	--nxt-muted: #a3978a;
+	--nxt-border: #3b3128;
+}
+
+/* Rose: blush and lilac, rose buttons with a purple edge */
+[data-nexlify-theme="rose"] {
+	--nxt-accent: #b8407f;
+	--nxt-accent2: #8a5cf0;
+	--nxt-btn: #c2478a;
+	--nxt-tint: #f8e1ee;
+	--nxt-sidebar: #fbf0f7;
+	--nxt-sidebar2: #f4ebfa;
+	--nxt-sky-top: #f9eff6;
+	--nxt-sky-bottom: #f3ebf9;
+	--nxt-bg: #f8eef5;
+	--nxt-card: #fff8fc;
+	--nxt-card2: #ffffff;
+	--nxt-text: #4a3660;
+	--nxt-heading: #35214a;
+	--nxt-muted: #68557a;
+	--nxt-border: #ead9e8;
+}
+[data-theme="dark"][data-nexlify-theme="rose"],
+[data-theme="dark"] [data-nexlify-theme="rose"] {
+	--nxt-accent: #ec7fc3;
+	--nxt-accent2: #b49aff;
+	--nxt-btn: #d55ea3;
+	--nxt-tint: #3e2238;
+	--nxt-sidebar: #1e1424;
+	--nxt-sidebar2: #22182c;
+	--nxt-sky-top: #19111f;
+	--nxt-sky-bottom: #1e1427;
+	--nxt-bg: #19111f;
+	--nxt-card: #261b30;
+	--nxt-card2: #2e2239;
+	--nxt-text: #ebdff0;
+	--nxt-heading: #f7eefa;
+	--nxt-muted: #a893b4;
+	--nxt-border: #3c2d47;
+}
+
+/* Ocean: pale water, deep blue ink and teal */
+[data-nexlify-theme="ocean"] {
+	--nxt-accent: #1c7ea6;
+	--nxt-accent2: #2db8a6;
+	--nxt-btn: #1f86ae;
+	--nxt-tint: #dcedf4;
+	--nxt-sidebar: #eef6fa;
+	--nxt-sidebar2: #e7f2f7;
+	--nxt-sky-top: #ecf4f8;
+	--nxt-sky-bottom: #e6f0f5;
+	--nxt-bg: #ecf4f8;
+	--nxt-card: #f9fcfe;
+	--nxt-card2: #ffffff;
+	--nxt-text: #2b4a62;
+	--nxt-heading: #11314a;
+	--nxt-muted: #466278;
+	--nxt-border: #d3e2ea;
+}
+[data-theme="dark"][data-nexlify-theme="ocean"],
+[data-theme="dark"] [data-nexlify-theme="ocean"] {
+	--nxt-accent: #4fb6dd;
+	--nxt-accent2: #5ed6c4;
+	--nxt-btn: #2d93bd;
+	--nxt-tint: #16364a;
+	--nxt-sidebar: #10191f;
+	--nxt-sidebar2: #121e26;
+	--nxt-sky-top: #0d161c;
+	--nxt-sky-bottom: #111c23;
+	--nxt-bg: #0d161c;
+	--nxt-card: #172530;
+	--nxt-card2: #1d2e3b;
+	--nxt-text: #d9e6ee;
+	--nxt-heading: #eef5f9;
+	--nxt-muted: #8ea3b3;
+	--nxt-border: #26394a;
+}
+
+/* Prism: frosted glass over drifting color blobs, an indigo to violet gradient. It also names
+   blob1 .. blob3 (the blobs behind the page) */
+[data-nexlify-theme="prism"] {
+	--nxt-accent: #5b5bf6;
+	--nxt-accent2: #b44cf0;
+	--nxt-btn: #5b5bf6;
+	--nxt-tint: #e7e7fe;
+	--nxt-sidebar: #f7f7fc;
+	--nxt-sidebar2: #f4f3fb;
+	--nxt-sky-top: #f2f3f8;
+	--nxt-sky-bottom: #f2f3f8;
+	--nxt-bg: #f2f3f8;
+	--nxt-card: #ffffff;
+	--nxt-card2: #ffffff;
+	--nxt-text: #1d2230;
+	--nxt-heading: #0c0f17;
+	--nxt-muted: #585f6f;
+	--nxt-border: #e2e4ec;
+	--nxt-blob1: #c3c8ff;
+	--nxt-blob2: #f3c6f1;
+	--nxt-blob3: #bdeddf;
+}
+[data-theme="dark"][data-nexlify-theme="prism"],
+[data-theme="dark"] [data-nexlify-theme="prism"] {
+	--nxt-accent: #8c8cff;
+	--nxt-accent2: #d68bff;
+	--nxt-btn: #6a6af8;
+	--nxt-tint: #1d1e3c;
+	--nxt-sidebar: #0d0f16;
+	--nxt-sidebar2: #0f1018;
+	--nxt-sky-top: #06070b;
+	--nxt-sky-bottom: #06070b;
+	--nxt-bg: #06070b;
+	--nxt-card: #11131b;
+	--nxt-card2: #171a24;
+	--nxt-text: #d9dce6;
+	--nxt-heading: #edeff5;
+	--nxt-muted: #9aa1b1;
+	--nxt-border: #1f222c;
+	--nxt-blob1: #2a2c80;
+	--nxt-blob2: #5b1e66;
+	--nxt-blob3: #0d4a3d;
+}
+
+/* ---------------------------------------------------------------- the business themes' colors */
+
+/* A business theme names, besides the desk's tokens: dock (the icon tray, a step darker than the
+   sidebar), side-text and side-muted (ink on the dark sidebar) and head (the list's and the grid's
+   header rows). The page's own colors are the same plain ones in every preset; only the accent and
+   the sidebar change. "Custom" takes both from the user (--nxt-user-*, set on the root by the JS). */
+
+/* Ledger: a navy sidebar and one clear blue */
+[data-nexlify-theme="ledger"] {
+	--nxt-accent: #3b82f6;
+	--nxt-accent2: #2563eb;
+	--nxt-btn: #3b82f6;
+	--nxt-tint: #e6effe;
+	--nxt-sidebar: #1f2437;
+	--nxt-sidebar2: #1f2437;
+	--nxt-dock: #171b2b;
+	--nxt-side-text: #d3d7e3;
+	--nxt-side-muted: #8b91a7;
+}
+[data-theme="dark"][data-nexlify-theme="ledger"],
+[data-theme="dark"] [data-nexlify-theme="ledger"] {
+	--nxt-accent: #60a5fa;
+	--nxt-accent2: #3b82f6;
+	--nxt-btn: #3b82f6;
+	--nxt-tint: #1b2a44;
+	--nxt-sidebar: #15192a;
+	--nxt-sidebar2: #15192a;
+	--nxt-dock: #10131f;
+	--nxt-side-text: #c3c8d6;
+	--nxt-side-muted: #7d8399;
+}
+
+/* Slate: a graphite sidebar and green */
+[data-nexlify-theme="slate"] {
+	--nxt-accent: #16a34a;
+	--nxt-accent2: #15803d;
+	--nxt-btn: #16a34a;
+	--nxt-tint: #e2f5e9;
+	--nxt-sidebar: #24282e;
+	--nxt-sidebar2: #24282e;
+	--nxt-dock: #1b1e23;
+	--nxt-side-text: #d2d6db;
+	--nxt-side-muted: #8e949c;
+}
+[data-theme="dark"][data-nexlify-theme="slate"],
+[data-theme="dark"] [data-nexlify-theme="slate"] {
+	--nxt-accent: #4ade80;
+	--nxt-accent2: #22c55e;
+	--nxt-btn: #22c55e;
+	--nxt-tint: #17322a;
+	--nxt-sidebar: #191c20;
+	--nxt-sidebar2: #191c20;
+	--nxt-dock: #131518;
+	--nxt-side-text: #c8ccd2;
+	--nxt-side-muted: #80868f;
+}
+
+/* Indigo: a deep violet sidebar and indigo */
+[data-nexlify-theme="indigo"] {
+	--nxt-accent: #4f46e5;
+	--nxt-accent2: #4338ca;
+	--nxt-btn: #4f46e5;
+	--nxt-tint: #e8e7fb;
+	--nxt-sidebar: #1f1d4a;
+	--nxt-sidebar2: #1f1d4a;
+	--nxt-dock: #171538;
+	--nxt-side-text: #d9d8ef;
+	--nxt-side-muted: #9593c4;
+}
+[data-theme="dark"][data-nexlify-theme="indigo"],
+[data-theme="dark"] [data-nexlify-theme="indigo"] {
+	--nxt-accent: #818cf8;
+	--nxt-accent2: #6366f1;
+	--nxt-btn: #6366f1;
+	--nxt-tint: #23234a;
+	--nxt-sidebar: #15142e;
+	--nxt-sidebar2: #15142e;
+	--nxt-dock: #100f24;
+	--nxt-side-text: #cfcee6;
+	--nxt-side-muted: #8381b3;
+}
+
+/* Teal: a pine sidebar and teal */
+[data-nexlify-theme="teal"] {
+	--nxt-accent: #0d9488;
+	--nxt-accent2: #0f766e;
+	--nxt-btn: #0d9488;
+	--nxt-tint: #dcf3ef;
+	--nxt-sidebar: #10302e;
+	--nxt-sidebar2: #10302e;
+	--nxt-dock: #0b2422;
+	--nxt-side-text: #cfe3e0;
+	--nxt-side-muted: #7fa39f;
+}
+[data-theme="dark"][data-nexlify-theme="teal"],
+[data-theme="dark"] [data-nexlify-theme="teal"] {
+	--nxt-accent: #2dd4bf;
+	--nxt-accent2: #14b8a6;
+	--nxt-btn: #14b8a6;
+	--nxt-tint: #143331;
+	--nxt-sidebar: #0e1f1e;
+	--nxt-sidebar2: #0e1f1e;
+	--nxt-dock: #0a1716;
+	--nxt-side-text: #c6d9d6;
+	--nxt-side-muted: #6f8f8b;
+}
+
+/* Ember: a stone sidebar and orange */
+[data-nexlify-theme="ember"] {
+	--nxt-accent: #ea580c;
+	--nxt-accent2: #c2410c;
+	--nxt-btn: #ea580c;
+	--nxt-tint: #fdeadb;
+	--nxt-sidebar: #292524;
+	--nxt-sidebar2: #292524;
+	--nxt-dock: #1c1917;
+	--nxt-side-text: #dcd8d5;
+	--nxt-side-muted: #9a938e;
+}
+[data-theme="dark"][data-nexlify-theme="ember"],
+[data-theme="dark"] [data-nexlify-theme="ember"] {
+	--nxt-accent: #fb923c;
+	--nxt-accent2: #f97316;
+	--nxt-btn: #f97316;
+	--nxt-tint: #3a2718;
+	--nxt-sidebar: #1c1917;
+	--nxt-sidebar2: #1c1917;
+	--nxt-dock: #141211;
+	--nxt-side-text: #d6d1cd;
+	--nxt-side-muted: #8c857f;
+}
+
+/* Custom: the user's accent and sidebar (the JS sets --nxt-user-accent, --nxt-user-sidebar and
+   --nxt-user-side-ink, white or near-black by the sidebar's lightness); the rest derives from them */
+[data-nexlify-theme="custom"] {
+	--nxt-accent: var(--nxt-user-accent, #3b82f6);
+	--nxt-accent2: color-mix(in srgb, var(--nxt-accent) 85%, #000);
+	--nxt-btn: var(--nxt-accent);
+	--nxt-tint: color-mix(in srgb, var(--nxt-accent) 12%, #ffffff);
+	--nxt-sidebar: var(--nxt-user-sidebar, #1f2437);
+	--nxt-sidebar2: var(--nxt-sidebar);
+	--nxt-dock: color-mix(in srgb, var(--nxt-sidebar) 80%, #000);
+	--nxt-side-text: color-mix(in srgb, var(--nxt-user-side-ink, #fff) 82%, var(--nxt-sidebar));
+	--nxt-side-muted: color-mix(in srgb, var(--nxt-user-side-ink, #fff) 50%, var(--nxt-sidebar));
+}
+[data-theme="dark"][data-nexlify-theme="custom"],
+[data-theme="dark"] [data-nexlify-theme="custom"] {
+	--nxt-accent: color-mix(in srgb, var(--nxt-user-accent, #3b82f6) 75%, #fff);
+	--nxt-accent2: var(--nxt-user-accent, #3b82f6);
+	--nxt-btn: var(--nxt-user-accent, #3b82f6);
+	--nxt-tint: color-mix(in srgb, var(--nxt-user-accent, #3b82f6) 24%, #12141d);
+	--nxt-sidebar: color-mix(in srgb, var(--nxt-user-sidebar, #1f2437) 60%, #0b0c12);
+	--nxt-sidebar2: var(--nxt-sidebar);
+	--nxt-dock: color-mix(in srgb, var(--nxt-sidebar) 75%, #000);
+	--nxt-side-text: color-mix(in srgb, var(--nxt-user-side-ink, #fff) 78%, var(--nxt-sidebar));
+	--nxt-side-muted: color-mix(in srgb, var(--nxt-user-side-ink, #fff) 46%, var(--nxt-sidebar));
+}
+
+/* the page, the same in every business theme: near-white paper, white sheets, graphite ink */
+[data-nexlify-theme="ledger"],
+[data-nexlify-theme="slate"],
+[data-nexlify-theme="indigo"],
+[data-nexlify-theme="teal"],
+[data-nexlify-theme="ember"],
+[data-nexlify-theme="custom"] {
+	--nxt-sky-top: #f5f6f9;
+	--nxt-sky-bottom: #f5f6f9;
+	--nxt-bg: #f5f6f9;
+	--nxt-card: #ffffff;
+	--nxt-card2: #ffffff;
+	--nxt-head: #f9fafc;
+	--nxt-text: #2b2f3e;
+	--nxt-heading: #171a26;
+	--nxt-muted: #5a5f73;
+	--nxt-border: #e4e7ee;
+}
+[data-theme="dark"] :is(
+		[data-nexlify-theme="ledger"], [data-nexlify-theme="slate"], [data-nexlify-theme="indigo"],
+		[data-nexlify-theme="teal"], [data-nexlify-theme="ember"], [data-nexlify-theme="custom"]
+	),
+[data-theme="dark"]:is(
+		[data-nexlify-theme="ledger"], [data-nexlify-theme="slate"], [data-nexlify-theme="indigo"],
+		[data-nexlify-theme="teal"], [data-nexlify-theme="ember"], [data-nexlify-theme="custom"]
+	) {
+	--nxt-sky-top: #111319;
+	--nxt-sky-bottom: #111319;
+	--nxt-bg: #111319;
+	--nxt-card: #191c25;
+	--nxt-card2: #1f222c;
+	--nxt-head: #1d2029;
+	--nxt-text: #d2d5df;
+	--nxt-heading: #eef0f5;
+	--nxt-muted: #8a8fa3;
+	--nxt-border: #2a2e3a;
+}
+
+/* ---------------------------------------------------------------- the desk in a theme, any kind */
+
+html[data-nexlify-theme] {
+	--primary: var(--nxt-accent);
+	--primary-color: var(--nxt-accent);
+	--brand-color: var(--nxt-accent);
+	--border-primary: var(--nxt-accent);
+	--btn-primary: var(--nxt-btn);
+	--ink-blue-link: var(--nxt-accent);
+	--desk-sidebar-bg: var(--nxt-sidebar);
+	--navbar-bg: var(--nxt-sidebar);
+	--dock-bg: var(--nxt-sidebar);
+	--sidebar-select-color: var(--nxt-tint);
+	--focus-default: 0 0 0 2px color-mix(in srgb, var(--nxt-accent) 40%, transparent);
+	--checkbox-gradient: linear-gradient(180deg, var(--nxt-btn) 0%, var(--nxt-btn) 100%);
+	/* the Kanban's cards; a scene leaves them to the fallback, a wash of its accent over the card */
+	--nxt-kanban-card: var(--nxt-card, color-mix(in srgb, var(--surface-elevation-1) 90%, var(--nxt-tint)));
+	background:
+		radial-gradient(ellipse 60% 40% at 90% 0%, color-mix(in srgb, var(--nxt-accent2) 9%, transparent), transparent),
+		linear-gradient(180deg, var(--nxt-sky-top), var(--nxt-sky-bottom)) fixed;
+}
+/* the page lets the background (and a scene) through; cards, forms and dialogs keep their own color */
+html[data-nexlify-theme] body,
+html[data-nexlify-theme] .page-container {
+	background: transparent;
+}
+
+html[data-nexlify-theme] .page-head {
+	background: color-mix(in srgb, var(--bg-color) 80%, transparent);
+	backdrop-filter: blur(12px) saturate(1.2);
+	border-bottom-color: transparent;
+}
+/* under the page's header, a line in the theme's two colors */
+html[data-nexlify-theme] .page-head::after {
+	content: "";
+	position: absolute;
+	left: 0;
+	right: 0;
+	bottom: -1px;
+	height: 1px;
+	background: linear-gradient(90deg, var(--nxt-accent), color-mix(in srgb, var(--nxt-accent2) 60%, transparent) 60%, transparent);
+	opacity: 0.45;
+	pointer-events: none;
+}
+
+html[data-nexlify-theme] .btn.btn-primary {
+	color: #fff;
+	--icon-stroke: #fff;
+	border: none;
+	background: linear-gradient(135deg, var(--nxt-btn), color-mix(in srgb, var(--nxt-btn) 80%, var(--nxt-accent2)));
+	box-shadow: 0 1px 2px color-mix(in srgb, var(--nxt-btn) 30%, transparent),
+		0 4px 12px -6px color-mix(in srgb, var(--nxt-btn) 55%, transparent);
+	transition: filter 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+}
+html[data-nexlify-theme] .btn.btn-primary:hover {
+	filter: brightness(1.05);
+	box-shadow: 0 1px 2px color-mix(in srgb, var(--nxt-btn) 30%, transparent),
+		0 6px 16px -8px color-mix(in srgb, var(--nxt-btn) 65%, transparent);
+}
+html[data-nexlify-theme] .btn.btn-primary:active {
+	transform: translateY(1px);
+}
+
+/* Frappe's Espresso buttons: the solid ones (the page's primary action) in the accent too */
+html[data-nexlify-theme] .es-button:not([data-theme="red"]) {
+	--bt-solid-bg: var(--nxt-btn);
+	--bt-solid-bg-hover: color-mix(in srgb, var(--nxt-btn) 88%, #000);
+	--bt-solid-bg-active: color-mix(in srgb, var(--nxt-btn) 78%, #000);
+	--bt-solid-fg: #fff;
+}
+html[data-nexlify-theme] .es-button[data-variant="solid"]:not([data-theme="red"]) {
+	background: linear-gradient(135deg, var(--nxt-btn), color-mix(in srgb, var(--nxt-btn) 80%, var(--nxt-accent2)));
+	box-shadow: 0 1px 2px color-mix(in srgb, var(--nxt-btn) 30%, transparent),
+		0 4px 12px -6px color-mix(in srgb, var(--nxt-btn) 55%, transparent);
+	--icon-stroke: #fff;
+}
+html[data-nexlify-theme] .es-button[data-variant="solid"]:not([data-theme="red"]):hover {
+	background: linear-gradient(135deg, var(--bt-solid-bg-hover), color-mix(in srgb, var(--nxt-btn) 75%, var(--nxt-accent2)));
+}
+
+html[data-nexlify-theme] input[type="checkbox"]:checked {
+	background-color: var(--nxt-btn);
+}
+
+html[data-nexlify-theme] .body-sidebar {
+	background: linear-gradient(180deg, var(--nxt-sidebar), var(--nxt-sidebar2));
+	border-right-color: color-mix(in srgb, var(--nxt-accent) 14%, var(--outline-gray-1));
+}
+
+html[data-nexlify-theme] .body-sidebar .active-sidebar {
+	background: linear-gradient(90deg, var(--nxt-tint), color-mix(in srgb, var(--nxt-tint) 40%, transparent));
+	color: var(--nxt-accent);
+	box-shadow: none;
+}
+html[data-nexlify-theme] .body-sidebar .active-sidebar .item-anchor {
+	color: var(--nxt-accent);
+}
+
+/* the sidebar's rows: roomier than Frappe's, the same in every theme */
+html[data-nexlify-theme] .body-sidebar .standard-sidebar-item {
+	margin-bottom: 3px;
+}
+html[data-nexlify-theme] .body-sidebar .item-anchor,
+html[data-nexlify-theme] .body-sidebar .sidebar-item-control .drop-icon {
+	height: 33px;
+}
+html[data-nexlify-theme] .body-sidebar .item-anchor {
+	padding-left: 10px;
+}
+html[data-nexlify-theme] .body-sidebar .sidebar-item-label {
+	font-size: 13.5px;
+}
+
+/* ---- polish shared by every theme */
+
+/* the form's active tab in the accent */
+html[data-nexlify-theme] .form-tabs-list .form-tabs .nav-item .nav-link.active {
+	color: var(--nxt-accent);
+	border-bottom: 2px solid var(--nxt-accent);
+	font-weight: 500;
+}
+html[data-nexlify-theme] .form-tabs-list .form-tabs .nav-item .nav-link:hover:not(.active) {
+	color: var(--heading-color);
+}
+
+/* the page's own column paints nothing: forms, lists and dashboards bring their cards */
+html[data-nexlify-theme] .layout-main-section {
+	background: transparent;
+}
+
+/* the inputs: a ring in the accent when focused */
+html[data-nexlify-theme] .form-control:focus,
+html[data-nexlify-theme] .awesomplete > input:focus {
+	box-shadow: 0 0 0 2px color-mix(in srgb, var(--nxt-accent) 22%, transparent);
+	border-color: color-mix(in srgb, var(--nxt-accent) 55%, transparent);
+}
+
+/* titles a touch firmer */
+html[data-nexlify-theme] .page-head .title-text {
+	font-weight: 600;
+	letter-spacing: -0.01em;
+	color: var(--heading-color);
+}
+html[data-nexlify-theme] .kn-card .kn-card-title {
+	font-weight: 600;
+}
+
+/* selected text and the scrollbars in the theme's colors */
+html[data-nexlify-theme] ::selection {
+	background: color-mix(in srgb, var(--nxt-accent) 25%, transparent);
+}
+html[data-nexlify-theme] {
+	--scrollbar-thumb-color: color-mix(in srgb, var(--nxt-accent) 28%, var(--outline-gray-2));
+	scrollbar-color: var(--scrollbar-thumb-color) transparent;
+}
+
+html[data-nexlify-theme] .progress-bar {
+	background: linear-gradient(90deg, var(--nxt-btn), var(--nxt-accent2));
+}
+
+/* the suggestions under a Link field: the one you are on is tinted and marked with the accent */
+html[data-nexlify-theme] {
+	--awesomplete-hover-bg: color-mix(in srgb, var(--nxt-accent) 16%, var(--surface-base));
+}
+html[data-nexlify-theme] .awesomplete ul > :is(li, div) {
+	border-left: 3px solid transparent;
+	transition: background-color 0.1s ease, border-color 0.1s ease;
+}
+html[data-nexlify-theme] .awesomplete ul > :is(li, div):hover,
+html[data-nexlify-theme] .awesomplete ul > :is(li, div)[aria-selected="true"] {
+	background-color: var(--awesomplete-hover-bg);
+	border-left-color: var(--nxt-accent);
+	color: var(--heading-color);
+}
+html[data-nexlify-theme] .awesomplete ul > :is(li, div)[aria-selected="true"] .link-option,
+html[data-nexlify-theme] .awesomplete ul > :is(li, div)[aria-selected="true"] strong {
+	color: var(--nxt-accent);
+}
+
+/* ---------------------------------------------------------------- the finish, every theme */
+
+/* What makes a desk feel made rather than assembled: one easing for every motion, a lift on
+   hover and a press on click, the same focus ring everywhere, menus and dialogs that arrive
+   instead of appearing, and in the dark a hairline of light on each surface's top edge where the
+   light has no shadow to give. Everything here is short and quiet; those who ask for less motion
+   get none. */
+html[data-nexlify-theme] {
+	--nxt-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+	--nxt-quick: 0.15s;
+	--nxt-ring: 0 0 0 2px var(--bg-color, var(--surface-base)), 0 0 0 4px color-mix(in srgb, var(--nxt-accent) 55%, transparent);
+	--nxt-edge-light: inset 0 1px 0 rgba(255, 255, 255, 0.55);
+	--nxt-menu-shadow: 0 1px 2px rgba(15, 20, 40, 0.06), 0 16px 40px -16px rgba(15, 20, 40, 0.25);
+	--nxt-dialog-shadow: 0 1px 2px rgba(15, 20, 40, 0.08), 0 34px 70px -22px rgba(15, 20, 40, 0.4);
+	text-rendering: optimizeLegibility;
+}
+/* in a scene, which keeps Frappe's own ink, the faintest ink is lifted toward the muted one: Frappe's
+   is too faint on a colored background, in the dark above all */
+html[data-nexlify-kind="scene"] {
+	--text-light: color-mix(in srgb, var(--text-muted) 90%, var(--bg-color));
+}
+html[data-theme="dark"][data-nexlify-theme] {
+	--nxt-edge-light: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+	--nxt-menu-shadow: 0 1px 2px rgba(0, 0, 0, 0.5), 0 16px 40px -16px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.06);
+	--nxt-dialog-shadow: 0 34px 70px -22px rgba(0, 0, 0, 0.9), 0 0 0 1px rgba(255, 255, 255, 0.08);
+	--shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4), 0 2px 8px -4px rgba(0, 0, 0, 0.6);
+	--shadow-base: 0 1px 2px rgba(0, 0, 0, 0.5), 0 10px 26px -14px rgba(0, 0, 0, 0.9);
+}
+
+/* the surfaces catch the light on their top edge: in the light a white hairline, in the dark a faint one */
+html[data-nexlify-theme] :is(.frappe-card, .widget, .kn-card, .modal-content, .dropdown-menu) {
+	box-shadow: var(--nxt-edge-light), var(--shadow-sm);
+}
+
+/* one motion for everything that reacts */
+html[data-nexlify-theme] :is(.btn, .es-button, .kn-card, .list-row-container, .widget, .frappe-card, .dropdown-item,
+		.body-sidebar .item-anchor, .form-control, .awesomplete > input, .indicator-pill, .avatar, .grid-row) {
+	transition: background-color var(--nxt-quick) ease, border-color var(--nxt-quick) ease, color var(--nxt-quick) ease,
+		box-shadow 0.25s var(--nxt-ease), transform 0.25s var(--nxt-ease), filter var(--nxt-quick) ease;
+}
+
+/* the buttons: a lift on hover, a press on click */
+html[data-nexlify-theme] :is(.btn, .es-button):not(:disabled):hover {
+	transform: translateY(-1px);
+}
+html[data-nexlify-theme] :is(.btn, .es-button):not(:disabled):active {
+	transform: translateY(0) scale(0.98);
+	transition-duration: 0.08s;
+}
+html[data-nexlify-theme] .btn.btn-default:hover,
+html[data-nexlify-theme] .btn.btn-secondary:hover,
+html[data-nexlify-theme] .es-button:not([data-variant="solid"]):not([data-theme="red"]):hover {
+	box-shadow: var(--nxt-edge-light), 0 4px 12px -6px color-mix(in srgb, var(--nxt-accent) 35%, transparent);
+}
+
+/* the focus ring: the same two-tone ring on everything you can tab to */
+html[data-nexlify-theme] :is(a, button, .btn, .es-button, [tabindex], .list-row-container, .kn-card):focus-visible {
+	outline: none;
+	box-shadow: var(--nxt-ring);
+}
+
+/* the sidebar's rows and the menus' items: a tint on hover that doesn't jump */
+html[data-nexlify-theme] .body-sidebar .item-anchor:hover {
+	background: color-mix(in srgb, var(--nxt-accent) 8%, transparent);
+}
+html[data-nexlify-theme] .body-sidebar .item-anchor {
+	border-radius: 10px;
+}
+html[data-nexlify-theme] .body-sidebar .sidebar-item-icon {
+	transition: transform 0.25s var(--nxt-ease);
+}
+html[data-nexlify-theme] .body-sidebar .item-anchor:hover .sidebar-item-icon {
+	transform: translateX(1px);
+}
+
+/* the lists: the row you are over lifts a hair and takes a line of accent on its edge */
+html[data-nexlify-theme] .list-row-container {
+	border-left: 2px solid transparent;
+}
+html[data-nexlify-theme] .list-row-container:hover {
+	border-left-color: color-mix(in srgb, var(--nxt-accent) 60%, transparent);
+}
+html[data-nexlify-theme] :is(.list-row, .kn-card, .grid-row, .datatable, .d-grid) {
+	font-variant-numeric: tabular-nums;
+}
+html[data-nexlify-theme] .list-row-head .list-row-col {
+	letter-spacing: 0.01em;
+}
+
+/* the tables in forms: the row you are over, quietly */
+html[data-nexlify-theme] .form-grid .grid-row:hover {
+	background-color: color-mix(in srgb, var(--nxt-accent) 5%, transparent);
+}
+/* the tables' header row: plain words (capitals crowd the narrow columns), a little firmer than
+   the rows, on a wash of the accent with a line under it, so it reads as the header */
+html[data-nexlify-theme] .form-grid .grid-heading-row {
+	background-color: color-mix(in srgb, var(--nxt-accent) 7%, var(--surface-base, var(--bg-color)));
+	border-bottom: 1px solid color-mix(in srgb, var(--nxt-accent) 18%, var(--border-color));
+	color: var(--text-color);
+	font-size: 12.5px;
+	font-weight: 600;
+	letter-spacing: 0;
+	text-transform: none;
+}
+html[data-nexlify-theme] .form-grid .grid-heading-row :is(.static-area, .col) {
+	text-transform: none;
+}
+html[data-theme="dark"][data-nexlify-theme] .form-grid .grid-heading-row {
+	background-color: color-mix(in srgb, var(--nxt-accent) 12%, var(--surface-base, var(--bg-color)));
+}
+
+/* the inputs always show their edge: Frappe draws them as a gray fill with no border, which is lost
+   on a colored or glass card. A business theme, a style and Prism set their own border after this */
+html[data-nexlify-theme] :is(.form-control, .awesomplete > input, .like-disabled-input) {
+	border: 1px solid color-mix(in srgb, var(--border-color) 90%, transparent);
+}
+html[data-theme="dark"][data-nexlify-theme] :is(.form-control, .awesomplete > input, .like-disabled-input):not(:focus) {
+	border-color: color-mix(in srgb, #fff 10%, transparent);
+}
+
+/* the inputs: the border wakes up under the pointer before the ring on focus */
+html[data-nexlify-theme] :is(.form-control, .awesomplete > input):hover:not(:focus):not(:disabled) {
+	border-color: color-mix(in srgb, var(--nxt-accent) 35%, var(--outline-gray-2));
+}
+html[data-nexlify-theme] ::placeholder {
+	color: color-mix(in srgb, var(--text-muted) 70%, transparent);
+}
+html[data-nexlify-theme] input[type="checkbox"],
+html[data-nexlify-theme] input[type="radio"] {
+	accent-color: var(--nxt-btn);
+}
+
+/* the status pills: a soft wash of their color, no hard fill */
+html[data-nexlify-theme] .indicator-pill {
+	border-radius: 999px;
+	font-weight: 500;
+	letter-spacing: 0.01em;
+	box-shadow: inset 0 0 0 1px color-mix(in srgb, currentColor 18%, transparent);
+}
+
+/* the menus: glass, round, with items that highlight as rounded blocks, and they arrive from above */
+html[data-nexlify-theme] .dropdown-menu {
+	border-radius: 14px;
+	padding: 6px;
+	border: 1px solid color-mix(in srgb, var(--outline-gray-2) 70%, transparent);
+	background: color-mix(in srgb, var(--surface-elevation-2, var(--surface-base)) 88%, transparent);
+	backdrop-filter: blur(18px) saturate(1.4);
+	-webkit-backdrop-filter: blur(18px) saturate(1.4);
+	box-shadow: var(--nxt-edge-light), var(--nxt-menu-shadow);
+	animation: nxt-menu-in 0.18s var(--nxt-ease) both;
+	transform-origin: top;
+}
+html[data-nexlify-theme] .dropdown-item {
+	border-radius: 8px;
+}
+html[data-nexlify-theme] .dropdown-item:hover,
+html[data-nexlify-theme] .dropdown-item:focus {
+	background: color-mix(in srgb, var(--nxt-accent) 10%, transparent);
+	color: var(--heading-color);
+}
+html[data-nexlify-theme] .popover {
+	border-radius: 14px;
+	box-shadow: var(--nxt-edge-light), var(--nxt-menu-shadow);
+}
+
+/* the dialogs: a blurred backdrop, and the dialog springs in rather than popping */
+html[data-nexlify-theme] .modal-backdrop {
+	backdrop-filter: blur(6px);
+	-webkit-backdrop-filter: blur(6px);
+	background: color-mix(in srgb, var(--surface-gray-7, #000) 50%, #000);
+}
+html[data-nexlify-theme] .modal-backdrop.show {
+	opacity: 0.45;
+}
+html[data-nexlify-theme] .modal.fade .modal-dialog {
+	transform: translateY(14px) scale(0.97);
+	transition: transform 0.4s cubic-bezier(0.2, 0.9, 0.25, 1.15), opacity 0.25s ease;
+	opacity: 0;
+}
+html[data-nexlify-theme] .modal.show .modal-dialog {
+	transform: none;
+	opacity: 1;
+}
+html[data-nexlify-theme] .modal-content {
+	box-shadow: var(--nxt-edge-light), var(--nxt-dialog-shadow);
+}
+html[data-nexlify-theme] .modal-header {
+	border-bottom-color: color-mix(in srgb, var(--outline-gray-1) 70%, transparent);
+}
+html[data-nexlify-theme] .modal-footer {
+	border-top-color: color-mix(in srgb, var(--outline-gray-1) 70%, transparent);
+}
+
+/* the inputs in a dialog always show their edge: a dialog is the inputs' own color in some themes
+   (a white input on a white dialog), and some dialogs make the border transparent and count on a
+   gray fill (the board's popups do) */
+html[data-nexlify-theme] .modal :is(.form-control, .awesomplete > input, .like-disabled-input):not(:focus) {
+	border: 1px solid var(--border-color);
+}
+html[data-nexlify-theme] .modal :is(.form-control, .awesomplete > input):hover:not(:focus):not(:disabled) {
+	border-color: color-mix(in srgb, var(--nxt-accent) 35%, var(--border-color));
+}
+
+/* the browser draws a select's list and the date pickers itself: tell it which mode the page is in,
+   and give the options a solid color (a see-through select would hand them a white list with the
+   dark mode's pale text on it) */
+html[data-nexlify-theme] {
+	color-scheme: light;
+}
+html[data-theme="dark"][data-nexlify-theme] {
+	color-scheme: dark;
+}
+html[data-nexlify-theme] select option,
+html[data-nexlify-theme] select optgroup {
+	background-color: var(--surface-elevation-2, var(--surface-base, var(--bg-color)));
+	color: var(--text-color);
+}
+html[data-nexlify-theme] select option:disabled {
+	color: var(--text-muted);
+}
+
+/* the board's popups (nexlify_board's .nx-dlg skin) take the theme's accent, not their own indigo */
+html[data-nexlify-theme] .modal.nx-dlg {
+	--nx-accent: var(--nxt-accent);
+	--nx-accent-2: var(--nxt-accent2);
+	--nx-soft: color-mix(in srgb, var(--nxt-accent) 10%, transparent);
+	--nx-ring: color-mix(in srgb, var(--nxt-accent) 28%, transparent);
+}
+html[data-nexlify-theme] .modal.nx-dlg .modal-footer .btn-primary {
+	background: var(--nxt-btn);
+}
+
+/* the alerts that slide in at the corner: a round card with the menus' shadow */
+html[data-nexlify-theme] .desk-alert,
+html[data-nexlify-theme] .alert.desk-alert {
+	border-radius: 14px;
+	box-shadow: var(--nxt-edge-light), var(--nxt-menu-shadow);
+	backdrop-filter: blur(16px);
+	-webkit-backdrop-filter: blur(16px);
+}
+
+/* the Kanban: a column rises when the board renders, the cards after it; the count breathes when it changes */
+html[data-nexlify-theme] .kn-column {
+	animation: nxt-rise 0.4s var(--nxt-ease) both;
+}
+html[data-nexlify-theme] .kn-column:nth-child(2) { animation-delay: 0.04s; }
+html[data-nexlify-theme] .kn-column:nth-child(3) { animation-delay: 0.08s; }
+html[data-nexlify-theme] .kn-column:nth-child(4) { animation-delay: 0.12s; }
+html[data-nexlify-theme] .kn-column:nth-child(n + 5) { animation-delay: 0.16s; }
+html[data-nexlify-theme] .kn-column-dot::before {
+	box-shadow: 0 0 0 3px color-mix(in srgb, currentColor 18%, transparent);
+}
+
+/* the form: a gap under the header, and the footer (comments, activity) a card of its own under
+   the form's card, with the same edges. Frappe paints the Activity heading's row white; in a theme
+   it takes the card it sits on */
+html[data-nexlify-theme] .std-form-layout > .form-layout > .form-page {
+	margin-top: 12px;
+}
+/* Frappe gives the form's column no room on the sidebar's side: as cards, the form and its footer
+   would touch the sidebar. They get room on both sides, the form's own sidebar on the other */
+html[data-nexlify-theme] body[data-route^="Form"] .layout-main-section-wrapper {
+	padding-inline: 16px;
+}
+html[data-nexlify-theme] .form-footer {
+	margin-top: 16px;
+	padding: 16px 20px 8px;
+}
+html[data-nexlify-theme] .form-footer :is(.timeline-item.activity-title, .timeline-actions, .new-timeline) {
+	background: transparent;
+}
+html[data-nexlify-theme] .form-footer .activity-title h4,
+html[data-nexlify-theme] .form-footer .comment-box .comment-title {
+	font-size: var(--text-base);
+	font-weight: 600;
+	color: var(--heading-color);
+}
+html[data-nexlify-theme] .new-timeline .timeline-dot {
+	background: var(--surface-base, var(--bg-color));
+}
+/* the form's right-hand column: labels in the muted ink, readable on any background */
+html[data-nexlify-theme] .form-sidebar {
+	color: var(--text-color);
+}
+html[data-nexlify-theme] .form-sidebar :is(.form-sidebar-label, .sidebar-label, .text-muted) {
+	color: var(--text-muted);
+}
+
+/* the page's own content rises in: the form, the list, the workspace cards */
+html[data-nexlify-theme] :is(.std-form-layout > .form-layout > .form-page, .layout-main-section .frappe-list .result, .widget) {
+	animation: nxt-rise 0.35s var(--nxt-ease) both;
+}
+
+/* the links: an underline that slides in, not one that is always there */
+html[data-nexlify-theme] .layout-main-section a:not(.btn):not(.es-button):not(.list-row-container):not(.item-anchor):not(.dropdown-item) {
+	text-underline-offset: 3px;
+	text-decoration-color: transparent;
+	transition: text-decoration-color var(--nxt-quick) ease, color var(--nxt-quick) ease;
+}
+html[data-nexlify-theme] .layout-main-section a:not(.btn):not(.es-button):not(.list-row-container):not(.item-anchor):not(.dropdown-item):hover {
+	text-decoration: underline;
+	text-decoration-color: color-mix(in srgb, var(--nxt-accent) 60%, transparent);
+}
+
+/* the avatars on the page: a ring in the page's color, on the round frame (the wrapper is square).
+   Not in the dock, the sidebar or the navbar: there the page's color would draw a box */
+html[data-nexlify-theme] .layout-main-section .avatar .avatar-frame {
+	box-shadow: 0 0 0 2px var(--surface-base);
+}
+
+/* thin, rounded scrollbars everywhere */
+html[data-nexlify-theme] ::-webkit-scrollbar {
+	width: 8px;
+	height: 8px;
+}
+html[data-nexlify-theme] ::-webkit-scrollbar-thumb {
+	background: var(--scrollbar-thumb-color);
+	border-radius: 8px;
+	border: 2px solid transparent;
+	background-clip: padding-box;
+}
+html[data-nexlify-theme] ::-webkit-scrollbar-track {
+	background: transparent;
+}
+
+@keyframes nxt-rise {
+	from { opacity: 0; transform: translateY(8px); }
+	to { opacity: 1; transform: none; }
+}
+@keyframes nxt-menu-in {
+	from { opacity: 0; transform: translateY(-4px) scale(0.98); }
+	to { opacity: 1; transform: none; }
+}
+
+/* those who ask for less motion get none of this */
+@media (prefers-reduced-motion: reduce) {
+	html[data-nexlify-theme] *,
+	html[data-nexlify-theme] *::before,
+	html[data-nexlify-theme] *::after {
+		animation-duration: 0.01ms !important;
+		animation-iteration-count: 1 !important;
+		transition-duration: 0.01ms !important;
+	}
+	html[data-nexlify-theme] :is(.btn, .es-button):not(:disabled):hover {
+		transform: none;
+	}
+}
+
+/* ---------------------------------------------------------------- a style: the desk re-colored */
+
+html:is([data-nexlify-kind="style"], [data-nexlify-kind="business"]) {
+	/* Frappe's surfaces, in the theme's paper and cards */
+	--surface-base: var(--nxt-card);
+	--surface-gray-1: color-mix(in srgb, var(--nxt-bg) 60%, var(--nxt-card));
+	--surface-gray-2: color-mix(in srgb, var(--nxt-bg) 96%, var(--nxt-text));
+	--surface-gray-3: color-mix(in srgb, var(--nxt-bg) 90%, var(--nxt-text));
+	--surface-gray-4: color-mix(in srgb, var(--nxt-bg) 82%, var(--nxt-text));
+	--control-bg: color-mix(in srgb, var(--nxt-card) 93%, var(--nxt-text));
+	--control-bg-on-gray: color-mix(in srgb, var(--nxt-card) 88%, var(--nxt-text));
+	--disabled-control-bg: color-mix(in srgb, var(--nxt-card) 96%, var(--nxt-text));
+	--surface-sidebar: var(--nxt-sidebar);
+	--surface-elevation-1: var(--nxt-card);
+	--surface-elevation-2: var(--nxt-card2);
+	--surface-elevation-3: var(--nxt-card2);
+	--surface-modal: var(--nxt-card);
+	--surface-menu-bar: var(--nxt-sidebar);
+	--modal-bg: var(--nxt-card2);
+	--popover-bg: var(--nxt-card2);
+	/* its ink */
+	--ink-gray-9: var(--nxt-heading);
+	--ink-gray-8: var(--nxt-text);
+	--ink-gray-7: color-mix(in srgb, var(--nxt-text) 80%, var(--nxt-muted));
+	--ink-gray-6: var(--nxt-muted);
+	--ink-gray-5: color-mix(in srgb, var(--nxt-muted) 90%, var(--nxt-bg));
+	/* the faintest ink (counts, hints, figures in brackets): still the theme's muted ink, a step back */
+	--text-light: color-mix(in srgb, var(--nxt-muted) 90%, var(--nxt-bg));
+	--heading-color: var(--nxt-heading);
+	--text-color: var(--nxt-text);
+	--text-muted: var(--nxt-muted);
+	/* its lines */
+	--outline-gray-1: var(--nxt-border);
+	--outline-gray-2: color-mix(in srgb, var(--nxt-border) 70%, var(--nxt-text));
+	--border-color: var(--nxt-border);
+	--dark-border-color: color-mix(in srgb, var(--nxt-border) 70%, var(--nxt-text));
+	--table-border-color: var(--nxt-border);
+	/* rounder, like a phone's cards */
+	--radius: 12px;
+	--radius-md: 14px;
+	--radius-lg: 18px;
+	--border-radius: 12px;
+	--border-radius-md: 14px;
+	--border-radius-lg: 18px;
+	--shadow-base: 0 6px 18px -10px color-mix(in srgb, var(--nxt-heading) 25%, transparent);
+	--shadow-sm: 0 2px 8px -4px color-mix(in srgb, var(--nxt-heading) 16%, transparent);
+	/* the sidebar's selected item and the links, a shade deeper than the accent on paper */
+	background:
+		radial-gradient(ellipse 50% 35% at 100% 0%, color-mix(in srgb, var(--nxt-accent2) 10%, transparent), transparent),
+		radial-gradient(ellipse 40% 30% at 0% 100%, color-mix(in srgb, var(--nxt-accent) 6%, transparent), transparent),
+		linear-gradient(180deg, var(--nxt-sky-top), var(--nxt-sky-bottom)) fixed;
+}
+
+/* the form, the list and the workspace sit on the paper as rounded cards */
+html[data-nexlify-kind="style"] .std-form-layout > .form-layout > .form-page,
+html[data-nexlify-kind="style"] .form-footer,
+html[data-nexlify-kind="style"] .layout-main-section .frappe-list .result,
+html[data-nexlify-kind="style"] .layout-main-section .report-wrapper .result,
+html[data-nexlify-kind="style"] .page-form.list-page-form,
+html[data-nexlify-kind="style"] .frappe-card,
+html[data-nexlify-kind="style"] .widget {
+	background-color: var(--nxt-card);
+	border: 1px solid color-mix(in srgb, var(--nxt-border) 70%, transparent);
+	border-radius: var(--radius-lg);
+	box-shadow: var(--shadow-sm);
+}
+html[data-nexlify-kind="style"] .widget:hover,
+html[data-nexlify-kind="style"] .frappe-card:hover {
+	box-shadow: var(--shadow-base);
+}
+
+html[data-nexlify-kind="style"] .std-form-layout > .form-layout > .form-page {
+	overflow: hidden;
+}
+
+html[data-nexlify-kind="style"] .form-control,
+html[data-nexlify-kind="style"] .like-disabled-input,
+html[data-nexlify-kind="style"] .awesomplete > input {
+	border-radius: 10px;
+}
+
+/* headings in the style's ink */
+html[data-nexlify-kind="style"] .page-title .title-text,
+html[data-nexlify-kind="style"] .title-area .title-text,
+html[data-nexlify-kind="style"] h1,
+html[data-nexlify-kind="style"] h2,
+html[data-nexlify-kind="style"] h3,
+html[data-nexlify-kind="style"] .section-head,
+html[data-nexlify-kind="style"] .widget .widget-title,
+html[data-nexlify-kind="style"] .kn-column-title {
+	color: var(--nxt-heading);
+}
+
+/* pill buttons, a soft default one */
+html[data-nexlify-kind="style"] .btn.btn-primary,
+html[data-nexlify-kind="style"] .es-button[data-variant="solid"] {
+	border-radius: 999px;
+	padding-left: 16px;
+	padding-right: 16px;
+}
+html[data-nexlify-kind="style"] .btn.btn-default,
+html[data-nexlify-kind="style"] .btn.btn-secondary {
+	border-radius: 10px;
+	background-color: color-mix(in srgb, var(--nxt-card2) 70%, var(--nxt-bg));
+	border: 1px solid color-mix(in srgb, var(--nxt-border) 80%, transparent);
+	color: var(--nxt-text);
+}
+html[data-nexlify-kind="style"] .btn.btn-default:hover,
+html[data-nexlify-kind="style"] .btn.btn-secondary:hover {
+	background-color: var(--nxt-tint);
+	border-color: color-mix(in srgb, var(--nxt-accent) 30%, var(--nxt-border));
+}
+html[data-nexlify-kind="style"] .btn-group > .btn {
+	border-radius: 0;
+}
+html[data-nexlify-kind="style"] .btn-group > .btn:first-child {
+	border-radius: 10px 0 0 10px;
+}
+html[data-nexlify-kind="style"] .btn-group > .btn:last-child {
+	border-radius: 0 10px 10px 0;
+}
+html[data-nexlify-kind="style"] .btn-group > .btn:only-child {
+	border-radius: 10px;
+}
+
+/* the navbar is paper too, with a hairline, not Frappe's gray */
+html[data-nexlify-kind="style"] .navbar {
+	background: color-mix(in srgb, var(--nxt-sidebar) 85%, transparent);
+	backdrop-filter: blur(12px) saturate(1.2);
+	border-bottom: 1px solid color-mix(in srgb, var(--nxt-border) 70%, transparent);
+}
+
+/* the list's rows */
+html[data-nexlify-kind="style"] .list-row-container:hover {
+	background-color: var(--nxt-tint);
+}
+html[data-nexlify-kind="style"] .list-row-head {
+	background-color: color-mix(in srgb, var(--nxt-bg) 50%, var(--nxt-card));
+}
+
+/* the indicator pills, a little rounder and softer */
+html[data-nexlify-kind="style"] .indicator-pill {
+	border-radius: 999px;
+}
+
+/* dialogs */
+html[data-nexlify-kind="style"] .modal-content {
+	border-radius: var(--radius-lg);
+	background-color: var(--nxt-card2);
+	border: 1px solid color-mix(in srgb, var(--nxt-border) 70%, transparent);
+}
+
+/* ---------------------------------------------------------------- business: a bookkeeping app's desk */
+
+/* Plain and exact, but not flat: 8px corners, hairlines, a whisper of shadow, and one accent that
+   appears only where it means something (the primary action, the row you are on, a link). The dark
+   sidebar and the darker dock are the one strong thing on the page. */
+html[data-nexlify-kind="business"] {
+	--radius: 8px;
+	--radius-md: 10px;
+	--radius-lg: 12px;
+	--border-radius: 8px;
+	--border-radius-md: 10px;
+	--border-radius-lg: 12px;
+	--shadow-sm: 0 1px 2px rgba(20, 24, 40, 0.05), 0 1px 3px rgba(20, 24, 40, 0.04);
+	--shadow-base: 0 4px 14px -6px rgba(20, 24, 40, 0.14);
+	--control-bg: var(--nxt-head);
+	--control-bg-on-gray: var(--nxt-card);
+	--dock-bg: var(--nxt-dock);
+	--nxt-edge-light: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+	background: var(--nxt-bg);
+}
+html[data-theme="dark"][data-nexlify-kind="business"] {
+	--shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35), 0 1px 3px rgba(0, 0, 0, 0.3);
+	--shadow-base: 0 6px 18px -8px rgba(0, 0, 0, 0.7);
+	--nxt-edge-light: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+/* the sidebar and the dock are dark; inside them Frappe's own tokens take the dark values */
+html[data-nexlify-kind="business"] .body-sidebar,
+html[data-nexlify-kind="business"] .dock {
+	--ink-gray-9: #ffffff;
+	--ink-gray-8: var(--nxt-side-text);
+	--ink-gray-7: var(--nxt-side-text);
+	--ink-gray-6: var(--nxt-side-muted);
+	--ink-gray-5: var(--nxt-side-muted);
+	--ink-gray-4: color-mix(in srgb, var(--nxt-side-muted) 70%, var(--nxt-sidebar));
+	--surface-gray-2: rgba(255, 255, 255, 0.07);
+	--surface-gray-3: rgba(255, 255, 255, 0.11);
+	--surface-elevation-3: rgba(255, 255, 255, 0.1);
+	--outline-gray-1: rgba(255, 255, 255, 0.08);
+	--outline-gray-2: rgba(255, 255, 255, 0.12);
+	--outline-gray-3: rgba(255, 255, 255, 0.16);
+	--dock-ink: var(--nxt-side-muted);
+	--dock-ink-strong: #ffffff;
+	--dock-tile-hover: rgba(255, 255, 255, 0.08);
+	--dock-tile-active: rgba(255, 255, 255, 0.14);
+	--dock-rule: rgba(255, 255, 255, 0.1);
+	--scrollbar-thumb-color: rgba(255, 255, 255, 0.18);
+	color: var(--nxt-side-text);
+}
+html[data-nexlify-kind="business"] .dock {
+	background: var(--nxt-dock);
+	box-shadow: inset -1px 0 0 rgba(255, 255, 255, 0.05);
+}
+html[data-nexlify-kind="business"] .body-sidebar {
+	background: var(--nxt-sidebar);
+	border-right-color: transparent;
+	box-shadow: inset -1px 0 0 rgba(0, 0, 0, 0.25);
+}
+/* the workspace's name at the top: white and firm */
+html[data-nexlify-kind="business"] .body-sidebar .sidebar-header .header-title {
+	color: #ffffff;
+	font-weight: 600;
+}
+html[data-nexlify-kind="business"] .body-sidebar .item-anchor {
+	border-radius: 8px;
+}
+html[data-nexlify-kind="business"] .body-sidebar .item-anchor:hover {
+	background: rgba(255, 255, 255, 0.07);
+}
+/* a section's label: small caps in the muted ink */
+html[data-nexlify-kind="business"] .body-sidebar .item-anchor.section-break .sidebar-item-label {
+	color: var(--nxt-side-muted);
+	font-size: 11px;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.06em;
+}
+/* the row you are on: a soft white wash with a bar of the accent on its edge, white text */
+html[data-nexlify-kind="business"] .body-sidebar .active-sidebar {
+	background: rgba(255, 255, 255, 0.1);
+	border-radius: 8px;
+	box-shadow: inset 3px 0 0 var(--nxt-accent);
+}
+html[data-nexlify-kind="business"] .body-sidebar .active-sidebar .item-anchor,
+html[data-nexlify-kind="business"] .body-sidebar .active-sidebar .sidebar-item-label {
+	color: #ffffff;
+	--icon-stroke: #ffffff;
+	font-weight: 500;
+}
+html[data-nexlify-kind="business"] .body-sidebar .active-sidebar .item-anchor:hover {
+	background: transparent;
+}
+html[data-nexlify-kind="business"] .body-sidebar .es-button,
+html[data-nexlify-kind="business"] .dock .es-button {
+	background: transparent;
+	border-color: transparent;
+	color: inherit;
+}
+/* the banners at the sidebar's foot, readable on the dark sidebar */
+html[data-nexlify-kind="business"] .body-sidebar .promotional-banner,
+html[data-nexlify-kind="business"] .body-sidebar .promotional-banner * {
+	color: var(--nxt-side-text) !important;
+}
+html[data-nexlify-kind="business"] .body-sidebar .promotional-banner:hover {
+	background: rgba(255, 255, 255, 0.07);
+}
+
+/* a white header with a hairline; no colored line under it, no blur */
+html[data-nexlify-kind="business"] .page-head {
+	background: var(--nxt-card);
+	backdrop-filter: none;
+	-webkit-backdrop-filter: none;
+	border-bottom: 1px solid var(--nxt-border);
+}
+html[data-nexlify-kind="business"] .page-head::after {
+	display: none;
+}
+html[data-nexlify-kind="business"] .page-head .title-text {
+	font-weight: 600;
+	letter-spacing: -0.01em;
+}
+html[data-nexlify-kind="business"] .navbar {
+	background: var(--nxt-card);
+	backdrop-filter: none;
+	-webkit-backdrop-filter: none;
+	border-bottom: 1px solid var(--nxt-border);
+}
+
+/* the buttons: one color, 8px corners, a whisper of shadow that the lift on hover deepens */
+html[data-nexlify-kind="business"] .btn.btn-primary,
+html[data-nexlify-kind="business"] .es-button[data-variant="solid"]:not([data-theme="red"]) {
+	background: var(--nxt-btn);
+	border-radius: 8px;
+	box-shadow: var(--shadow-sm);
+}
+html[data-nexlify-kind="business"] .btn.btn-primary:hover,
+html[data-nexlify-kind="business"] .es-button[data-variant="solid"]:not([data-theme="red"]):hover {
+	background: var(--nxt-accent2);
+	filter: none;
+	box-shadow: 0 4px 12px -6px color-mix(in srgb, var(--nxt-btn) 70%, transparent);
+}
+html[data-nexlify-kind="business"] .btn.btn-default,
+html[data-nexlify-kind="business"] .btn.btn-secondary,
+html[data-nexlify-kind="business"] .es-button:not([data-variant]),
+html[data-nexlify-kind="business"] .es-button[data-variant="subtle"] {
+	background: var(--nxt-card);
+	border: 1px solid var(--nxt-border);
+	color: var(--nxt-text);
+	border-radius: 8px;
+	box-shadow: var(--shadow-sm);
+}
+html[data-nexlify-kind="business"] .btn.btn-default:hover,
+html[data-nexlify-kind="business"] .btn.btn-secondary:hover,
+html[data-nexlify-kind="business"] .es-button:not([data-variant]):hover,
+html[data-nexlify-kind="business"] .es-button[data-variant="subtle"]:hover {
+	background: var(--nxt-head);
+	border-color: color-mix(in srgb, var(--nxt-border) 50%, var(--nxt-muted));
+	box-shadow: var(--shadow-sm);
+}
+html[data-nexlify-kind="business"] .btn-group > .btn:first-child {
+	border-radius: 8px 0 0 8px;
+}
+html[data-nexlify-kind="business"] .btn-group > .btn:last-child {
+	border-radius: 0 8px 8px 0;
+}
+
+/* the inputs: white boxes with a border, a ring in the accent when focused */
+html[data-nexlify-kind="business"] .form-control,
+html[data-nexlify-kind="business"] .like-disabled-input,
+html[data-nexlify-kind="business"] .awesomplete > input {
+	background-color: var(--nxt-card);
+	border: 1px solid var(--nxt-border);
+	border-radius: 8px;
+}
+html[data-nexlify-kind="business"] .form-control:focus,
+html[data-nexlify-kind="business"] .awesomplete > input:focus {
+	border-color: var(--nxt-accent);
+	box-shadow: 0 0 0 3px color-mix(in srgb, var(--nxt-accent) 18%, transparent);
+}
+
+/* the form, the list and the workspace: white sheets with a hairline and a whisper of shadow */
+html[data-nexlify-kind="business"] .std-form-layout > .form-layout > .form-page,
+html[data-nexlify-kind="business"] .form-footer,
+html[data-nexlify-kind="business"] .layout-main-section .frappe-list .result,
+html[data-nexlify-kind="business"] .layout-main-section .report-wrapper .result,
+html[data-nexlify-kind="business"] .page-form.list-page-form,
+html[data-nexlify-kind="business"] .frappe-card,
+html[data-nexlify-kind="business"] .widget {
+	background-color: var(--nxt-card);
+	border: 1px solid var(--nxt-border);
+	border-radius: var(--radius-lg);
+	box-shadow: var(--shadow-sm);
+}
+html[data-nexlify-kind="business"] .std-form-layout > .form-layout > .form-page {
+	overflow: hidden;
+}
+html[data-nexlify-kind="business"] :is(.widget, .frappe-card):hover {
+	box-shadow: var(--shadow-base);
+}
+/* a section's title in the form: small caps, a hairline under it */
+html[data-nexlify-kind="business"] .form-section .section-head {
+	color: var(--nxt-muted);
+	font-size: 11.5px;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+}
+
+/* the list reads like a ledger: small uppercase heads, rows divided by hairlines */
+html[data-nexlify-kind="business"] .list-row-head {
+	background-color: var(--nxt-head);
+	border-bottom: 1px solid var(--nxt-border);
+}
+html[data-nexlify-kind="business"] .list-row-head .list-row-col,
+html[data-nexlify-kind="business"] .list-row-head .list-subject {
+	color: var(--nxt-muted);
+	font-size: 11px;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+}
+html[data-nexlify-kind="business"] .list-row-container {
+	border-bottom: 1px solid var(--nxt-border);
+}
+html[data-nexlify-kind="business"] .list-row-container:hover {
+	background-color: color-mix(in srgb, var(--nxt-accent) 5%, var(--nxt-card));
+}
+html[data-nexlify-kind="business"] .list-row .list-subject a {
+	color: var(--nxt-accent);
+}
+
+
+/* the dialogs and the menus: the same sheets, 12px corners */
+html[data-nexlify-kind="business"] .modal-content {
+	border-radius: 12px;
+	background-color: var(--nxt-card);
+	border: 1px solid var(--nxt-border);
+}
+html[data-nexlify-kind="business"] .dropdown-menu {
+	border-radius: 10px;
+	background: var(--nxt-card);
+	backdrop-filter: none;
+	-webkit-backdrop-filter: none;
+	border: 1px solid var(--nxt-border);
+}
+
+/* the Kanban (named with the theme too, to outrank the shared Kanban rules that follow): a quiet column, white cards with a hairline that takes the accent on hover */
+html[data-nexlify-kind="business"][data-nexlify-theme] .kn-column,
+html[data-theme="dark"][data-nexlify-kind="business"][data-nexlify-theme] .kn-column {
+	background: color-mix(in srgb, var(--nxt-head) 85%, var(--nxt-bg));
+	backdrop-filter: none;
+	-webkit-backdrop-filter: none;
+	border: 1px solid var(--nxt-border);
+	border-radius: 12px;
+	box-shadow: none;
+}
+html[data-nexlify-kind="business"][data-nexlify-theme] .kn-column-title {
+	color: var(--nxt-heading);
+	text-transform: uppercase;
+	font-size: 11px;
+	letter-spacing: 0.05em;
+}
+html[data-nexlify-kind="business"][data-nexlify-theme] .kn-column-count {
+	background: var(--nxt-card);
+	border: 1px solid var(--nxt-border);
+	color: var(--nxt-muted);
+}
+html[data-nexlify-kind="business"][data-nexlify-theme] .kn-card {
+	border-radius: 10px;
+	border-color: var(--nxt-border);
+	box-shadow: var(--shadow-sm);
+}
+html[data-nexlify-kind="business"][data-nexlify-theme] .kn-card:hover {
+	transform: none;
+	border-color: color-mix(in srgb, var(--nxt-accent) 45%, var(--nxt-border));
+	box-shadow: var(--shadow-base);
+}
+
+/* ---- business, refined: the details that make a bookkeeping app's desk read as made */
+
+/* the token Frappe paints its other sidebars with (the Settings dialog's list of tabs) stays light:
+   only the desk's own sidebar and dock are dark, and they name their color themselves */
+html[data-nexlify-kind="business"] {
+	--surface-sidebar: var(--nxt-head);
+	--text-light: color-mix(in srgb, var(--nxt-muted) 90%, var(--nxt-bg));
+}
+html[data-nexlify-kind="business"] .settings-dialog-sidebar {
+	border-inline-end: 1px solid var(--nxt-border);
+}
+html[data-nexlify-kind="business"] .settings-dialog-tab-item {
+	color: var(--nxt-text);
+	border-radius: 6px;
+}
+html[data-nexlify-kind="business"] .settings-dialog-tab-item:hover {
+	background-color: color-mix(in srgb, var(--nxt-accent) 7%, transparent);
+}
+html[data-nexlify-kind="business"] .settings-dialog-tab-item.active,
+html[data-nexlify-kind="business"] .settings-dialog-tab-item.active:hover {
+	background-color: var(--nxt-card);
+	color: var(--nxt-heading);
+	font-weight: 500;
+	box-shadow: inset 2px 0 0 var(--nxt-accent), var(--shadow-sm);
+}
+
+/* the sidebar: the icons a step back from the words, the row you are on lit; a hairline under the
+   workspace's name */
+html[data-nexlify-kind="business"] .body-sidebar .sidebar-item-icon {
+	color: var(--nxt-side-muted);
+	--icon-stroke: var(--nxt-side-muted);
+}
+html[data-nexlify-kind="business"] .body-sidebar .item-anchor:hover .sidebar-item-icon {
+	color: var(--nxt-side-text);
+	--icon-stroke: var(--nxt-side-text);
+}
+html[data-nexlify-kind="business"] .body-sidebar .active-sidebar .sidebar-item-icon {
+	color: #ffffff;
+	--icon-stroke: #ffffff;
+}
+/* the row you are on: filled with the accent, white words, as a bookkeeping app marks it */
+html[data-nexlify-kind="business"] .body-sidebar .active-sidebar {
+	background: var(--nxt-btn);
+	box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+	border-radius: 6px;
+}
+html[data-nexlify-kind="business"] .body-sidebar .item-anchor {
+	border-radius: 6px;
+}
+
+/* the light pane: the sidebar and the dock on the sheet's head color, the page's own ink, a hairline
+   to the page; the row you are on stays filled with the accent */
+html[data-nexlify-kind="business"][data-nexlify-pane="light"] .body-sidebar,
+html[data-nexlify-kind="business"][data-nexlify-pane="light"] .dock {
+	--ink-gray-9: var(--nxt-heading);
+	--ink-gray-8: var(--nxt-text);
+	--ink-gray-7: var(--nxt-text);
+	--ink-gray-6: var(--nxt-muted);
+	--ink-gray-5: var(--nxt-muted);
+	--ink-gray-4: color-mix(in srgb, var(--nxt-muted) 70%, var(--nxt-bg));
+	--nxt-side-text: var(--nxt-text);
+	--nxt-side-muted: var(--nxt-muted);
+	--surface-gray-2: color-mix(in srgb, var(--nxt-text) 6%, transparent);
+	--surface-gray-3: color-mix(in srgb, var(--nxt-text) 10%, transparent);
+	--surface-elevation-3: var(--nxt-card);
+	--outline-gray-1: var(--nxt-border);
+	--outline-gray-2: var(--nxt-border);
+	--outline-gray-3: color-mix(in srgb, var(--nxt-border) 70%, var(--nxt-text));
+	--dock-ink: var(--nxt-muted);
+	--dock-ink-strong: var(--nxt-heading);
+	--dock-tile-hover: color-mix(in srgb, var(--nxt-text) 7%, transparent);
+	--dock-tile-active: color-mix(in srgb, var(--nxt-accent) 14%, transparent);
+	--dock-rule: var(--nxt-border);
+	--scrollbar-thumb-color: color-mix(in srgb, var(--nxt-text) 18%, transparent);
+	color: var(--nxt-text);
+}
+html[data-nexlify-kind="business"][data-nexlify-pane="light"] .body-sidebar {
+	background: var(--nxt-head);
+	box-shadow: inset -1px 0 0 var(--nxt-border);
+}
+html[data-nexlify-kind="business"][data-nexlify-pane="light"] .dock {
+	background: color-mix(in srgb, var(--nxt-head) 70%, var(--nxt-bg));
+	box-shadow: inset -1px 0 0 var(--nxt-border);
+}
+html[data-nexlify-kind="business"][data-nexlify-pane="light"] .body-sidebar .sidebar-header {
+	box-shadow: 0 1px 0 var(--nxt-border);
+}
+html[data-nexlify-kind="business"][data-nexlify-pane="light"] .body-sidebar .sidebar-header .header-title {
+	color: var(--nxt-heading);
+}
+html[data-nexlify-kind="business"][data-nexlify-pane="light"] .body-sidebar .item-anchor:hover {
+	background: color-mix(in srgb, var(--nxt-text) 6%, transparent);
+}
+html[data-nexlify-kind="business"][data-nexlify-pane="light"] .body-sidebar .promotional-banner,
+html[data-nexlify-kind="business"][data-nexlify-pane="light"] .body-sidebar .promotional-banner * {
+	color: var(--nxt-text) !important;
+}
+html[data-nexlify-kind="business"] .body-sidebar .sidebar-header {
+	box-shadow: 0 1px 0 rgba(255, 255, 255, 0.07);
+	border-radius: 0;
+}
+
+/* the page's title: firm and a size up; the breadcrumbs before it quiet */
+html[data-nexlify-kind="business"] .page-head .title-text {
+	font-size: 18px;
+	color: var(--nxt-heading);
+}
+html[data-nexlify-kind="business"] .page-head :is(.breadcrumb-container, .breadcrumbs) a {
+	color: var(--nxt-muted);
+}
+
+/* the form's tabs: plain words, the one you are on in the heading's ink over a 2px bar of the accent */
+html[data-nexlify-kind="business"] .form-tabs-list {
+	background-color: var(--nxt-card);
+	border-bottom: 1px solid var(--nxt-border);
+}
+html[data-nexlify-kind="business"] .form-tabs-list .form-tabs .nav-item .nav-link {
+	color: var(--nxt-muted);
+	font-weight: 500;
+	background-color: transparent;
+	border-bottom: 2px solid transparent;
+}
+html[data-nexlify-kind="business"] .form-tabs-list .form-tabs .nav-item .nav-link:hover:not(.active) {
+	color: var(--nxt-heading);
+	border-bottom-color: var(--nxt-border);
+}
+html[data-nexlify-kind="business"] .form-tabs-list .form-tabs .nav-item .nav-link.active {
+	color: var(--nxt-heading);
+	font-weight: 600;
+	border-bottom: 2px solid var(--nxt-accent);
+}
+
+/* the fields' labels: the text's ink, a touch lighter than the values, not the faint gray */
+html[data-nexlify-kind="business"] .control-label {
+	color: color-mix(in srgb, var(--nxt-text) 75%, var(--nxt-muted));
+	font-size: 12.5px;
+	font-weight: 500;
+}
+/* a value shown, not typed (a read-only field): plain on the sheet, no box around it */
+html[data-nexlify-kind="business"] .like-disabled-input {
+	background-color: var(--nxt-head);
+}
+/* a section's title: the small capitals, a hairline above the section so the sheet reads in parts */
+html[data-nexlify-kind="business"] .form-section:not(:first-child) {
+	border-top: 1px solid var(--nxt-border);
+}
+
+/* the status badges: small rectangles with round corners and a dot, like a ledger's, not pills */
+html[data-nexlify-kind="business"] .indicator-pill {
+	border-radius: 6px;
+	font-size: 11.5px;
+	font-weight: 500;
+	padding: 2px 8px;
+}
+
+/* the workspace's number cards: the figure large and firm, its label in small capitals; the card's
+   edge takes the accent on hover */
+html[data-nexlify-kind="business"] .widget.number-widget-box .widget-title {
+	color: var(--nxt-muted);
+	font-size: 11px;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+}
+html[data-nexlify-kind="business"] .widget.number-widget-box .widget-content .number {
+	color: var(--nxt-heading);
+	font-weight: 600;
+	letter-spacing: -0.01em;
+	font-variant-numeric: tabular-nums;
+}
+html[data-nexlify-kind="business"] :is(.widget, .frappe-card):hover {
+	border-color: color-mix(in srgb, var(--nxt-accent) 35%, var(--nxt-border));
+}
+
+/* the list: a little more air in each row, the row you have ticked tinted, the counts quiet */
+html[data-nexlify-kind="business"] .list-row {
+	min-height: 44px;
+}
+html[data-nexlify-kind="business"] .list-row-container:has(.list-row-checkbox:checked) {
+	background-color: color-mix(in srgb, var(--nxt-accent) 8%, var(--nxt-card));
+}
+html[data-nexlify-kind="business"] .list-row .list-row-activity {
+	color: var(--nxt-muted);
+}
+
+/* the dialogs: the title firm, the header and footer on the sheet's head color */
+html[data-nexlify-kind="business"] .modal-header .modal-title {
+	font-weight: 600;
+	color: var(--nxt-heading);
+}
+html[data-nexlify-kind="business"] .modal-footer {
+	background-color: var(--nxt-head);
+	border-bottom-left-radius: 12px;
+	border-bottom-right-radius: 12px;
+}
+
+/* ---------------------------------------------------------------- the Kanban, every theme */
+
+/* the columns are glass over the page: the sky, the scene or the paper shows through them */
+html[data-nexlify-theme] .kn-column {
+	background: color-mix(in srgb, var(--surface-elevation-1) 42%, transparent);
+	backdrop-filter: blur(16px) saturate(1.3);
+	-webkit-backdrop-filter: blur(16px) saturate(1.3);
+	border: 1px solid color-mix(in srgb, var(--surface-elevation-1) 70%, transparent);
+	border-top-color: color-mix(in srgb, var(--surface-elevation-1) 90%, transparent);
+	border-radius: var(--radius-lg, 14px);
+	box-shadow:
+		inset 0 1px 0 color-mix(in srgb, var(--surface-elevation-1) 60%, transparent),
+		0 10px 30px -18px color-mix(in srgb, var(--nxt-accent) 45%, transparent);
+}
+html[data-theme="dark"][data-nexlify-theme] .kn-column {
+	background: color-mix(in srgb, var(--surface-elevation-2) 38%, transparent);
+	border-color: color-mix(in srgb, #fff 8%, transparent);
+	border-top-color: color-mix(in srgb, #fff 14%, transparent);
+	box-shadow:
+		inset 0 1px 0 color-mix(in srgb, #fff 6%, transparent),
+		0 10px 30px -18px color-mix(in srgb, var(--nxt-accent) 35%, transparent);
+}
+
+html[data-nexlify-theme] .kn-column-header {
+	padding-top: 10px;
+	padding-bottom: 6px;
+}
+html[data-nexlify-theme] .kn-column-title {
+	color: var(--nxt-accent);
+	font-weight: 600;
+	letter-spacing: 0.01em;
+}
+html[data-nexlify-theme] .kn-column-count {
+	color: var(--nxt-accent);
+	background: color-mix(in srgb, var(--nxt-tint) 80%, transparent);
+	border-radius: 999px;
+	padding: 1px 8px;
+	font-weight: 500;
+}
+
+/* the cards: the theme's card color, rounder, a soft shadow that lifts on hover */
+html[data-nexlify-theme] .kn-card {
+	background: var(--nxt-kanban-card);
+	border: 1px solid color-mix(in srgb, var(--nxt-accent) 10%, var(--outline-gray-1));
+	border-radius: var(--radius-md, 12px);
+	box-shadow: 0 2px 8px -6px color-mix(in srgb, var(--nxt-accent) 40%, transparent);
+	transition: box-shadow 0.15s ease, transform 0.15s ease, border-color 0.15s ease;
+}
+html[data-nexlify-theme] .kn-card:hover {
+	border-color: color-mix(in srgb, var(--nxt-accent) 30%, var(--outline-gray-1));
+	box-shadow: 0 10px 22px -14px color-mix(in srgb, var(--nxt-accent) 60%, transparent);
+	transform: translateY(-1px);
+}
+html[data-nexlify-theme] .kn-card.kn-dragging {
+	box-shadow: 0 16px 30px -12px color-mix(in srgb, var(--nxt-accent) 70%, transparent);
+}
+html[data-nexlify-theme] .kn-card .kn-card-title {
+	color: var(--heading-color);
+}
+html[data-nexlify-theme] .kn-add-card-input {
+	background: var(--nxt-kanban-card);
+	border-radius: 10px;
+}
+html[data-nexlify-theme] .kn-column-footer .btn,
+html[data-nexlify-theme] .kn-add-card {
+	border-radius: 999px;
+}
+
+/* ---- in a scene, the page is glass over the drawing: the header, the filter bar and the cards */
+html[data-nexlify-kind="scene"] .page-head {
+	background: color-mix(in srgb, var(--surface-base) 45%, transparent);
+	backdrop-filter: blur(18px) saturate(1.4);
+	-webkit-backdrop-filter: blur(18px) saturate(1.4);
+}
+html[data-nexlify-kind="scene"] .page-form.list-page-form {
+	background: color-mix(in srgb, var(--surface-base) 40%, transparent);
+	backdrop-filter: blur(18px) saturate(1.4);
+	-webkit-backdrop-filter: blur(18px) saturate(1.4);
+	border: 1px solid color-mix(in srgb, var(--surface-base) 60%, transparent);
+	border-radius: var(--radius-lg, 12px);
+}
+html[data-nexlify-kind="scene"] .page-form .form-control,
+html[data-nexlify-kind="scene"] .page-form .btn-default,
+html[data-nexlify-kind="scene"] .page-form .es-button:not([data-variant="solid"]) {
+	background: color-mix(in srgb, var(--surface-base) 50%, transparent);
+	border: 1px solid color-mix(in srgb, var(--surface-base) 70%, transparent);
+}
+/* the cards let the column's blurred scene through (the column does the blurring: a blur inside
+   a blur would only see the column) */
+/* the glass takes the theme's color: white glass on a pale sky would only read as white */
+html[data-nexlify-kind="scene"] .kn-column {
+	background: linear-gradient(
+		180deg,
+		color-mix(in srgb, var(--nxt-tint) 45%, transparent),
+		color-mix(in srgb, var(--nxt-accent2) 10%, transparent)
+	);
+}
+html[data-nexlify-kind="scene"] .kn-card {
+	background: linear-gradient(
+		150deg,
+		color-mix(in srgb, var(--surface-elevation-1) 50%, transparent) 0%,
+		color-mix(in srgb, var(--nxt-tint) 55%, transparent) 55%,
+		color-mix(in srgb, var(--nxt-accent2) 16%, transparent) 100%
+	);
+	border: 1px solid color-mix(in srgb, var(--surface-elevation-1) 75%, transparent);
+	box-shadow:
+		inset 0 1px 0 color-mix(in srgb, #fff 55%, transparent),
+		0 4px 14px -8px color-mix(in srgb, var(--nxt-accent) 45%, transparent);
+}
+html[data-nexlify-kind="scene"] .kn-card:hover {
+	background: linear-gradient(
+		150deg,
+		color-mix(in srgb, var(--surface-elevation-1) 70%, transparent) 0%,
+		color-mix(in srgb, var(--nxt-tint) 65%, transparent) 55%,
+		color-mix(in srgb, var(--nxt-accent2) 20%, transparent) 100%
+	);
+}
+html[data-theme="dark"][data-nexlify-kind="scene"] .kn-column {
+	background: linear-gradient(
+		180deg,
+		color-mix(in srgb, var(--nxt-tint) 40%, transparent),
+		color-mix(in srgb, var(--nxt-accent) 8%, transparent)
+	);
+}
+html[data-theme="dark"][data-nexlify-kind="scene"] .kn-card {
+	background: linear-gradient(
+		150deg,
+		color-mix(in srgb, var(--surface-elevation-2) 45%, transparent) 0%,
+		color-mix(in srgb, var(--nxt-tint) 55%, transparent) 60%,
+		color-mix(in srgb, var(--nxt-accent) 14%, transparent) 100%
+	);
+	border-color: color-mix(in srgb, #fff 10%, transparent);
+	box-shadow:
+		inset 0 1px 0 color-mix(in srgb, #fff 8%, transparent),
+		0 4px 14px -8px rgba(0, 0, 0, 0.5);
+}
+html[data-theme="dark"][data-nexlify-kind="scene"] :is(.page-head, .page-form.list-page-form) {
+	background: color-mix(in srgb, var(--surface-base) 45%, transparent);
+	border-color: color-mix(in srgb, #fff 8%, transparent);
+}
+
+/* ---- in a scene, everything on the page is glass: the cards, the forms, the lists, the
+   workspace and the dashboards built into it. Frappe's card tokens get glass values inside the page
+   (dialogs and menus, outside it, stay solid); they reach into dashboards' shadow DOM too. */
+html[data-nexlify-kind="scene"] .main-section {
+	/* glass in the theme's color, like the Kanban's cards */
+	--card-bg: color-mix(in srgb, color-mix(in srgb, var(--nxt-tint) 60%, var(--surface-base)) 55%, transparent);
+	--fg-color: color-mix(in srgb, color-mix(in srgb, var(--nxt-tint) 60%, var(--surface-base)) 55%, transparent);
+	--bg-color: color-mix(in srgb, var(--surface-base) 40%, transparent);
+	--surface-modal: color-mix(in srgb, var(--surface-base) 52%, transparent);
+	--nxt-edge: color-mix(in srgb, var(--nxt-accent) 16%, transparent);
+	--nxt-track: color-mix(in srgb, var(--nxt-tint) 75%, transparent);
+	--nxt-wash: color-mix(in srgb, var(--nxt-tint) 45%, transparent);
+	--nxt-glass-blur: blur(16px) saturate(1.3);
+	--control-bg: color-mix(in srgb, var(--surface-base) 78%, transparent);
+	--disabled-control-bg: color-mix(in srgb, var(--surface-base) 40%, transparent);
+}
+html[data-theme="dark"][data-nexlify-kind="scene"] .main-section {
+	--card-bg: color-mix(in srgb, color-mix(in srgb, var(--nxt-tint) 65%, var(--surface-elevation-1)) 55%, transparent);
+	--fg-color: color-mix(in srgb, color-mix(in srgb, var(--nxt-tint) 65%, var(--surface-elevation-1)) 55%, transparent);
+	--surface-modal: color-mix(in srgb, var(--surface-elevation-1) 45%, transparent);
+	--nxt-edge: color-mix(in srgb, #fff 9%, transparent);
+	--nxt-track: color-mix(in srgb, var(--nxt-tint) 80%, transparent);
+	--nxt-wash: color-mix(in srgb, var(--nxt-tint) 50%, transparent);
+	--control-bg: color-mix(in srgb, var(--surface-gray-2) 80%, transparent);
+	--disabled-control-bg: color-mix(in srgb, var(--surface-gray-2) 30%, transparent);
+}
+html[data-nexlify-kind="scene"] :is(
+		.std-form-layout > .form-layout > .form-page,
+		.form-footer,
+		.layout-main-section .frappe-list .result,
+		.layout-main-section .report-wrapper .result,
+		.frappe-card,
+		.widget
+	) {
+	background-color: var(--card-bg);
+	backdrop-filter: var(--nxt-glass-blur);
+	-webkit-backdrop-filter: var(--nxt-glass-blur);
+	border: 1px solid var(--nxt-edge);
+	border-radius: var(--radius-lg, 12px);
+}
+/* the page's own column is see-through: only the cards on it are glass */
+html[data-nexlify-kind="scene"] .layout-main-section {
+	background: transparent;
+}
+
+/* what has to stay readable over glass: the Link field's suggestions */
+html[data-nexlify-kind="scene"] .awesomplete ul {
+	background: var(--surface-elevation-2);
+}
+
+/* the filter bar's blur makes it a layer of its own, and the glass columns and cards after it would
+   paint over its suggestions: it sits above the page's content, under the sticky header (z-index 6).
+   A gap under it keeps the Kanban's columns off its edge (the board measures its height from where
+   it starts, so it gets shorter, not taller than the window) */
+html[data-nexlify-theme] .page-form.list-page-form {
+	position: relative;
+	z-index: 5;
+	margin-bottom: 10px;
+}
+/* on a Kanban the filter bar runs edge to edge, where the board keeps 16px (px-4) from each side:
+   as a card it would touch the sidebar and the header, so it takes the board's edges and a gap on top */
+html[data-nexlify-theme] :is(.kanban-v2-full-width .page-form, .page-form:has(> .kanban-v2-filter-section)).list-page-form {
+	margin: 10px 16px;
+}
+
+/* a workspace's custom block is a frame around a dashboard that draws its own cards: no second box */
+html[data-nexlify-theme] .widget.custom-block-widget-box {
+	background: transparent;
+	border: none;
+	box-shadow: none;
+	backdrop-filter: none;
+	-webkit-backdrop-filter: none;
+}
+
+/* the dashboards' lines and tracks in a style or a business theme, from the theme's own colors */
+html:is([data-nexlify-kind="style"], [data-nexlify-kind="business"]) {
+	--nxt-edge: var(--nxt-border);
+	--nxt-track: color-mix(in srgb, var(--nxt-bg) 70%, var(--nxt-border));
+	--nxt-wash: color-mix(in srgb, var(--nxt-tint) 50%, transparent);
+}
+
+/* the old Kanban engine, for boards that still use it */
+html[data-nexlify-theme] .kanban .kanban-column:not(.add-new-column) {
+	background: color-mix(in srgb, var(--surface-elevation-1) 42%, transparent);
+	backdrop-filter: blur(16px) saturate(1.3);
+	border: 1px solid color-mix(in srgb, var(--surface-elevation-1) 70%, transparent);
+	border-radius: var(--radius-lg, 14px);
+}
+html[data-nexlify-theme] .kanban .kanban-column-title {
+	color: var(--nxt-accent);
+}
+html[data-nexlify-theme] .kanban .kanban-card {
+	background: var(--nxt-kanban-card);
+	border-radius: var(--radius-md, 12px);
+	border-color: color-mix(in srgb, var(--nxt-accent) 10%, var(--outline-gray-1));
+}
+
+/* ---------------------------------------------------------------- the scene */
+
+.nxt-scene {
+	position: fixed;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	/* the drawing's own proportions (1440 by 320), as far as a short window lets it */
+	height: min(22.3vw, 40vh);
+	z-index: -1;
+	pointer-events: none;
+	overflow: hidden;
+	/* the sky warms toward the horizon, behind the drawing */
+	background: linear-gradient(180deg, transparent, color-mix(in srgb, var(--nxt-horizon) 65%, transparent) 80%);
+}
+
+.nxt-scene-svg,
+.nxt-theme-preview-svg {
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+}
+
+:is(.nxt-scene-svg, .nxt-theme-preview-svg) .s1 { fill: var(--nxt-s1); }
+:is(.nxt-scene-svg, .nxt-theme-preview-svg) .s2 { fill: var(--nxt-s2); }
+:is(.nxt-scene-svg, .nxt-theme-preview-svg) .s3 { fill: var(--nxt-s3); }
+:is(.nxt-scene-svg, .nxt-theme-preview-svg) .s4 { fill: var(--nxt-s4); }
+:is(.nxt-scene-svg, .nxt-theme-preview-svg) .sun { fill: var(--nxt-sun); }
+:is(.nxt-scene-svg, .nxt-theme-preview-svg) .deco,
+:is(.nxt-scene-svg, .nxt-theme-preview-svg) .deco > * { fill: var(--nxt-deco); }
+:is(.nxt-scene-svg, .nxt-theme-preview-svg) .deco2 { fill: var(--nxt-deco2); }
+:is(.nxt-scene-svg, .nxt-theme-preview-svg) .trunk { fill: var(--nxt-deco); }
+:is(.nxt-scene-svg, .nxt-theme-preview-svg) .star { fill: var(--nxt-star, var(--nxt-sun)); }
+:is(.nxt-scene-svg, .nxt-theme-preview-svg) .win { fill: var(--nxt-win); }
+:is(.nxt-scene-svg, .nxt-theme-preview-svg) .snow { fill: var(--nxt-snow); opacity: 0.9; }
+:is(.nxt-scene-svg, .nxt-theme-preview-svg) .line-fill { fill: var(--nxt-line); }
+:is(.nxt-scene-svg, .nxt-theme-preview-svg) .bloom-petal { fill: var(--nxt-bloom); opacity: 0.7; }
+:is(.nxt-scene-svg, .nxt-theme-preview-svg) .flag1 { fill: var(--nxt-flag1); }
+:is(.nxt-scene-svg, .nxt-theme-preview-svg) .flag2 { fill: var(--nxt-flag2); }
+:is(.nxt-scene-svg, .nxt-theme-preview-svg) .flag3 { fill: var(--nxt-flag3); }
+:is(.nxt-scene-svg, .nxt-theme-preview-svg) .beacon { fill: #ff5a5a; }
+:is(.nxt-scene-svg, .nxt-theme-preview-svg) .sail-w { fill: #fff; }
+:is(.nxt-scene-svg, .nxt-theme-preview-svg) .reflect { fill: var(--nxt-sail); opacity: 0.14; }
+:is(.nxt-scene-svg, .nxt-theme-preview-svg) .line,
+:is(.nxt-scene-svg, .nxt-theme-preview-svg) .pole,
+:is(.nxt-scene-svg, .nxt-theme-preview-svg) .frame {
+		fill: none;
+		stroke: var(--nxt-line);
+		stroke-width: 2;
+		stroke-linecap: round;
+	}
+:is(.nxt-scene-svg, .nxt-theme-preview-svg) .frame { stroke: var(--nxt-frame); stroke-width: 1.5; }
+:is(.nxt-scene-svg, .nxt-theme-preview-svg) .pole { stroke-width: 3; }
+:is(.nxt-scene-svg, .nxt-theme-preview-svg) .shine {
+		fill: none;
+		stroke: var(--nxt-sun);
+		stroke-width: 3;
+		stroke-linecap: round;
+		opacity: 0.6;
+	}
+:is(.nxt-scene-svg, .nxt-theme-preview-svg) .ripple {
+		fill: none;
+		stroke: #fff;
+		stroke-width: 2;
+		stroke-linecap: round;
+		opacity: 0.35;
+	}
+:is(.nxt-scene-svg, .nxt-theme-preview-svg) .win-reflect {
+		fill: none;
+		stroke: var(--nxt-win);
+		stroke-width: 2;
+		opacity: 0.35;
+	}
+:is(.nxt-scene-svg, .nxt-theme-preview-svg) .ridge,
+:is(.nxt-scene-svg, .nxt-theme-preview-svg) .foam {
+		fill: none;
+		stroke: var(--nxt-ridge, var(--nxt-foam));
+		stroke-width: 2.5;
+		opacity: 0.7;
+	}
+:is(.nxt-scene-svg, .nxt-theme-preview-svg) .foam { stroke-width: 4; opacity: 0.9; }
+:is(.nxt-scene-svg, .nxt-theme-preview-svg) .arc {
+		fill: none;
+		stroke-width: 14;
+		opacity: 0.75;
+	}
+
+/* what moves, gently, and only for those who don't ask for less motion */
+@media (prefers-reduced-motion: no-preference) {
+	.nxt-scene-svg .star { animation: nxt-twinkle 4s ease-in-out infinite; }
+.nxt-scene-svg .beacon { animation: nxt-twinkle 1.6s ease-in-out infinite; }
+.nxt-scene-svg .sail-boat { animation: nxt-sail 60s ease-in-out infinite alternate; }
+.nxt-scene-svg .flutter,
+.nxt-scene-svg .sway,
+.nxt-scene-svg .drift,
+.nxt-scene-svg .bob,
+.nxt-scene-svg .ribbon {
+			transform-box: fill-box;
+			transform-origin: center;
+		}
+.nxt-scene-svg .flutter { animation: nxt-flutter 0.5s ease-in-out infinite alternate; }
+.nxt-scene-svg .sway {
+			transform-origin: top center;
+			animation: nxt-sway 4s ease-in-out infinite alternate;
+		}
+.nxt-scene-svg .drift { animation: nxt-drift 26s ease-in-out infinite alternate; }
+.nxt-scene-svg .bob { animation: nxt-bob 6s ease-in-out infinite alternate; }
+.nxt-scene-svg .ribbon { animation: nxt-aurora 14s ease-in-out infinite alternate; }
+.nxt-scene-svg .ribbon:nth-of-type(2n) { animation-duration: 19s; }
+	.nxt-fall > span {
+		animation-name: nxt-fall;
+		animation-timing-function: linear;
+		animation-iteration-count: infinite;
+	}
+}
+
+.nxt-fall {
+	position: fixed;
+	inset: 0;
+	pointer-events: none;
+	overflow: hidden;
+}
+.nxt-fall > span {
+	position: absolute;
+	top: -24px;
+	opacity: 0;
+}
+.nxt-fall .petal {
+	width: calc(14px * var(--size));
+	height: calc(10px * var(--size));
+	background: var(--nxt-petal);
+	border-radius: 100% 0 100% 0;
+}
+.nxt-fall .sparkle-dot {
+	width: calc(6px * var(--size));
+	height: calc(6px * var(--size));
+	background: var(--nxt-petal);
+	border-radius: 50%;
+	box-shadow: 0 0 8px var(--nxt-petal);
+}
+
+@keyframes nxt-twinkle {
+	50% { opacity: 0.35; }
+}
+@keyframes nxt-sail {
+	to { transform: translateX(-380px); }
+}
+@keyframes nxt-flutter {
+	to { transform: scaleX(0.55); }
+}
+@keyframes nxt-sway {
+	from { transform: rotate(-4deg); }
+	to { transform: rotate(4deg); }
+}
+@keyframes nxt-drift {
+	to { transform: translateX(60px); }
+}
+@keyframes nxt-bob {
+	to { transform: translateY(-14px); }
+}
+@keyframes nxt-aurora {
+	from { transform: translateX(-30px) scaleY(0.92); opacity: 0.75; }
+	to { transform: translateX(30px) scaleY(1.08); opacity: 1; }
+}
+@keyframes nxt-fall {
+	0% { transform: translate(0, 0) rotate(0); opacity: 0; }
+	10% { opacity: 0.55; }
+	90% { opacity: 0.45; }
+	100% { transform: translate(var(--drift), 100vh) rotate(540deg); opacity: 0; }
+}
+
+/* printing is the document, never the scene */
+@media print {
+	.nxt-scene { display: none; }
+}
+
+
+/* ---------------------------------------------------------------- picking one, in Switch Theme */
+
+.nxt-theme-section {
+	margin-top: 20px;
+}
+
+.nxt-theme-heading {
+	font-weight: 600;
+	color: var(--heading-color);
+	font-size: var(--text-base);
+}
+
+.nxt-theme-hint {
+	color: var(--text-muted);
+	font-size: var(--text-sm);
+	margin: 2px 0 10px;
+}
+
+.nxt-theme-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+	gap: 12px;
+}
+
+.nxt-theme-button {
+	display: flex;
+	flex-direction: column;
+	width: 100%;
+	overflow: hidden;
+	padding: 0;
+	text-align: left;
+	cursor: pointer;
+	border-radius: var(--radius-lg, 12px);
+	border: 1px solid var(--outline-gray-2);
+	background: var(--surface-elevation-2, var(--card-bg));
+	transition: border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+}
+.nxt-theme-button:hover {
+	border-color: var(--outline-gray-4);
+	transform: translateY(-2px);
+	box-shadow: 0 6px 16px -8px rgba(0, 0, 0, 0.25);
+}
+.nxt-theme-button:focus-visible {
+	outline: none;
+	box-shadow: 0 0 0 2px var(--outline-gray-4);
+}
+
+.nxt-theme-card.selected .nxt-theme-button {
+	border-color: var(--ink-gray-8);
+}
+.nxt-theme-card.selected .theme-card-radio {
+	border-width: 4px;
+	border-color: var(--ink-gray-8);
+}
+
+.nxt-theme-preview {
+	position: relative;
+	height: 92px;
+	overflow: hidden;
+	background: linear-gradient(180deg, var(--nxt-sky-top, var(--surface-gray-1)), var(--nxt-horizon, var(--nxt-sky-bottom, var(--surface-gray-1))));
+}
+
+/* the theme's two colors, as its buttons will have them */
+.nxt-theme-swatch {
+	position: absolute;
+	top: 10px;
+	left: 10px;
+	width: 38px;
+	height: 12px;
+	border-radius: 6px;
+	background: linear-gradient(135deg, var(--nxt-btn, var(--nxt-accent)), var(--nxt-accent2, var(--nxt-accent)));
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
+}
+
+/* a style's preview: a little desk, with its sidebar, two cards and a pill button */
+.nxt-style-preview {
+	position: absolute;
+	inset: 0;
+	display: flex;
+	background: var(--nxt-bg);
+}
+.nxt-style-preview .sb {
+	width: 26%;
+	background: var(--nxt-sidebar);
+	border-right: 1px solid var(--nxt-border);
+}
+.nxt-style-preview .sb::before,
+.nxt-style-preview .sb::after {
+	content: "";
+	display: block;
+	height: 5px;
+	margin: 12px 7px 0;
+	border-radius: 3px;
+	background: var(--nxt-tint);
+}
+.nxt-style-preview .sb::after {
+	background: var(--nxt-border);
+}
+.nxt-style-preview .main {
+	flex: 1;
+	padding: 10px;
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+.nxt-style-preview .card {
+	flex: 1;
+	border-radius: 8px;
+	background: var(--nxt-card);
+	border: 1px solid var(--nxt-border);
+	position: relative;
+}
+.nxt-style-preview .card::before {
+	content: "";
+	position: absolute;
+	left: 8px;
+	top: 7px;
+	width: 45%;
+	height: 4px;
+	border-radius: 2px;
+	background: var(--nxt-heading);
+	opacity: 0.8;
+}
+.nxt-style-preview .card::after {
+	content: "";
+	position: absolute;
+	left: 8px;
+	top: 15px;
+	width: 70%;
+	height: 3px;
+	border-radius: 2px;
+	background: var(--nxt-muted);
+	opacity: 0.5;
+}
+.nxt-style-preview .pill {
+	align-self: flex-end;
+	width: 42px;
+	height: 12px;
+	border-radius: 999px;
+	background: linear-gradient(135deg, var(--nxt-btn), var(--nxt-accent2));
+}
+/* a business theme's preview: the dark sidebar with the accent bar, square-ish cards, a flat button */
+.nxt-theme-preview[data-nexlify-kind="business"] .nxt-style-preview .sb::before {
+	background: var(--nxt-accent);
+}
+.nxt-theme-preview[data-nexlify-kind="business"] .nxt-style-preview .sb::after {
+	background: var(--nxt-side-muted);
+	opacity: 0.5;
+}
+.nxt-theme-preview[data-nexlify-kind="business"] .nxt-style-preview :is(.card, .pill) {
+	border-radius: 4px;
+}
+.nxt-theme-preview[data-nexlify-kind="business"] .nxt-style-preview .pill {
+	background: var(--nxt-btn);
+}
+
+/* the pane under the business themes: two small cards, a dark and a light sidebar beside a white page */
+.nxt-pane-row {
+	display: flex;
+	gap: 10px;
+	flex-wrap: wrap;
+}
+.nxt-pane {
+	display: inline-flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 6px;
+	padding: 8px 8px 6px;
+	border-radius: 10px;
+	border: 1px solid var(--outline-gray-2);
+	background: var(--surface-base, #fff);
+	color: var(--text-muted);
+	font-size: var(--text-xs, 11px);
+	font-weight: 600;
+	letter-spacing: 0.03em;
+	text-transform: uppercase;
+	cursor: pointer;
+	transition: border-color 0.2s, box-shadow 0.2s;
+}
+.nxt-pane:hover {
+	border-color: var(--outline-gray-4, var(--ink-gray-5));
+}
+.nxt-pane.selected {
+	border-color: var(--ink-gray-8);
+	box-shadow: 0 0 0 1px var(--ink-gray-8);
+	color: var(--ink-gray-8);
+}
+.nxt-pane-preview {
+	display: flex;
+	width: 92px;
+	height: 52px;
+	border-radius: 6px;
+	overflow: hidden;
+	border: 1px solid var(--outline-gray-2);
+	background: #ffffff;
+}
+.nxt-pane-preview i {
+	width: 28%;
+	background: #21263c;
+	position: relative;
+}
+.nxt-pane-light i {
+	background: #f3f4f7;
+	border-right: 1px solid #e4e7ee;
+}
+/* the row you are on, in the accent, on both panes */
+.nxt-pane-preview i::after {
+	content: "";
+	position: absolute;
+	left: 3px;
+	right: 3px;
+	top: 14px;
+	height: 6px;
+	border-radius: 2px;
+	background: #408dfb;
+}
+
+/* the color picker under the business themes: a row of swatches and a well for any other color */
+.nxt-color-picker {
+	display: grid;
+	grid-template-columns: auto 1fr;
+	gap: 10px 14px;
+	align-items: center;
+	margin-top: 14px;
+	padding: 12px 14px;
+	border: 1px solid var(--outline-gray-2);
+	border-radius: var(--radius-lg, 12px);
+	background: var(--surface-gray-1);
+}
+.nxt-color-picker label {
+	margin: 0;
+	font-size: var(--text-sm);
+	font-weight: 500;
+	color: var(--text-color);
+}
+.nxt-color-row {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	flex-wrap: wrap;
+}
+.nxt-swatch {
+	width: 24px;
+	height: 24px;
+	border-radius: 50%;
+	border: 0;
+	padding: 0;
+	cursor: pointer;
+	background: var(--swatch);
+	box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+	transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.2s;
+}
+.nxt-swatch:hover {
+	transform: scale(1.12);
+}
+.nxt-swatch.selected {
+	box-shadow: 0 0 0 2px var(--surface-base, #fff), 0 0 0 4px var(--swatch);
+}
+.nxt-swatch:focus-visible {
+	outline: none;
+	box-shadow: 0 0 0 2px var(--surface-base, #fff), 0 0 0 4px var(--ink-gray-8);
+}
+/* the well: the native color input, round, showing the color it holds */
+.nxt-color-well {
+	position: relative;
+	width: 24px;
+	height: 24px;
+	border-radius: 50%;
+	overflow: hidden;
+	box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.12);
+	background: conic-gradient(#f87171, #fbbf24, #4ade80, #38bdf8, #a78bfa, #f87171);
+	cursor: pointer;
+}
+.nxt-color-well input[type="color"] {
+	position: absolute;
+	inset: -6px;
+	width: calc(100% + 12px);
+	height: calc(100% + 12px);
+	border: 0;
+	padding: 0;
+	cursor: pointer;
+	opacity: 0;
+}
+.nxt-color-well.has-color {
+	background: var(--swatch);
+}
+.nxt-theme-preview:has(.nxt-style-preview) .nxt-theme-swatch {
+	display: none;
+}
+
+/* None: Frappe as it is, whatever theme the page is in now */
+.nxt-theme-preview:not([data-nexlify-theme]) {
+	background: var(--surface-gray-1);
+}
+.nxt-theme-preview:not([data-nexlify-theme]) .nxt-theme-swatch {
+	background: var(--surface-gray-10);
+}
+
+.nxt-theme-footer {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 8px 10px;
+	gap: 6px;
+}
+
+.nxt-theme-label {
+	color: var(--text-color);
+	font-size: var(--text-sm);
+	font-weight: 500;
+}
+
+/* ---------------------------------------------------------------- the styles and the scenes, refined */
+
+/* the lists' heads and the forms' section titles read as labels, not as text, in a style and a scene */
+html:is([data-nexlify-kind="style"], [data-nexlify-kind="scene"]) .list-row-head .list-row-col,
+html:is([data-nexlify-kind="style"], [data-nexlify-kind="scene"]) .list-row-head .list-subject,
+html:is([data-nexlify-kind="style"], [data-nexlify-kind="scene"]) .form-section .section-head {
+	color: var(--text-muted);
+	font-size: 11.5px;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+}
+/* the rows divided by hairlines in the theme's own border, a touch softer than Frappe's */
+html:is([data-nexlify-kind="style"], [data-nexlify-kind="scene"]) .list-row-container {
+	border-bottom: 1px solid color-mix(in srgb, var(--outline-gray-1) 70%, transparent);
+}
+/* a style's sidebar: the workspace's name firm, a section's label in small caps */
+html[data-nexlify-kind="style"] .body-sidebar .sidebar-header .header-title {
+	font-weight: 600;
+	color: var(--nxt-heading);
+}
+html:is([data-nexlify-kind="style"], [data-nexlify-kind="scene"]) .body-sidebar .item-anchor.section-break .sidebar-item-label {
+	color: var(--text-muted);
+	font-size: 11px;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.06em;
+}
+/* the tabs in a style: a soft track under them, so the active underline has somewhere to sit */
+html[data-nexlify-kind="style"] .form-tabs-list {
+	border-bottom: 1px solid color-mix(in srgb, var(--nxt-border) 70%, transparent);
+}
+/* in a scene the header keeps a hairline under its glass, so the page reads as layered, not floating */
+html[data-nexlify-kind="scene"] .page-head {
+	border-bottom: 1px solid color-mix(in srgb, var(--nxt-accent) 14%, transparent);
+}
+html[data-nexlify-kind="scene"] .page-head::after {
+	display: none;
+}
+/* the scene's drawing stays under the last rows: the list's foot and its paging get the paper back */
+html[data-nexlify-kind="scene"] .layout-main-section .frappe-list .list-paging-area,
+html[data-nexlify-kind="scene"] .layout-main-section .frappe-list .result {
+	background-color: color-mix(in srgb, var(--surface-base) 72%, transparent);
+}
+html[data-nexlify-kind="scene"] .layout-main-section .frappe-list .list-paging-area {
+	backdrop-filter: blur(16px) saturate(1.3);
+	-webkit-backdrop-filter: blur(16px) saturate(1.3);
+	border-radius: var(--radius-lg, 12px);
+	margin-top: 8px;
+}
+
+/* ---------------------------------------------------------------- Prism: glass over drifting color */
+
+/* the font, the page's color under the blobs, and glass made from the theme's card color */
+html[data-nexlify-theme="prism"] {
+	--font-stack: "Geist", "InterVariable", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+	--nxt-glass: color-mix(in srgb, var(--nxt-card) 62%, transparent);
+	--nxt-glass2: color-mix(in srgb, var(--nxt-card) 55%, transparent);
+	--nxt-line: color-mix(in srgb, var(--nxt-heading) 8%, transparent);
+	--nxt-line-strong: color-mix(in srgb, var(--nxt-heading) 16%, transparent);
+	--nxt-hi: inset 0 1px 0 rgba(255, 255, 255, 0.9);
+	--nxt-soft-shadow: 0 1px 2px rgba(15, 20, 40, 0.05), 0 6px 18px -8px rgba(15, 20, 40, 0.12);
+	--nxt-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+	--radius: 14px;
+	--radius-md: 18px;
+	--radius-lg: 24px;
+	--border-radius: 14px;
+	--border-radius-md: 18px;
+	--border-radius-lg: 24px;
+	--shadow-sm: var(--nxt-soft-shadow);
+	--shadow-base: 0 14px 34px -16px color-mix(in srgb, var(--nxt-accent) 55%, transparent);
+	background: var(--nxt-bg);
+	letter-spacing: -0.005em;
+}
+html[data-theme="dark"][data-nexlify-theme="prism"] {
+	--nxt-glass: color-mix(in srgb, #141620 58%, transparent);
+	--nxt-glass2: rgba(255, 255, 255, 0.04);
+	--nxt-line: rgba(255, 255, 255, 0.07);
+	--nxt-line-strong: rgba(255, 255, 255, 0.15);
+	--nxt-hi: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+	--nxt-soft-shadow: 0 1px 2px rgba(0, 0, 0, 0.5), 0 10px 26px -14px rgba(0, 0, 0, 0.9);
+}
+
+/* the blobs: three large soft circles that drift slowly, and a grid of dots that fades down the page */
+.nxt-aurora {
+	position: fixed;
+	inset: 0;
+	z-index: -1;
+	overflow: hidden;
+	pointer-events: none;
+}
+.nxt-aurora i {
+	position: absolute;
+	width: 52vmax;
+	height: 52vmax;
+	border-radius: 50%;
+	filter: blur(110px);
+	opacity: 0.32;
+}
+html[data-theme="dark"] .nxt-aurora i {
+	opacity: 0.45;
+}
+.nxt-aurora i:nth-child(1) {
+	background: var(--nxt-blob1);
+	top: -22vmax;
+	left: -12vmax;
+}
+.nxt-aurora i:nth-child(2) {
+	background: var(--nxt-blob2);
+	top: -18vmax;
+	right: -16vmax;
+}
+.nxt-aurora i:nth-child(3) {
+	background: var(--nxt-blob3);
+	bottom: -30vmax;
+	left: 30vw;
+}
+.nxt-aurora::after {
+	content: "";
+	position: absolute;
+	inset: 0;
+	background-image: radial-gradient(var(--nxt-line) 1px, transparent 1px);
+	background-size: 22px 22px;
+	mask-image: linear-gradient(to bottom, #000, transparent 70%);
+	-webkit-mask-image: linear-gradient(to bottom, #000, transparent 70%);
+}
+@media (prefers-reduced-motion: no-preference) {
+	.nxt-aurora i {
+		animation: nxt-blob-drift 26s ease-in-out infinite alternate;
+	}
+	.nxt-aurora i:nth-child(2) {
+		animation-delay: -9s;
+		animation-duration: 32s;
+	}
+	.nxt-aurora i:nth-child(3) {
+		animation-delay: -4s;
+		animation-duration: 38s;
+	}
+}
+@keyframes nxt-blob-drift {
+	0% { transform: translate(0, 0) scale(1); }
+	50% { transform: translate(6vmax, 4vmax) scale(1.08); }
+	100% { transform: translate(-4vmax, 8vmax) scale(0.95); }
+}
+@media print {
+	.nxt-aurora { display: none; }
+}
+
+/* the sidebar, the navbar and the page's header: frosted glass over the blobs */
+html[data-nexlify-theme="prism"] .body-sidebar,
+html[data-nexlify-theme="prism"] .navbar,
+html[data-nexlify-theme="prism"] .page-head {
+	background: var(--nxt-glass);
+	backdrop-filter: blur(20px) saturate(1.5);
+	-webkit-backdrop-filter: blur(20px) saturate(1.5);
+	border-color: var(--nxt-line);
+}
+html[data-nexlify-theme="prism"] .page-head::after {
+	opacity: 0.7;
+	background: linear-gradient(90deg, transparent, var(--nxt-accent), var(--nxt-accent2), transparent);
+}
+html[data-nexlify-theme="prism"] .body-sidebar .active-sidebar {
+	background: color-mix(in srgb, var(--nxt-accent) 14%, transparent);
+	box-shadow: var(--nxt-hi);
+	border-radius: 999px;
+}
+html[data-nexlify-theme="prism"] .body-sidebar .item-anchor {
+	border-radius: 999px;
+}
+
+/* titles: bold, tight, like the board's own */
+html[data-nexlify-theme="prism"] .page-head .title-text {
+	font-weight: 700;
+	letter-spacing: -0.03em;
+}
+html[data-nexlify-theme="prism"] :is(h1, h2, h3, .section-head, .widget .widget-title) {
+	letter-spacing: -0.02em;
+}
+
+/* the form, the list, the filters and the workspace: glass panes with a highlight on the top edge */
+html[data-nexlify-theme="prism"] :is(
+		.std-form-layout > .form-layout > .form-page,
+		.form-footer,
+		.layout-main-section .frappe-list .result,
+		.layout-main-section .report-wrapper .result,
+		.page-form.list-page-form,
+		.frappe-card,
+		.widget
+	) {
+	background-color: var(--nxt-glass);
+	backdrop-filter: blur(22px) saturate(1.4);
+	-webkit-backdrop-filter: blur(22px) saturate(1.4);
+	border: 1px solid var(--nxt-line);
+	border-radius: var(--radius-lg);
+	box-shadow: var(--nxt-hi), var(--nxt-soft-shadow);
+}
+html[data-nexlify-theme="prism"] :is(.widget, .frappe-card):hover {
+	box-shadow: var(--nxt-hi), var(--shadow-base);
+}
+html[data-nexlify-theme="prism"] .list-row-container:hover {
+	background-color: color-mix(in srgb, var(--nxt-accent) 7%, transparent);
+}
+html[data-nexlify-theme="prism"] .list-row-head {
+	background-color: transparent;
+}
+
+/* the inputs: a soft glass box, a wide ring in the accent when focused */
+html[data-nexlify-theme="prism"] :is(.form-control, .like-disabled-input, .awesomplete > input) {
+	background-color: var(--nxt-glass2);
+	border: 1px solid var(--nxt-line-strong);
+	border-radius: 14px;
+	transition: border-color 0.2s, box-shadow 0.2s;
+}
+html[data-nexlify-theme="prism"] :is(.form-control, .awesomplete > input):focus {
+	border-color: var(--nxt-accent);
+	box-shadow: 0 0 0 4px color-mix(in srgb, var(--nxt-accent) 14%, transparent);
+}
+
+/* the buttons: pills. The primary one in the full gradient with a glow under it */
+html[data-nexlify-theme="prism"] .btn.btn-primary,
+html[data-nexlify-theme="prism"] .es-button[data-variant="solid"]:not([data-theme="red"]) {
+	background: linear-gradient(110deg, var(--nxt-accent), var(--nxt-accent2));
+	border-radius: 999px;
+	box-shadow: 0 8px 22px -8px var(--nxt-accent);
+	transition: transform 0.2s var(--nxt-ease), box-shadow 0.25s;
+}
+html[data-nexlify-theme="prism"] .btn.btn-primary:hover,
+html[data-nexlify-theme="prism"] .es-button[data-variant="solid"]:not([data-theme="red"]):hover {
+	background: linear-gradient(110deg, var(--nxt-accent), var(--nxt-accent2));
+	filter: none;
+	transform: translateY(-1px);
+	box-shadow: 0 12px 28px -8px var(--nxt-accent);
+}
+html[data-nexlify-theme="prism"] .btn.btn-primary:active {
+	transform: scale(0.97);
+}
+html[data-nexlify-theme="prism"] :is(.btn.btn-default, .btn.btn-secondary) {
+	background-color: var(--nxt-glass2);
+	border: 1px solid var(--nxt-line-strong);
+	border-radius: 999px;
+	color: var(--nxt-heading);
+}
+html[data-nexlify-theme="prism"] :is(.btn.btn-default, .btn.btn-secondary):hover {
+	background-color: var(--nxt-glass2);
+	border-color: var(--nxt-muted);
+}
+html[data-nexlify-theme="prism"] .btn-group > .btn:first-child {
+	border-radius: 999px 0 0 999px;
+}
+html[data-nexlify-theme="prism"] .btn-group > .btn:last-child {
+	border-radius: 0 999px 999px 0;
+}
+html[data-nexlify-theme="prism"] .btn-group > .btn:only-child {
+	border-radius: 999px;
+}
+
+html[data-nexlify-theme="prism"] .progress-bar {
+	background: linear-gradient(90deg, var(--nxt-accent), var(--nxt-accent2));
+	box-shadow: 0 0 10px color-mix(in srgb, var(--nxt-accent) 60%, transparent);
+}
+
+/* dialogs: a solid card, very round, that springs in */
+html[data-nexlify-theme="prism"] .modal-content {
+	border-radius: 26px;
+	background-color: var(--nxt-card);
+	border: 1px solid var(--nxt-line);
+	box-shadow: 0 34px 70px -22px rgba(40, 30, 120, 0.45), 0 10px 24px -10px rgba(40, 30, 120, 0.25), var(--nxt-hi);
+}
+html[data-theme="dark"][data-nexlify-theme="prism"] .modal-content {
+	box-shadow: 0 34px 70px -22px rgba(0, 0, 0, 0.95), 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+/* the Kanban: glass columns with a gradient line on top, white cards that rise on hover */
+html[data-nexlify-theme="prism"] .kn-column,
+html[data-theme="dark"][data-nexlify-theme="prism"] .kn-column {
+	position: relative;
+	background: var(--nxt-glass);
+	backdrop-filter: blur(22px) saturate(1.4);
+	-webkit-backdrop-filter: blur(22px) saturate(1.4);
+	border: 1px solid var(--nxt-line);
+	border-radius: 24px;
+	box-shadow: var(--nxt-hi);
+}
+html[data-nexlify-theme="prism"] .kn-column::before {
+	content: "";
+	position: absolute;
+	left: 24px;
+	right: 24px;
+	top: 0;
+	height: 2px;
+	border-radius: 2px;
+	background: linear-gradient(90deg, transparent, var(--nxt-accent), transparent);
+	opacity: 0.7;
+}
+html[data-nexlify-theme="prism"] .kn-column-header {
+	padding-top: 14px;
+	padding-bottom: 8px;
+}
+html[data-nexlify-theme="prism"] .kn-column-title {
+	color: var(--nxt-heading);
+	font-weight: 600;
+	letter-spacing: -0.01em;
+}
+html[data-nexlify-theme="prism"] .kn-column-dot::before {
+	box-shadow: 0 0 0 3px var(--nxt-line), 0 0 10px color-mix(in srgb, var(--nxt-accent) 50%, transparent);
+}
+html[data-nexlify-theme="prism"] .kn-column-count {
+	color: var(--nxt-muted);
+	background: var(--nxt-glass2);
+	border: 1px solid var(--nxt-line);
+	border-radius: 999px;
+	padding: 1px 8px;
+	font-weight: 600;
+	font-variant-numeric: tabular-nums;
+}
+html[data-nexlify-theme="prism"] .kn-card {
+	background: var(--nxt-card);
+	border: 1px solid var(--nxt-line);
+	border-radius: 18px;
+	box-shadow: var(--nxt-soft-shadow), var(--nxt-hi);
+	transition: border-color 0.25s, box-shadow 0.3s, transform 0.3s var(--nxt-ease);
+}
+html[data-nexlify-theme="prism"] .kn-card:hover {
+	transform: translateY(-2px);
+	border-color: color-mix(in srgb, var(--nxt-accent) 40%, var(--nxt-line));
+	box-shadow: 0 14px 34px -16px color-mix(in srgb, var(--nxt-accent) 70%, transparent), var(--nxt-hi);
+}
+html[data-nexlify-theme="prism"] .kn-card.kn-dragging {
+	transform: rotate(2deg) scale(1.05);
+	box-shadow: 0 34px 70px -22px rgba(40, 30, 120, 0.45), 0 10px 24px -10px rgba(40, 30, 120, 0.25);
+}
+html[data-nexlify-theme="prism"] .kn-card .kn-card-title {
+	font-weight: 600;
+	letter-spacing: -0.015em;
+}
+html[data-nexlify-theme="prism"] .kn-add-card-input {
+	background: var(--nxt-card);
+	border-radius: 14px;
+}
+
+/* Prism's card in Switch Theme: its blobs behind the little desk */
+.nxt-theme-preview[data-nexlify-theme="prism"] .nxt-style-preview {
+	background:
+		radial-gradient(circle at 10% 0%, var(--nxt-blob1), transparent 55%),
+		radial-gradient(circle at 100% 10%, var(--nxt-blob2), transparent 55%),
+		radial-gradient(circle at 55% 110%, var(--nxt-blob3), transparent 55%),
+		var(--nxt-bg);
+}
+.nxt-theme-preview[data-nexlify-theme="prism"] .nxt-style-preview :is(.sb, .card) {
+	background: color-mix(in srgb, var(--nxt-card) 62%, transparent);
+}
+.nxt-theme-preview[data-nexlify-theme="prism"] .nxt-style-preview .pill {
+	background: linear-gradient(110deg, var(--nxt-accent), var(--nxt-accent2));
+}
+
+/* ---------------------------------------------------------------- the dock's names, with or without a theme */
+
+/* Nexlify Theme Settings > Dock puts `nxt-dock-labels` on <body>: each tile shows its module's name
+   under its icon, and the bar widens to hold the names. A pinned dock is a column of the page, so the
+   page makes room for it; a floating one widens over the sidebar */
+body.nxt-dock-labels {
+	--dock-width: 76px;
+}
+body.nxt-dock-labels .dock {
+	padding-inline: 6px;
+}
+body.nxt-dock-labels .dock .dock-items {
+	gap: 4px;
+}
+body.nxt-dock-labels .dock .dock-item:not(.dock-user-button) {
+	width: 100%;
+	height: auto;
+	min-height: 54px;
+	flex-direction: column;
+	gap: 4px;
+	padding: 7px 2px 6px;
+	border-radius: 12px;
+}
+body.nxt-dock-labels .dock .dock-item:not(.dock-user-button) .dock-item-label {
+	display: block;
+	max-width: 100%;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	font-size: 10.5px;
+	font-weight: 500;
+	line-height: 1.2;
+	letter-spacing: 0.01em;
+	text-align: center;
+	color: inherit;
+	opacity: 0.82;
+	transition: opacity 0.15s ease;
+}
+/* the name steps forward with the icon: on hover and on the module you are in */
+body.nxt-dock-labels .dock .dock-item:is(:hover, .active) .dock-item-label {
+	opacity: 1;
+}
+body.nxt-dock-labels .dock .dock-item.active .dock-item-label {
+	font-weight: 600;
+}

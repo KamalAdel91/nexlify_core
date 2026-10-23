@@ -1,0 +1,39 @@
+{
+ "actions": [],
+ "creation": "2026-10-23 18:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "enabled"
+ ],
+ "fields": [
+  {
+   "fieldname": "enabled",
+   "fieldtype": "Check",
+   "label": "Enabled",
+   "default": "1",
+   "description": "The report views' layout fixes, in the colors of the user's Nexlify theme. Off: reports look as Frappe draws them."
+  }
+ ],
+ "issingle": 1,
+ "modified": "2026-10-23 18:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Nexlify Core",
+ "name": "Nexlify Reports Settings",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "read": 1,
+   "write": 1,
+   "email": 1,
+   "print": 1,
+   "share": 1,
+   "role": "System Manager"
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

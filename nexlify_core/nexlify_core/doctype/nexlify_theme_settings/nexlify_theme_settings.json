@@ -1,0 +1,63 @@
+{
+ "actions": [],
+ "creation": "2026-10-23 18:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "enabled",
+  "default_theme",
+  "section_dock",
+  "dock_labels"
+ ],
+ "fields": [
+  {
+   "fieldname": "enabled",
+   "fieldtype": "Check",
+   "label": "Enable Nexlify Themes",
+   "default": "1",
+   "description": "Off: no Nexlify theme is put on the desk, and Switch Theme shows only Frappe's own themes."
+  },
+  {
+   "fieldname": "default_theme",
+   "fieldtype": "Select",
+   "label": "Default Theme",
+   "default": "warm",
+   "options": "warm\nrose\nocean\nprism\nledger\nslate\nindigo\nteal\nember\ncustom\nsakura\ncandy\nlavender\nnile\nsahel\ndesert\nramadan\nforest\naurora\nnight\nnone",
+   "depends_on": "eval:doc.enabled",
+   "description": "The theme of a user who has not picked one in Switch Theme. \"none\" is Frappe as it is."
+  },
+  {
+   "fieldname": "section_dock",
+   "fieldtype": "Section Break",
+   "label": "Dock"
+  },
+  {
+   "fieldname": "dock_labels",
+   "fieldtype": "Check",
+   "label": "Show Names Under the Dock's Icons",
+   "default": "1",
+   "description": "The icon bar at the far left: each module's name under its icon, the bar a little wider. Works with or without a theme."
+  }
+ ],
+ "issingle": 1,
+ "modified": "2026-10-23 20:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Nexlify Core",
+ "name": "Nexlify Theme Settings",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "read": 1,
+   "write": 1,
+   "email": 1,
+   "print": 1,
+   "share": 1,
+   "role": "System Manager"
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

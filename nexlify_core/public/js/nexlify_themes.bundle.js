@@ -725,8 +725,8 @@ frappe.provide("nexlify.themes");
 
 	T.preview_html = function (name) {
 		if (kind_of(name) === "scene") return T.scene_svg(name, "nxt-theme-preview-svg");
-		if (kind_of(name)) return style_preview_html();
-		return "";
+		// a style, a business theme, and None (Frappe's own grays, from the CSS)
+		return style_preview_html();
 	};
 
 	function falling(name) {

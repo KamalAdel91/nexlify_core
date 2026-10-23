@@ -1349,6 +1349,15 @@ html[data-nexlify-theme] .layout-main-section .avatar .avatar-frame {
 	box-shadow: 0 0 0 2px var(--surface-base);
 }
 
+/* the scrollbars' track is see-through in every theme (Frappe paints it the page's light gray, a white
+   strip on a dark sidebar); the sidebar's thumb shows only while the pointer is over the sidebar */
+html[data-nexlify-theme] {
+	--scrollbar-track-color: transparent;
+}
+html[data-nexlify-theme] .body-sidebar:not(:hover) {
+	--scrollbar-thumb-color: transparent;
+}
+
 /* thin, rounded scrollbars everywhere */
 html[data-nexlify-theme] ::-webkit-scrollbar {
 	width: 8px;
@@ -2017,6 +2026,74 @@ html[data-nexlify-kind="business"] .list-row .list-row-activity {
 	color: var(--nxt-muted);
 }
 
+/* ---- business lists, current: what read as old was a column of bold blue links, capital headers
+   with rules between them and a gray header band. Now the names are in the heading's ink and take
+   the accent only under the pointer; the header is plain words on the sheet, the column rules show
+   only while you hover the header; the rows are divided by fainter lines */
+html[data-nexlify-kind="business"] .list-row .list-subject a,
+html[data-nexlify-kind="business"] .list-row .list-subject .bold {
+	color: var(--nxt-heading);
+	font-weight: 500;
+}
+html[data-nexlify-kind="business"] .list-row-container:hover .list-subject a {
+	color: var(--nxt-accent);
+}
+html[data-nexlify-kind="business"] .list-row-head {
+	--list-row-height: 38px;
+	background-color: var(--nxt-head);
+	border-bottom: 1px solid var(--nxt-border);
+	border-radius: 0;
+}
+html[data-nexlify-kind="business"] .list-row-head .level-right,
+html[data-nexlify-kind="business"] .list-row-head:hover .level-right {
+	background-color: var(--nxt-head);
+}
+html[data-nexlify-kind="business"] .list-row-head .list-row-col,
+html[data-nexlify-kind="business"] .list-row-head .list-subject,
+html[data-nexlify-kind="business"] .list-row-head .level-right {
+	color: color-mix(in srgb, var(--nxt-text) 70%, var(--nxt-muted));
+	font-size: 12px;
+	font-weight: 600;
+	text-transform: none;
+	letter-spacing: 0.01em;
+}
+html[data-nexlify-kind="business"] .list-row-head .list-col-resize-handle::before {
+	opacity: 0;
+	transition: opacity 0.15s ease;
+}
+html[data-nexlify-kind="business"] .list-row-head:hover .list-col-resize-handle::before {
+	opacity: 0.35;
+}
+html[data-nexlify-kind="business"] .list-row-container {
+	border-bottom-color: color-mix(in srgb, var(--nxt-border) 65%, transparent);
+}
+/* the sticky column at the row's end (the age, the comments, the like) takes the row's own color,
+   so it doesn't read as a strip of its own */
+html[data-nexlify-kind="business"] .list-row .level-right {
+	background-color: var(--nxt-card);
+	border-left-color: transparent;
+}
+html[data-nexlify-kind="business"] .list-row-container:hover .list-row .level-right {
+	background-color: color-mix(in srgb, var(--nxt-accent) 5%, var(--nxt-card));
+}
+html[data-nexlify-kind="business"] .list-row-checkbox,
+html[data-nexlify-kind="business"] .list-header-checkbox {
+	border-radius: 4px;
+}
+
+/* the filter bar: quiet fields on the sheet's head color, no border until the pointer or the cursor
+   is in them */
+html[data-nexlify-kind="business"] .page-form :is(.form-control, .awesomplete > input):not(:focus) {
+	background-color: var(--nxt-head);
+	border-color: transparent;
+}
+html[data-nexlify-kind="business"] .page-form :is(.form-control, .awesomplete > input):hover:not(:focus) {
+	border-color: var(--nxt-border);
+}
+html[data-nexlify-kind="business"] .page-form :is(.form-control, .awesomplete > input):focus {
+	background-color: var(--nxt-card);
+}
+
 /* the dialogs: the title firm, the header and footer on the sheet's head color */
 html[data-nexlify-kind="business"] .modal-header .modal-title {
 	font-weight: 600;
@@ -2214,6 +2291,15 @@ html[data-nexlify-kind="scene"] .layout-main-section {
 	background: transparent;
 }
 
+/* the list's sticky end column (age, comments, like) takes --bg-color, which a scene makes see-through:
+   the columns scrolling under it showed through it. It is a frosted, nearly solid strip */
+html[data-nexlify-kind="scene"] .list-row .level-right,
+html[data-nexlify-kind="scene"] .list-row-head .level-right {
+	background-color: color-mix(in srgb, var(--surface-base) 90%, transparent);
+	backdrop-filter: blur(12px);
+	-webkit-backdrop-filter: blur(12px);
+}
+
 /* what has to stay readable over glass: the Link field's suggestions */
 html[data-nexlify-kind="scene"] .awesomplete ul {
 	background: var(--surface-elevation-2);
@@ -2232,6 +2318,13 @@ html[data-nexlify-theme] .page-form.list-page-form {
    as a card it would touch the sidebar and the header, so it takes the board's edges and a gap on top */
 html[data-nexlify-theme] :is(.kanban-v2-full-width .page-form, .page-form:has(> .kanban-v2-filter-section)).list-page-form {
 	margin: 10px 16px;
+}
+/* on a list too the filter bar runs to the sidebar's edge while the list keeps its room: as a card it
+   takes the list's edges */
+html[data-nexlify-theme] body[data-route^="List"] .page-form.list-page-form,
+html[data-nexlify-theme] body[data-route^="query-report"] .page-form {
+	margin: 10px 16px;
+	border-radius: var(--radius-lg, 12px);
 }
 
 /* a workspace's custom block is a frame around a dashboard that draws its own cards: no second box */
@@ -2734,12 +2827,18 @@ html[data-nexlify-theme] .kanban .kanban-card {
 	display: none;
 }
 
-/* None: Frappe as it is, whatever theme the page is in now */
+/* None: Frappe as it is, whatever theme the page is in now: the little desk in Frappe's own grays */
 .nxt-theme-preview:not([data-nexlify-theme]) {
+	--nxt-bg: var(--surface-gray-1);
+	--nxt-sidebar: var(--surface-gray-2);
+	--nxt-card: var(--surface-base);
+	--nxt-border: var(--outline-gray-2);
+	--nxt-heading: var(--ink-gray-8);
+	--nxt-muted: var(--ink-gray-5);
+	--nxt-tint: var(--surface-gray-4);
+	--nxt-btn: var(--ink-gray-8);
+	--nxt-accent2: var(--ink-gray-7);
 	background: var(--surface-gray-1);
-}
-.nxt-theme-preview:not([data-nexlify-theme]) .nxt-theme-swatch {
-	background: var(--surface-gray-10);
 }
 
 .nxt-theme-footer {
@@ -3113,8 +3212,9 @@ html[data-nexlify-theme="prism"] .kn-add-card-input {
 
 /* ---------------------------------------------------------------- the dock's names, with or without a theme */
 
-/* Nexlify Theme Settings > Dock puts `nxt-dock-labels` on <body>: each tile shows its module's name
-   under its icon, and the bar widens to hold the names. A pinned dock is a column of the page, so the
+/* Nexlify Theme Settings > Dock puts `nxt-dock-labels` on <body>: each module's tile shows its name
+   under its icon, and the bar widens to hold the names (only tiles that carry a name: the avatar,
+   and on newer Frappe the search and the bell, keep their size). A pinned dock is a column of the page, so the
    page makes room for it; a floating one widens over the sidebar */
 body.nxt-dock-labels {
 	--dock-width: 76px;
@@ -3125,7 +3225,15 @@ body.nxt-dock-labels .dock {
 body.nxt-dock-labels .dock .dock-items {
 	gap: 4px;
 }
-body.nxt-dock-labels .dock .dock-item:not(.dock-user-button) {
+/* the app's mark at the top, centred in the wider bar (older Frappe leaves it at the bar's start) */
+body.nxt-dock-labels .dock .dock-logo {
+	display: flex;
+	justify-content: center;
+}
+body.nxt-dock-labels .dock .dock-logo .shell-header {
+	margin-inline: auto;
+}
+body.nxt-dock-labels .dock .dock-item:has(> .dock-item-label) {
 	width: 100%;
 	height: auto;
 	min-height: 54px;
@@ -3134,7 +3242,7 @@ body.nxt-dock-labels .dock .dock-item:not(.dock-user-button) {
 	padding: 7px 2px 6px;
 	border-radius: 12px;
 }
-body.nxt-dock-labels .dock .dock-item:not(.dock-user-button) .dock-item-label {
+body.nxt-dock-labels .dock .dock-item:has(> .dock-item-label) .dock-item-label {
 	/* a long name takes two lines rather than lose its end */
 	display: -webkit-box;
 	-webkit-box-orient: vertical;
@@ -3159,4 +3267,14 @@ body.nxt-dock-labels .dock .dock-item:is(:hover, .active) .dock-item-label {
 }
 body.nxt-dock-labels .dock .dock-item.active .dock-item-label {
 	font-weight: 600;
+}
+
+/* the bell's unread dot on the dock (Frappe 16.53): Frappe's shared .notification-count rule pads it
+   as a pill (1px 7px) and the dock's dot rule does not take that back, so the "dot" drew as a bar
+   across the bell. A dot again, on the bell's corner, in the theme's accent when there is one */
+.dock .dock-item-dot {
+	padding: 0;
+	left: auto;
+	box-sizing: border-box;
+	background: var(--nxt-accent, var(--ink-gray-8));
 }

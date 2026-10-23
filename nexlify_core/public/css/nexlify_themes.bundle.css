@@ -1581,6 +1581,10 @@ html[data-nexlify-kind="business"] .dock {
 	--outline-gray-3: rgba(255, 255, 255, 0.16);
 	--dock-ink: var(--nxt-side-muted);
 	--dock-ink-strong: #ffffff;
+	/* Frappe 16.5x+ names the hovered and the active tile's ink apart (and sets them on :root, so
+	   they would keep the page's dark ink on this dark tray) */
+	--dock-ink-hover: var(--nxt-side-text);
+	--dock-ink-active: #ffffff;
 	--dock-tile-hover: rgba(255, 255, 255, 0.08);
 	--dock-tile-active: rgba(255, 255, 255, 0.14);
 	--dock-rule: rgba(255, 255, 255, 0.1);
@@ -1886,6 +1890,8 @@ html[data-nexlify-kind="business"][data-nexlify-pane="light"] .dock {
 	--outline-gray-3: color-mix(in srgb, var(--nxt-border) 70%, var(--nxt-text));
 	--dock-ink: var(--nxt-muted);
 	--dock-ink-strong: var(--nxt-heading);
+	--dock-ink-hover: var(--nxt-text);
+	--dock-ink-active: var(--nxt-heading);
 	--dock-tile-hover: color-mix(in srgb, var(--nxt-text) 7%, transparent);
 	--dock-tile-active: color-mix(in srgb, var(--nxt-accent) 14%, transparent);
 	--dock-rule: var(--nxt-border);

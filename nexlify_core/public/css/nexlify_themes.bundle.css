@@ -2097,21 +2097,23 @@ html[data-nexlify-kind="business"] .page-form :is(.form-control, .awesomplete > 
 /* ---- business, the light pane's top bar (as a bookkeeping app draws it): with a light sidebar the
    dark color moves to one bar across the top: the dock's mark, the sidebar's first 49px (the
    workspace's name) and the page's header, which are all 49px high. In it Frappe's tokens take the
-   dark values, as in the dark pane */
-html[data-nexlify-kind="business"][data-nexlify-pane="light"] {
+   dark values, as in the dark pane. A banner above the page (impersonating, an announcement) pushes
+   the page's header down and would break the bar: while one shows, the bar steps aside and the
+   header is white, as in the dark pane */
+html[data-nexlify-kind="business"][data-nexlify-pane="light"]:not(:has(.main-section > .site-banners, .main-section .announcement-widget:not(.hidden))) {
 	--nxt-topbar: var(--nxt-sidebar);
 	--nxt-topbar-h: 49px;
 }
-html[data-nexlify-kind="business"][data-nexlify-pane="light"] .body-sidebar {
+html[data-nexlify-kind="business"][data-nexlify-pane="light"]:not(:has(.main-section > .site-banners, .main-section .announcement-widget:not(.hidden))) .body-sidebar {
 	background: linear-gradient(to bottom, var(--nxt-topbar) 0 var(--nxt-topbar-h), var(--nxt-head) var(--nxt-topbar-h));
 }
-html[data-nexlify-kind="business"][data-nexlify-pane="light"] .dock {
+html[data-nexlify-kind="business"][data-nexlify-pane="light"]:not(:has(.main-section > .site-banners, .main-section .announcement-widget:not(.hidden))) .dock {
 	background: linear-gradient(to bottom, var(--nxt-topbar) 0 var(--nxt-topbar-h), color-mix(in srgb, var(--nxt-head) 70%, var(--nxt-bg)) var(--nxt-topbar-h));
 }
-html[data-nexlify-kind="business"][data-nexlify-pane="light"] .dock .dock-logo {
+html[data-nexlify-kind="business"][data-nexlify-pane="light"]:not(:has(.main-section > .site-banners, .main-section .announcement-widget:not(.hidden))) .dock .dock-logo {
 	border-bottom-color: transparent;
 }
-html[data-nexlify-kind="business"][data-nexlify-pane="light"] :is(.page-head, .body-sidebar .sidebar-header, .dock .dock-logo) {
+html[data-nexlify-kind="business"][data-nexlify-pane="light"]:not(:has(.main-section > .site-banners, .main-section .announcement-widget:not(.hidden))) :is(.page-head, .body-sidebar .sidebar-header, .dock .dock-logo) {
 	--ink-gray-9: #ffffff;
 	--ink-gray-8: #ffffff;
 	--ink-gray-7: color-mix(in srgb, #ffffff 88%, var(--nxt-topbar));
@@ -2134,28 +2136,28 @@ html[data-nexlify-kind="business"][data-nexlify-pane="light"] :is(.page-head, .b
 	--nxt-side-strong: #ffffff;
 	color: #ffffff;
 }
-html[data-nexlify-kind="business"][data-nexlify-pane="light"] .page-head {
+html[data-nexlify-kind="business"][data-nexlify-pane="light"]:not(:has(.main-section > .site-banners, .main-section .announcement-widget:not(.hidden))) .page-head {
 	background: var(--nxt-topbar);
 	border-bottom-color: transparent;
 }
-html[data-nexlify-kind="business"][data-nexlify-pane="light"] .body-sidebar .sidebar-header {
+html[data-nexlify-kind="business"][data-nexlify-pane="light"]:not(:has(.main-section > .site-banners, .main-section .announcement-widget:not(.hidden))) .body-sidebar .sidebar-header {
 	box-shadow: none;
 }
-html[data-nexlify-kind="business"][data-nexlify-pane="light"] .body-sidebar .sidebar-header :is(.header-title, .drop-icon) {
+html[data-nexlify-kind="business"][data-nexlify-pane="light"]:not(:has(.main-section > .site-banners, .main-section .announcement-widget:not(.hidden))) .body-sidebar .sidebar-header :is(.header-title, .drop-icon) {
 	color: #ffffff;
 	--icon-stroke: #ffffff;
 }
 /* the bar's buttons: see-through on the dark bar, the primary keeps the accent */
-html[data-nexlify-kind="business"][data-nexlify-pane="light"] .page-head :is(.btn.btn-default, .btn.btn-secondary, .es-button:not([data-variant="solid"])) {
+html[data-nexlify-kind="business"][data-nexlify-pane="light"]:not(:has(.main-section > .site-banners, .main-section .announcement-widget:not(.hidden))) .page-head :is(.btn.btn-default, .btn.btn-secondary, .es-button:not([data-variant="solid"])) {
 	background: rgba(255, 255, 255, 0.08);
 	border-color: rgba(255, 255, 255, 0.16);
 	color: #ffffff;
 	box-shadow: none;
 }
-html[data-nexlify-kind="business"][data-nexlify-pane="light"] .page-head :is(.btn.btn-default, .btn.btn-secondary, .es-button:not([data-variant="solid"])):hover {
+html[data-nexlify-kind="business"][data-nexlify-pane="light"]:not(:has(.main-section > .site-banners, .main-section .announcement-widget:not(.hidden))) .page-head :is(.btn.btn-default, .btn.btn-secondary, .es-button:not([data-variant="solid"])):hover {
 	background: rgba(255, 255, 255, 0.16);
 }
-html[data-nexlify-kind="business"][data-nexlify-pane="light"] .page-head .indicator-pill {
+html[data-nexlify-kind="business"][data-nexlify-pane="light"]:not(:has(.main-section > .site-banners, .main-section .announcement-widget:not(.hidden))) .page-head .indicator-pill {
 	box-shadow: none;
 }
 

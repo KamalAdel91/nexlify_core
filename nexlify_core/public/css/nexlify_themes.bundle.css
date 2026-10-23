@@ -3323,7 +3323,7 @@ body.nxt-dock-labels .dock .dock-item.active .dock-item-label {
 	background: var(--nxt-accent, var(--ink-gray-8));
 }
 
-/* ---------------------------------------------------------------- phones: the closed sidebar stays gone */
+/* ---------------------------------------------------------------- phones */
 
 /* On a phone Frappe keeps the sidebar in the page while it is closed (a drawer, out of flow) and
    hides it by making it see-through and fading its contents. A theme paints the sidebar, and its
@@ -3336,5 +3336,25 @@ body.nxt-dock-labels .dock .dock-item.active .dock-item-label {
 		box-shadow: none !important;
 		backdrop-filter: none !important;
 		-webkit-backdrop-filter: none !important;
+	}
+
+	html[data-nexlify-theme] .layout-main-section-wrapper .frappe-list .result-container .result {
+		/* the rows' left part asks for 80% of the width and the right part for 130px, more than a
+		   phone has: the list grew past its box (by 3px, by 12px with a theme's card edge, cutting
+		   the status pills). On a phone the left part takes what is left and cuts its text with an
+		   ellipsis, the right part asks for less */
+		--list-right-width: 96px;
+		display: block;
+		width: 100%;
+	}
+	html[data-nexlify-theme] .layout-main-section-wrapper .frappe-list .result-container .result .list-row .level-left {
+		min-width: 0;
+		flex: 1 1 auto;
+	}
+	/* the filter bar: the list's 15px margins, and less padding so its buttons keep to one row */
+	html[data-nexlify-theme] body[data-route^="List"] .page-form.list-page-form,
+	html[data-nexlify-theme] body[data-route^="query-report"] .page-form {
+		margin: 8px 15px;
+		padding: 6px 8px;
 	}
 }

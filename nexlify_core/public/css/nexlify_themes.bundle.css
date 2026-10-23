@@ -1488,8 +1488,10 @@ html[data-nexlify-kind="style"] .frappe-card:hover {
 	box-shadow: var(--shadow-base);
 }
 
+/* the corners are clipped with `clip`, not `hidden`: `hidden` made the card the tab bar's
+   scroll box, so the sticky tabs sat 48px down inside it, over the first fields */
 html[data-nexlify-kind="style"] .std-form-layout > .form-layout > .form-page {
-	overflow: hidden;
+	overflow: clip;
 }
 
 html[data-nexlify-kind="style"] .form-control,
@@ -1768,8 +1770,10 @@ html[data-nexlify-kind="business"] .widget {
 	border-radius: var(--radius-lg);
 	box-shadow: var(--shadow-sm);
 }
+/* the corners are clipped with `clip`, not `hidden`: `hidden` made the card the tab bar's
+   scroll box, so the sticky tabs sat 48px down inside it, over the first fields */
 html[data-nexlify-kind="business"] .std-form-layout > .form-layout > .form-page {
-	overflow: hidden;
+	overflow: clip;
 }
 html[data-nexlify-kind="business"] :is(.widget, .frappe-card):hover {
 	box-shadow: var(--shadow-base);

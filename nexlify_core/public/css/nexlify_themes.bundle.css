@@ -1100,6 +1100,27 @@ html[data-nexlify-theme] :is(a, button, .btn, .es-button, [tabindex], .list-row-
 	box-shadow: var(--nxt-ring);
 }
 
+/* the sidebar's rows read clearly in every theme: Frappe draws their words in its muted ink
+   (--ink-gray-6), faint on a colored or a dark sidebar. The words take the heading's ink (white in
+   the dark), the icons a step softer; the row you are on keeps its theme's own look. A business
+   theme names its pane's ink itself, later in this file */
+html[data-nexlify-theme] .body-sidebar :not(.active-sidebar) > .item-anchor:not(.section-break),
+html[data-nexlify-theme] .body-sidebar :not(.active-sidebar) > .item-anchor:not(.section-break) .sidebar-item-label {
+	color: var(--ink-gray-9);
+}
+html[data-nexlify-theme] .body-sidebar :not(.active-sidebar) > .item-anchor:not(.section-break) .sidebar-item-icon {
+	color: color-mix(in srgb, var(--ink-gray-9) 70%, transparent);
+	--icon-stroke: color-mix(in srgb, var(--ink-gray-9) 70%, transparent);
+}
+html[data-nexlify-theme] .body-sidebar .sidebar-header .header-title {
+	color: var(--ink-gray-9);
+}
+/* the dock's names and icons, a step brighter than Frappe's in the dark */
+html[data-theme="dark"][data-nexlify-theme] {
+	--dock-ink: color-mix(in srgb, var(--ink-gray-9) 72%, transparent);
+	--dock-ink-hover: var(--ink-gray-9);
+}
+
 /* the sidebar's rows and the menus' items: a tint on hover that doesn't jump */
 html[data-nexlify-theme] .body-sidebar .item-anchor:hover {
 	background: color-mix(in srgb, var(--nxt-accent) 8%, transparent);

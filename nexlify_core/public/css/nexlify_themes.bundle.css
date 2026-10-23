@@ -1855,6 +1855,12 @@ html[data-nexlify-kind="business"] .body-sidebar .sidebar-item-icon {
 	color: color-mix(in srgb, var(--nxt-side-strong, #ffffff) 72%, var(--nxt-sidebar));
 	--icon-stroke: color-mix(in srgb, var(--nxt-side-strong, #ffffff) 72%, var(--nxt-sidebar));
 }
+/* the rows' words (Frappe draws them in its muted ink, --ink-gray-6): the pane's strong ink, white on
+   the dark pane and the heading's ink on the light one; a section's label and the arrows stay muted */
+html[data-nexlify-kind="business"] .body-sidebar .item-anchor:not(.section-break),
+html[data-nexlify-kind="business"] .body-sidebar .item-anchor:not(.section-break) .sidebar-item-label {
+	color: var(--nxt-side-strong, #ffffff);
+}
 html[data-nexlify-kind="business"] .body-sidebar .item-anchor:hover .sidebar-item-icon {
 	color: var(--nxt-side-strong, #ffffff);
 	--icon-stroke: var(--nxt-side-strong, #ffffff);
@@ -3129,11 +3135,15 @@ body.nxt-dock-labels .dock .dock-item:not(.dock-user-button) {
 	border-radius: 12px;
 }
 body.nxt-dock-labels .dock .dock-item:not(.dock-user-button) .dock-item-label {
-	display: block;
+	/* a long name takes two lines rather than lose its end */
+	display: -webkit-box;
+	-webkit-box-orient: vertical;
+	-webkit-line-clamp: 2;
+	line-clamp: 2;
 	max-width: 100%;
 	overflow: hidden;
-	text-overflow: ellipsis;
-	white-space: nowrap;
+	white-space: normal;
+	overflow-wrap: anywhere;
 	font-size: 10.5px;
 	font-weight: 500;
 	line-height: 1.2;

@@ -3351,6 +3351,10 @@ body.nxt-dock-labels .dock .dock-item.active .dock-item-label {
 		min-width: 0;
 		flex: 1 1 auto;
 	}
+	/* the form's column: 8px from each edge, not the 16px kept beside a desktop's sidebar */
+	html[data-nexlify-theme] body[data-route^="Form"] .layout-main-section-wrapper {
+		padding-inline: 8px;
+	}
 	/* the filter bar: the list's 15px margins, and less padding so its buttons keep to one row */
 	html[data-nexlify-theme] body[data-route^="List"] .page-form.list-page-form,
 	html[data-nexlify-theme] body[data-route^="query-report"] .page-form {

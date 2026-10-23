@@ -1870,6 +1870,14 @@ html[data-nexlify-kind="business"] .body-sidebar .item-anchor:not(.section-break
 html[data-nexlify-kind="business"] .body-sidebar .item-anchor:not(.section-break) .sidebar-item-label {
 	color: var(--nxt-side-strong, #ffffff);
 }
+/* the row you are on is filled with the accent: its words and icon are white on either pane (the rule
+   above is the stronger one, so it is said again here) */
+html[data-nexlify-kind="business"] .body-sidebar .active-sidebar .item-anchor:not(.section-break),
+html[data-nexlify-kind="business"] .body-sidebar .active-sidebar .item-anchor:not(.section-break) .sidebar-item-label,
+html[data-nexlify-kind="business"] .body-sidebar .active-sidebar .item-anchor:not(.section-break) .sidebar-item-icon {
+	color: #ffffff;
+	--icon-stroke: #ffffff;
+}
 html[data-nexlify-kind="business"] .body-sidebar .item-anchor:hover .sidebar-item-icon {
 	color: var(--nxt-side-strong, #ffffff);
 	--icon-stroke: var(--nxt-side-strong, #ffffff);

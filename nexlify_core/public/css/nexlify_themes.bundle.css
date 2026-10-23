@@ -3322,3 +3322,19 @@ body.nxt-dock-labels .dock .dock-item.active .dock-item-label {
 	box-sizing: border-box;
 	background: var(--nxt-accent, var(--ink-gray-8));
 }
+
+/* ---------------------------------------------------------------- phones: the closed sidebar stays gone */
+
+/* On a phone Frappe keeps the sidebar in the page while it is closed (a drawer, out of flow) and
+   hides it by making it see-through and fading its contents. A theme paints the sidebar, and its
+   rules are the stronger ones, so the closed drawer showed as an empty panel over the page. While
+   closed it is see-through again in every theme; opened (.expanded) it takes the theme's colors */
+@media (max-width: 767.98px) {
+	html[data-nexlify-theme] .body-sidebar-container:not(.expanded) .body-sidebar {
+		background: transparent !important;
+		border-right-color: transparent !important;
+		box-shadow: none !important;
+		backdrop-filter: none !important;
+		-webkit-backdrop-filter: none !important;
+	}
+}

@@ -12,7 +12,7 @@ def extend_bootinfo(bootinfo):
 	try:
 		bootinfo["nexlify_themes"] = theme_boot_settings()
 	except frappe.DoesNotExistError:
-		bootinfo["nexlify_themes"] = {"enabled": 1, "default": "warm", "dock_labels": 1}
+		bootinfo["nexlify_themes"] = {"enabled": 1, "default": "ledger", "dock_labels": 1}
 	try:
 		# settings never saved have no value: the reports stay on
 		reports = frappe.get_cached_doc("Nexlify Reports Settings").get("enabled")

@@ -19,7 +19,7 @@ BUSINESS = ("ledger", "slate", "indigo", "teal", "ember", "custom")
 STYLES = ("warm", "rose", "ocean", "prism")
 SCENES = ("sakura", "candy", "lavender", "nile", "sahel", "desert", "ramadan", "forest", "aurora", "night")
 NONE = "none"
-DEFAULT = "warm"
+DEFAULT = "ledger"
 THEMES = BUSINESS + STYLES + SCENES + (NONE,)
 
 

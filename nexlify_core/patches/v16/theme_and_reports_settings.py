@@ -24,7 +24,7 @@ def execute():
 			THEMES,
 			{
 				"enabled": as_check(core.get("enable_themes")),
-				"default_theme": core.get("default_theme") or "warm",
+				"default_theme": core.get("default_theme") or "ledger",
 				"dock_labels": 1,
 			},
 		)

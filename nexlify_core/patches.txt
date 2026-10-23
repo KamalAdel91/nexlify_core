@@ -6,3 +6,4 @@
 # Patches added in this section will be executed after doctypes are migrated
 nexlify_core.patches.v16.remove_placeholder_workspaces
 nexlify_core.patches.v16.theme_and_reports_settings
+nexlify_core.patches.v16.default_theme_ledger

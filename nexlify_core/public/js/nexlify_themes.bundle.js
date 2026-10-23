@@ -686,7 +686,7 @@ frappe.provide("nexlify.themes");
 
 	// what a user sees before they pick: the site's own look (Nexlify Theme Settings), and
 	// whether the themes are on at all. "none" is Frappe as it is, chosen.
-	const SITE = (frappe.boot && frappe.boot.nexlify_themes) || { enabled: 1, default: "warm", dock_labels: 1 };
+	const SITE = (frappe.boot && frappe.boot.nexlify_themes) || { enabled: 1, default: "ledger", dock_labels: 1 };
 	T.ENABLED = !!SITE.enabled;
 	T.DEFAULT = SITE.default === "none" ? "" : SITE.default;
 	T.NONE = "none";

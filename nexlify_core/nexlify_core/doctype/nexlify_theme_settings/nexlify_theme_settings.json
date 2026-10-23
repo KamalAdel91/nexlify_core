@@ -21,7 +21,7 @@
    "fieldname": "default_theme",
    "fieldtype": "Select",
    "label": "Default Theme",
-   "default": "warm",
+   "default": "ledger",
    "options": "warm\nrose\nocean\nprism\nledger\nslate\nindigo\nteal\nember\ncustom\nsakura\ncandy\nlavender\nnile\nsahel\ndesert\nramadan\nforest\naurora\nnight\nnone",
    "depends_on": "eval:doc.enabled",
    "description": "The theme of a user who has not picked one in Switch Theme. \"none\" is Frappe as it is."

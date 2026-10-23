@@ -212,9 +212,18 @@ nexlify_reports.normalize_numeric_string = function (rawText) {
 	return t;
 };
 
+// A number or an amount, and nothing else: digits with their separators, a minus or accounting
+// brackets, at most a currency code beside them or a percent after ("SAR -40,404.00", "(123.45)",
+// "12.5 %"). A code ("CUST-0003", "ITEM-000") or a date ("07-10-2026") is not one: stripping its
+// letters used to leave "-0003" or "-000", and the cell went red or turned into a dash.
+nexlify_reports.looks_numeric = function (text) {
+	return /^(?:[A-Za-z]{1,5}\s+)?[-(]?\s*\d[\d.,]*\s*\)?\s*%?(?:\s+[A-Za-z]{1,5})?$/.test((text || "").trim());
+};
+
 nexlify_reports.is_zero_value = function (text) {
 	const t = (text || "").trim();
 	if (!t || t === "-") return true;
+	if (!nexlify_reports.looks_numeric(t)) return false;
 	const cleaned = nexlify_reports.normalize_numeric_string(t);
 	const num = parseFloat(cleaned);
 	return !isNaN(num) && num === 0;
@@ -222,7 +231,7 @@ nexlify_reports.is_zero_value = function (text) {
 
 nexlify_reports.is_negative_value = function (text) {
 	const t = (text || "").trim();
-	if (!t) return false;
+	if (!t || !nexlify_reports.looks_numeric(t)) return false;
 	// accounting format (123.45)
 	if (/^\([\d.,\s]+\)$/.test(t.replace(/[A-Za-z]/g, ""))) return true;
 	const cleaned = nexlify_reports.normalize_numeric_string(t);

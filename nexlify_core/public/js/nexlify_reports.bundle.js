@@ -607,24 +607,33 @@ nexlify_reports.observe_datatable = function (datatable) {
 // Polling + cleanup
 // ============================================================
 
+// The desk's datatables announce themselves through the patched refresh (on_datatable_ready). A
+// bundle that brings its own copy of the DataTable class (Bank Reconciliation, the Action dialog)
+// never calls that refresh: for those, a watcher sees a .datatable element arrive in the page.
+// Only insertions count, and never those inside a table's body (the rows virtual scroll swaps),
+// so it costs nothing while the user scrolls.
 nexlify_reports.watch_and_bind = function () {
 	if (!nexlify_reports.ENABLE_AUTO_LAYOUT_FIXES) return;
-	setInterval(() => {
-		if (frappe.query_report && frappe.query_report.datatable) {
-			nexlify_reports.observe_datatable(frappe.query_report.datatable);
+	let pending = false;
+	const observer = new MutationObserver((mutations) => {
+		if (pending) return;
+		for (const m of mutations) {
+			if (!m.addedNodes.length || m.target.closest(".dt-scrollable, .dt-body")) continue;
+			for (const node of m.addedNodes) {
+				if (node.nodeType !== 1) continue;
+				if (node.classList.contains("datatable") || node.querySelector(".datatable")) {
+					pending = true;
+					setTimeout(() => {
+						pending = false;
+						nexlify_reports.sweep_toolbars();
+					}, 200);
+					return;
+				}
+			}
 		}
-		if (window.cur_list && cur_list.datatable) {
-			nexlify_reports.observe_datatable(cur_list.datatable);
-		}
-		nexlify_reports.sweep_toolbars();
-		nexlify_reports.setup_report();
-	}, 1200);
-	// NOTE: this interval keeps running for the lifetime of the page even
-	// when no report/list is present. The checks above are cheap, but a
-	// fuller fix would hook frappe's own render-complete/page-change
-	// events instead of polling. Left as-is here since that requires
-	// confirming which events are reliably fired across report/list/dialog
-	// contexts in your frappe version.
+	});
+	observer.observe(document.body, { childList: true, subtree: true });
+	nexlify_reports.sweep_toolbars();
 };
 
 nexlify_reports.cleanup_orphaned_styles = function () {
@@ -665,7 +674,10 @@ nexlify_reports.cleanup_detached_observers = function () {
 
 $(document).on("page-change", function () {
 	frappe.after_ajax(() => {
-		setTimeout(nexlify_reports.setup_report, 300);
+		setTimeout(() => {
+			nexlify_reports.setup_report();
+			nexlify_reports.sweep_toolbars();
+		}, 300);
 		nexlify_reports.cleanup_orphaned_styles();
 		nexlify_reports.cleanup_detached_observers();
 	});
@@ -756,7 +768,10 @@ nexlify_reports.hook_datatable_constructor = function () {
 				} catch (e) {
 					console.warn('nexlify_reports: error wrapping columns on refresh', e);
 				}
-				return origRefresh.call(this, data, columns);
+				const result = origRefresh.call(this, data, columns);
+				// every datatable's first render (the constructor calls refresh) and each later one
+				nexlify_reports.on_datatable_ready(this);
+				return result;
 			};
 		}
 
@@ -811,6 +826,27 @@ nexlify_reports.hook_datatable_constructor = function () {
 	if (patchedConstructor) {
 		window.DataTable = patchedConstructor;
 	}
+	// the desk's own reference to the class; the same prototype, so the refresh patch above reaches
+	// the Report View, Query Reports and the dialogs that build their tables from it
+	if (frappe.DataTable && frappe.DataTable !== window.DataTable) {
+		wrap_datatable_class(frappe.DataTable);
+	}
+};
+
+// A datatable has rendered: watch it, and on a report or a list put the Autofit and Reset buttons
+// on the page. Idempotent; runs after the render settles.
+nexlify_reports.on_datatable_ready = function (datatable) {
+	setTimeout(() => {
+		try {
+			nexlify_reports.observe_datatable(datatable);
+			const isReportOrList =
+				(frappe.query_report && frappe.query_report.datatable === datatable) ||
+				(window.cur_list && cur_list.datatable === datatable);
+			if (isReportOrList) nexlify_reports.setup_report();
+		} catch (e) {
+			console.error("nexlify_reports.on_datatable_ready error", e);
+		}
+	}, 0);
 };
 
 // ============================================================
@@ -954,12 +990,9 @@ nexlify_reports.ensure_table_covered = function (wrapperEl) {
 };
 
 nexlify_reports.sweep_toolbars = function () {
-	// Cheap safety net replacing the old document.body MutationObserver.
-	// One bounded query per poll tick (1.2s) covers datatables that were
-	// NOT constructed through the window.DataTable hook (bundles that
-	// import DataTable directly - e.g. Bank Reconciliation and the
-	// Action dialog grid), giving them the floating Autofit / Reset
-	// toolbar and width handling with zero per-scroll-frame cost.
+	// One bounded query, run when a datatable arrives in the page and on a page change: covers
+	// the tables of bundles that bring their own DataTable class (Bank Reconciliation, the Action
+	// dialog grid), giving them the floating Autofit / Reset toolbar and the width handling.
 	var tables = document.querySelectorAll(".datatable");
 	for (var i = 0; i < tables.length; i++) {
 		var el = tables[i];

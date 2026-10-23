@@ -807,6 +807,7 @@
 	--nxt-dock: color-mix(in srgb, var(--nxt-sidebar) 80%, #000);
 	--nxt-side-text: color-mix(in srgb, var(--nxt-user-side-ink, #fff) 82%, var(--nxt-sidebar));
 	--nxt-side-muted: color-mix(in srgb, var(--nxt-user-side-ink, #fff) 50%, var(--nxt-sidebar));
+	--nxt-side-strong: var(--nxt-user-side-ink, #fff);
 }
 [data-theme="dark"][data-nexlify-theme="custom"],
 [data-theme="dark"] [data-nexlify-theme="custom"] {
@@ -1567,9 +1568,11 @@ html[data-theme="dark"][data-nexlify-kind="business"] {
 /* the sidebar and the dock are dark; inside them Frappe's own tokens take the dark values */
 html[data-nexlify-kind="business"] .body-sidebar,
 html[data-nexlify-kind="business"] .dock {
-	--ink-gray-9: #ffffff;
-	--ink-gray-8: var(--nxt-side-text);
-	--ink-gray-7: var(--nxt-side-text);
+	/* the words in white, for the clearest read on the dark pane (a Custom sidebar that is light
+	   names a dark ink instead) */
+	--ink-gray-9: var(--nxt-side-strong, #ffffff);
+	--ink-gray-8: var(--nxt-side-strong, #ffffff);
+	--ink-gray-7: var(--nxt-side-strong, #ffffff);
 	--ink-gray-6: var(--nxt-side-muted);
 	--ink-gray-5: var(--nxt-side-muted);
 	--ink-gray-4: color-mix(in srgb, var(--nxt-side-muted) 70%, var(--nxt-sidebar));
@@ -1579,7 +1582,7 @@ html[data-nexlify-kind="business"] .dock {
 	--outline-gray-1: rgba(255, 255, 255, 0.08);
 	--outline-gray-2: rgba(255, 255, 255, 0.12);
 	--outline-gray-3: rgba(255, 255, 255, 0.16);
-	--dock-ink: var(--nxt-side-muted);
+	--dock-ink: color-mix(in srgb, var(--nxt-side-strong, #ffffff) 78%, var(--nxt-dock));
 	--dock-ink-strong: #ffffff;
 	/* Frappe 16.5x+ names the hovered and the active tile's ink apart (and sets them on :root, so
 	   they would keep the page's dark ink on this dark tray) */
@@ -1589,7 +1592,7 @@ html[data-nexlify-kind="business"] .dock {
 	--dock-tile-active: rgba(255, 255, 255, 0.14);
 	--dock-rule: rgba(255, 255, 255, 0.1);
 	--scrollbar-thumb-color: rgba(255, 255, 255, 0.18);
-	color: var(--nxt-side-text);
+	color: var(--nxt-side-strong, #ffffff);
 }
 html[data-nexlify-kind="business"] .dock {
 	background: var(--nxt-dock);
@@ -1849,12 +1852,12 @@ html[data-nexlify-kind="business"] .settings-dialog-tab-item.active:hover {
 /* the sidebar: the icons a step back from the words, the row you are on lit; a hairline under the
    workspace's name */
 html[data-nexlify-kind="business"] .body-sidebar .sidebar-item-icon {
-	color: var(--nxt-side-muted);
-	--icon-stroke: var(--nxt-side-muted);
+	color: color-mix(in srgb, var(--nxt-side-strong, #ffffff) 72%, var(--nxt-sidebar));
+	--icon-stroke: color-mix(in srgb, var(--nxt-side-strong, #ffffff) 72%, var(--nxt-sidebar));
 }
 html[data-nexlify-kind="business"] .body-sidebar .item-anchor:hover .sidebar-item-icon {
-	color: var(--nxt-side-text);
-	--icon-stroke: var(--nxt-side-text);
+	color: var(--nxt-side-strong, #ffffff);
+	--icon-stroke: var(--nxt-side-strong, #ffffff);
 }
 html[data-nexlify-kind="business"] .body-sidebar .active-sidebar .sidebar-item-icon {
 	color: #ffffff;
@@ -1882,6 +1885,7 @@ html[data-nexlify-kind="business"][data-nexlify-pane="light"] .dock {
 	--ink-gray-4: color-mix(in srgb, var(--nxt-muted) 70%, var(--nxt-bg));
 	--nxt-side-text: var(--nxt-text);
 	--nxt-side-muted: var(--nxt-muted);
+	--nxt-side-strong: var(--nxt-heading);
 	--surface-gray-2: color-mix(in srgb, var(--nxt-text) 6%, transparent);
 	--surface-gray-3: color-mix(in srgb, var(--nxt-text) 10%, transparent);
 	--surface-elevation-3: var(--nxt-card);

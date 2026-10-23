@@ -18,7 +18,9 @@ app_include_js = [
 	"/assets/nexlify_core/js/raven_float.js",
 	# Active Company: company pill/switcher, locks Company on forms and reports
 	"/assets/nexlify_core/js/nexlify_active_company.js",
+	"/assets/nexlify_core/js/nexlify_themes.js",
 ]
+app_include_css = ["/assets/nexlify_core/css/nexlify_themes.css"]
 
 doctype_js = {
 }

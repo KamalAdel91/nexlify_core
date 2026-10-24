@@ -1209,7 +1209,7 @@ html[data-nexlify-theme] .dropdown-menu {
 	backdrop-filter: blur(18px) saturate(1.4);
 	-webkit-backdrop-filter: blur(18px) saturate(1.4);
 	box-shadow: var(--nxt-edge-light), var(--nxt-menu-shadow);
-	animation: nxt-menu-in 0.18s var(--nxt-ease) both;
+	animation: nxt-menu-in 0.18s var(--nxt-ease) backwards;
 	transform-origin: top;
 }
 html[data-nexlify-theme] .dropdown-item {
@@ -1303,7 +1303,7 @@ html[data-nexlify-theme] .alert.desk-alert {
 
 /* the Kanban: a column rises when the board renders, the cards after it; the count breathes when it changes */
 html[data-nexlify-theme] .kn-column {
-	animation: nxt-rise 0.4s var(--nxt-ease) both;
+	animation: nxt-rise 0.4s var(--nxt-ease) backwards;
 }
 html[data-nexlify-theme] .kn-column:nth-child(2) { animation-delay: 0.04s; }
 html[data-nexlify-theme] .kn-column:nth-child(3) { animation-delay: 0.08s; }
@@ -1348,9 +1348,12 @@ html[data-nexlify-theme] .form-sidebar :is(.form-sidebar-label, .sidebar-label, 
 	color: var(--text-muted);
 }
 
-/* the page's own content rises in: the form, the list, the workspace cards */
+/* the page's own content rises in: the form, the list, the workspace cards. Every entrance here
+   fills `backwards`, never `both`: a kept transform makes the element the containing block of
+   its fixed descendants (the grid's row editor opened inside the form card) and overrides the
+   transform Frappe places menus with */
 html[data-nexlify-theme] :is(.std-form-layout > .form-layout > .form-page, .layout-main-section .frappe-list .result, .widget) {
-	animation: nxt-rise 0.35s var(--nxt-ease) both;
+	animation: nxt-rise 0.35s var(--nxt-ease) backwards;
 }
 
 /* the links: an underline that slides in, not one that is always there */
@@ -3365,4 +3368,16 @@ body.nxt-dock-labels .dock .dock-item.active .dock-item-label {
 		margin: 8px 15px;
 		padding: 6px 8px;
 	}
+}
+
+/* ---------------------------------------------------------------- the grid's row editor */
+
+/* A glass form card (a scene, Prism) blurs what is behind it with backdrop-filter, which makes it
+   the containing block of its fixed descendants: the row editor of a child table (fixed, over the
+   page) opened inside the card instead. While a row is open the card drops its blur */
+html[data-nexlify-theme] .std-form-layout > .form-layout > .form-page:has(.grid-row-open) {
+	backdrop-filter: none !important;
+	-webkit-backdrop-filter: none !important;
+	transform: none !important;
+	filter: none !important;
 }

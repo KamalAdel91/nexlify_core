@@ -22,6 +22,8 @@ app_include_js = [
 	"nexlify_themes.bundle.js",
 	# Reports: the report views' styling and layout fixes; on and off in Nexlify Reports Settings
 	"nexlify_reports.bundle.js",
+	# Send WhatsApp button in every form's activity bar, next to New Email
+	"nexlify_whatsapp.bundle.js",
 ]
 app_include_css = ["nexlify_themes.bundle.css", "nexlify_reports.bundle.css"]
 

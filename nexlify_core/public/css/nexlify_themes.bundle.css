@@ -663,6 +663,157 @@
 	--nxt-blob3: #0d4a3d;
 }
 
+/* The calm styles: a clinic app's desk. Quiet paper, white cards, one deep color and almost no
+   gradient (accent2 sits next to the button's color, so the buttons read flat) */
+
+/* Sage: gray-green paper, white cards and forest green */
+[data-nexlify-theme="sage"] {
+	--nxt-accent: #2f5d47;
+	--nxt-accent2: #3a6a52;
+	--nxt-btn: #2f5a45;
+	--nxt-tint: #e4ede6;
+	--nxt-sidebar: #f8f9f7;
+	--nxt-sidebar2: #f3f6f2;
+	--nxt-sky-top: #f7f8f6;
+	--nxt-sky-bottom: #eef1ec;
+	--nxt-bg: #f3f5f1;
+	--nxt-card: #ffffff;
+	--nxt-card2: #ffffff;
+	--nxt-text: #2c3a32;
+	--nxt-heading: #1c2b23;
+	--nxt-muted: #5d6b63;
+	--nxt-border: #e1e7e1;
+}
+[data-theme="dark"][data-nexlify-theme="sage"],
+[data-theme="dark"] [data-nexlify-theme="sage"] {
+	--nxt-accent: #8cc4a2;
+	--nxt-accent2: #7fb894;
+	--nxt-btn: #3e7a5b;
+	--nxt-tint: #1f3329;
+	--nxt-sidebar: #121714;
+	--nxt-sidebar2: #141a16;
+	--nxt-sky-top: #0f1411;
+	--nxt-sky-bottom: #121814;
+	--nxt-bg: #0f1411;
+	--nxt-card: #18201b;
+	--nxt-card2: #1e2721;
+	--nxt-text: #dbe5de;
+	--nxt-heading: #eef4f0;
+	--nxt-muted: #93a399;
+	--nxt-border: #27322b;
+}
+
+/* Mint: fresh mint paper, white cards and emerald */
+[data-nexlify-theme="mint"] {
+	--nxt-accent: #127a63;
+	--nxt-accent2: #1a8a70;
+	--nxt-btn: #138068;
+	--nxt-tint: #dcf2ea;
+	--nxt-sidebar: #f5fbf8;
+	--nxt-sidebar2: #eef8f3;
+	--nxt-sky-top: #f4faf7;
+	--nxt-sky-bottom: #eaf5ef;
+	--nxt-bg: #f0f8f4;
+	--nxt-card: #ffffff;
+	--nxt-card2: #ffffff;
+	--nxt-text: #24413a;
+	--nxt-heading: #123029;
+	--nxt-muted: #4f6b63;
+	--nxt-border: #d6e9e0;
+}
+[data-theme="dark"][data-nexlify-theme="mint"],
+[data-theme="dark"] [data-nexlify-theme="mint"] {
+	--nxt-accent: #5fd3b2;
+	--nxt-accent2: #56c4a5;
+	--nxt-btn: #1f9277;
+	--nxt-tint: #133a30;
+	--nxt-sidebar: #0e1715;
+	--nxt-sidebar2: #101b18;
+	--nxt-sky-top: #0b1412;
+	--nxt-sky-bottom: #0f1a17;
+	--nxt-bg: #0b1412;
+	--nxt-card: #142420;
+	--nxt-card2: #1a2d28;
+	--nxt-text: #d6ebe4;
+	--nxt-heading: #ecf7f3;
+	--nxt-muted: #8aa69d;
+	--nxt-border: #22362f;
+}
+
+/* Linen: soft linen paper, white cards and olive green */
+[data-nexlify-theme="linen"] {
+	--nxt-accent: #4a6b3a;
+	--nxt-accent2: #587a45;
+	--nxt-btn: #4b6a3b;
+	--nxt-tint: #ece6d6;
+	--nxt-sidebar: #faf7f1;
+	--nxt-sidebar2: #f5f0e6;
+	--nxt-sky-top: #f8f5ee;
+	--nxt-sky-bottom: #f1ebdf;
+	--nxt-bg: #f5f1e8;
+	--nxt-card: #fffdf9;
+	--nxt-card2: #ffffff;
+	--nxt-text: #3b3a2f;
+	--nxt-heading: #29281f;
+	--nxt-muted: #6b6857;
+	--nxt-border: #e7dfcf;
+}
+[data-theme="dark"][data-nexlify-theme="linen"],
+[data-theme="dark"] [data-nexlify-theme="linen"] {
+	--nxt-accent: #b5c98e;
+	--nxt-accent2: #a7bc80;
+	--nxt-btn: #5b7f47;
+	--nxt-tint: #2c2e20;
+	--nxt-sidebar: #17160f;
+	--nxt-sidebar2: #1b1a12;
+	--nxt-sky-top: #14130d;
+	--nxt-sky-bottom: #18170f;
+	--nxt-bg: #14130d;
+	--nxt-card: #201f17;
+	--nxt-card2: #27261c;
+	--nxt-text: #e5e0d0;
+	--nxt-heading: #f3efe2;
+	--nxt-muted: #a39e89;
+	--nxt-border: #343226;
+}
+
+/* Mist: cool gray paper, white cards and slate blue */
+[data-nexlify-theme="mist"] {
+	--nxt-accent: #33526e;
+	--nxt-accent2: #3f6080;
+	--nxt-btn: #34526d;
+	--nxt-tint: #e3e9ef;
+	--nxt-sidebar: #f8f9fb;
+	--nxt-sidebar2: #f2f5f8;
+	--nxt-sky-top: #f7f8fa;
+	--nxt-sky-bottom: #edf0f4;
+	--nxt-bg: #f2f4f7;
+	--nxt-card: #ffffff;
+	--nxt-card2: #ffffff;
+	--nxt-text: #2d3743;
+	--nxt-heading: #1b2531;
+	--nxt-muted: #5c6875;
+	--nxt-border: #e0e5eb;
+}
+[data-theme="dark"][data-nexlify-theme="mist"],
+[data-theme="dark"] [data-nexlify-theme="mist"] {
+	--nxt-accent: #9db7d2;
+	--nxt-accent2: #90abc7;
+	--nxt-btn: #456a8e;
+	--nxt-tint: #1e2a37;
+	--nxt-sidebar: #12161b;
+	--nxt-sidebar2: #151a20;
+	--nxt-sky-top: #0f1317;
+	--nxt-sky-bottom: #12171c;
+	--nxt-bg: #0f1317;
+	--nxt-card: #181e25;
+	--nxt-card2: #1e262e;
+	--nxt-text: #dce3ea;
+	--nxt-heading: #eff3f7;
+	--nxt-muted: #93a0ad;
+	--nxt-border: #27303a;
+}
+
 /* ---------------------------------------------------------------- the business themes' colors */
 
 /* A business theme names, besides the desk's tokens: dock (the icon tray, a step darker than the
@@ -2957,6 +3108,46 @@ html[data-nexlify-kind="scene"] .layout-main-section .frappe-list .list-paging-a
 	margin-top: 8px;
 }
 
+/* ---------------------------------------------------------------- the calm styles: a clinic app's desk */
+
+/* their font, a page that fades from near white to the paper with no colored glow, and softer shadows */
+html:is([data-nexlify-theme="sage"], [data-nexlify-theme="mint"], [data-nexlify-theme="linen"], [data-nexlify-theme="mist"]) {
+	--font-stack: "Manrope", "IBM Plex Sans Arabic", "InterVariable", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+	--shadow-base: 0 4px 14px -8px color-mix(in srgb, var(--nxt-heading) 18%, transparent);
+	--shadow-sm: 0 1px 3px -1px color-mix(in srgb, var(--nxt-heading) 10%, transparent);
+	background: linear-gradient(180deg, var(--nxt-sky-top), var(--nxt-sky-bottom)) fixed;
+}
+html:is([data-nexlify-theme="sage"], [data-nexlify-theme="mint"], [data-nexlify-theme="linen"], [data-nexlify-theme="mist"]):lang(ar) {
+	--font-stack: "IBM Plex Sans Arabic", "Manrope", "InterVariable", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+/* the buttons are flat and rounded, not pills */
+html:is([data-nexlify-theme="sage"], [data-nexlify-theme="mint"], [data-nexlify-theme="linen"], [data-nexlify-theme="mist"]) .btn.btn-primary,
+html:is([data-nexlify-theme="sage"], [data-nexlify-theme="mint"], [data-nexlify-theme="linen"], [data-nexlify-theme="mist"]) .es-button[data-variant="solid"] {
+	border-radius: 10px;
+	background: var(--nxt-btn);
+}
+html:is([data-nexlify-theme="sage"], [data-nexlify-theme="mint"], [data-nexlify-theme="linen"], [data-nexlify-theme="mist"]) .btn.btn-primary:hover,
+html:is([data-nexlify-theme="sage"], [data-nexlify-theme="mint"], [data-nexlify-theme="linen"], [data-nexlify-theme="mist"]) .es-button[data-variant="solid"]:hover {
+	background: color-mix(in srgb, var(--nxt-btn) 88%, #000);
+}
+
+/* the selected sidebar item: a soft tint with the heading's ink, as a clinic app marks it */
+html:is([data-nexlify-theme="sage"], [data-nexlify-theme="mint"], [data-nexlify-theme="linen"], [data-nexlify-theme="mist"]) .body-sidebar .active-sidebar {
+	background-color: var(--nxt-tint);
+}
+html:is([data-nexlify-theme="sage"], [data-nexlify-theme="mint"], [data-nexlify-theme="linen"], [data-nexlify-theme="mist"]) .body-sidebar .active-sidebar .item-anchor,
+html:is([data-nexlify-theme="sage"], [data-nexlify-theme="mint"], [data-nexlify-theme="linen"], [data-nexlify-theme="mist"]) .body-sidebar .active-sidebar .sidebar-item-label {
+	color: var(--nxt-heading);
+	font-weight: 600;
+}
+
+/* the cards keep a hairline and only a breath of shadow */
+html:is([data-nexlify-theme="sage"], [data-nexlify-theme="mint"], [data-nexlify-theme="linen"], [data-nexlify-theme="mist"]) .widget,
+html:is([data-nexlify-theme="sage"], [data-nexlify-theme="mint"], [data-nexlify-theme="linen"], [data-nexlify-theme="mist"]) .frappe-card {
+	border-color: var(--nxt-border);
+}
+
 /* ---------------------------------------------------------------- Prism: glass over drifting color */
 
 /* the font, the page's color under the blobs, and glass made from the theme's card color */
@@ -3380,4 +3571,16 @@ html[data-nexlify-theme] .std-form-layout > .form-layout > .form-page:has(.grid-
 	-webkit-backdrop-filter: none !important;
 	transform: none !important;
 	filter: none !important;
+}
+
+/* ---------------------------------------------------------------- a field's suggestions */
+
+/* The form card clips its corners (overflow: clip) and a glass card is a layer of its own, so the
+   suggestions under a Link or Table MultiSelect field near the card's foot were cut at its edge, and
+   the comments card after it painted over them. While a list is open the card does not clip and sits
+   above the cards that follow it */
+html[data-nexlify-theme] .std-form-layout > .form-layout > .form-page:has(.awesomplete > ul:not([hidden])) {
+	overflow: visible;
+	position: relative;
+	z-index: 2;
 }

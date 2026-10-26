@@ -626,7 +626,16 @@ frappe.provide("nexlify.themes");
 
 	// the styles with soft color blobs drifting behind the glass, and the font each one loads
 	const AURORA = ["prism"];
-	const FONTS = { prism: "https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&display=swap" };
+	// the calm styles share one font: Manrope, and IBM Plex Sans Arabic for Arabic
+	const CALM_FONT =
+		"https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap";
+	const FONTS = {
+		prism: "https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&display=swap",
+		sage: CALM_FONT,
+		mint: CALM_FONT,
+		linen: CALM_FONT,
+		mist: CALM_FONT,
+	};
 
 	// the themes, in the three groups Switch Theme shows them in. A business theme and a style
 	// re-color the desk (plain and exact, or warm and round); a scene adds a sky and a drawing to
@@ -654,6 +663,10 @@ frappe.provide("nexlify.themes");
 				{ name: "rose", label: __("Rose"), info: __("Blush, lilac and rose buttons") },
 				{ name: "ocean", label: __("Ocean"), info: __("Pale water, deep blue ink and teal") },
 				{ name: "prism", label: __("Prism"), info: __("Glass over drifting color, indigo and violet") },
+				{ name: "sage", label: __("Sage"), info: __("Quiet gray-green paper, white cards and forest green") },
+				{ name: "mint", label: __("Mint"), info: __("Fresh mint paper, white cards and emerald") },
+				{ name: "linen", label: __("Linen"), info: __("Soft linen paper, white cards and olive green") },
+				{ name: "mist", label: __("Mist"), info: __("Cool gray paper, white cards and slate blue") },
 			],
 		},
 		{
@@ -745,10 +758,10 @@ frappe.provide("nexlify.themes");
 		return `<div class="nxt-fall">${s}</div>`;
 	}
 
-	// a theme's own font, fetched once, the first time the theme is put on the page
+	// a theme's own font, fetched once, the first time a theme that uses it is put on the page
 	function load_font(name) {
 		const href = FONTS[name];
-		if (!href || document.querySelector(`link[data-nexlify-font="${name}"]`)) return;
+		if (!href || [...document.querySelectorAll("link[data-nexlify-font]")].some((l) => l.href === href)) return;
 		const link = document.createElement("link");
 		link.rel = "stylesheet";
 		link.href = href;

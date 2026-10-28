@@ -979,6 +979,7 @@
 [data-nexlify-theme="indigo"],
 [data-nexlify-theme="teal"],
 [data-nexlify-theme="ember"],
+[data-nexlify-theme="mono"],
 [data-nexlify-theme="custom"] {
 	--nxt-sky-top: #f5f6f9;
 	--nxt-sky-bottom: #f5f6f9;
@@ -993,11 +994,13 @@
 }
 [data-theme="dark"] :is(
 		[data-nexlify-theme="ledger"], [data-nexlify-theme="slate"], [data-nexlify-theme="indigo"],
-		[data-nexlify-theme="teal"], [data-nexlify-theme="ember"], [data-nexlify-theme="custom"]
+		[data-nexlify-theme="teal"], [data-nexlify-theme="ember"], [data-nexlify-theme="mono"],
+		[data-nexlify-theme="custom"]
 	),
 [data-theme="dark"]:is(
 		[data-nexlify-theme="ledger"], [data-nexlify-theme="slate"], [data-nexlify-theme="indigo"],
-		[data-nexlify-theme="teal"], [data-nexlify-theme="ember"], [data-nexlify-theme="custom"]
+		[data-nexlify-theme="teal"], [data-nexlify-theme="ember"], [data-nexlify-theme="mono"],
+		[data-nexlify-theme="custom"]
 	) {
 	--nxt-sky-top: #111319;
 	--nxt-sky-bottom: #111319;
@@ -1725,6 +1728,53 @@ html[data-nexlify-kind="style"] .modal-content {
 	border: 1px solid color-mix(in srgb, var(--nxt-border) 70%, transparent);
 }
 
+/* Mono: Frappe's own look, in black and white. A black sidebar, white pages and black buttons in the
+   light; in the dark Frappe's near-black grays and white buttons. The page is pure gray (no blue in
+   it), so it names its own page colors after the shared ones above. */
+[data-nexlify-theme="mono"] {
+	--nxt-accent: #171717;
+	--nxt-accent2: #000000;
+	--nxt-btn: #171717;
+	--nxt-btn-ink: #ffffff;
+	--nxt-tint: #f0f0f0;
+	--nxt-sidebar: #171717;
+	--nxt-sidebar2: #171717;
+	--nxt-dock: #0a0a0a;
+	--nxt-side-text: #e2e2e2;
+	--nxt-side-muted: #8f8f8f;
+	--nxt-sky-top: #f8f8f8;
+	--nxt-sky-bottom: #f8f8f8;
+	--nxt-bg: #f8f8f8;
+	--nxt-head: #fafafa;
+	--nxt-text: #383838;
+	--nxt-heading: #171717;
+	--nxt-muted: #7c7c7c;
+	--nxt-border: #e7e7e7;
+}
+[data-theme="dark"][data-nexlify-theme="mono"],
+[data-theme="dark"] [data-nexlify-theme="mono"] {
+	--nxt-accent: #f5f5f5;
+	--nxt-accent2: #ffffff;
+	--nxt-btn: #f5f5f5;
+	--nxt-btn-ink: #0f0f0f;
+	--nxt-tint: #262626;
+	--nxt-sidebar: #141414;
+	--nxt-sidebar2: #141414;
+	--nxt-dock: #0a0a0a;
+	--nxt-side-text: #d4d4d4;
+	--nxt-side-muted: #7c7c7c;
+	--nxt-sky-top: #0f0f0f;
+	--nxt-sky-bottom: #0f0f0f;
+	--nxt-bg: #0f0f0f;
+	--nxt-card: #171717;
+	--nxt-card2: #1c1c1c;
+	--nxt-head: #1c1c1c;
+	--nxt-text: #d4d4d4;
+	--nxt-heading: #f5f5f5;
+	--nxt-muted: #8f8f8f;
+	--nxt-border: #2a2a2a;
+}
+
 /* ---------------------------------------------------------------- business: a bookkeeping app's desk */
 
 /* Plain and exact, but not flat: 8px corners, hairlines, a whisper of shadow, and one accent that
@@ -2124,6 +2174,33 @@ html[data-nexlify-kind="business"][data-nexlify-pane="light"] .body-sidebar .ite
 html[data-nexlify-kind="business"][data-nexlify-pane="light"] .body-sidebar .promotional-banner,
 html[data-nexlify-kind="business"][data-nexlify-pane="light"] .body-sidebar .promotional-banner * {
 	color: var(--nxt-text) !important;
+}
+
+/* Mono: the accent is black in the light and white in the dark, so what is filled with it takes the
+   other one as its ink. On the dark pane the row you are on is white (black on black would vanish);
+   on the light pane it is the button's color. */
+html[data-nexlify-theme="mono"] :is(.btn.btn-primary, .es-button[data-variant="solid"]:not([data-theme="red"])) {
+	--bt-solid-fg: var(--nxt-btn-ink);
+	--icon-stroke: var(--nxt-btn-ink);
+	color: var(--nxt-btn-ink);
+}
+html[data-nexlify-theme="mono"] .es-button:not([data-theme="red"]) {
+	--bt-solid-fg: var(--nxt-btn-ink);
+}
+html[data-nexlify-theme="mono"] .body-sidebar .active-sidebar {
+	--nxt-row: #ffffff;
+	--nxt-row-ink: #0f0f0f;
+	background: var(--nxt-row);
+}
+html[data-nexlify-theme="mono"][data-nexlify-pane="light"] .body-sidebar .active-sidebar {
+	--nxt-row: var(--nxt-btn);
+	--nxt-row-ink: var(--nxt-btn-ink);
+}
+html[data-nexlify-theme="mono"][data-nexlify-kind="business"] .body-sidebar .active-sidebar .item-anchor:not(.section-break),
+html[data-nexlify-theme="mono"][data-nexlify-kind="business"] .body-sidebar .active-sidebar .item-anchor:not(.section-break) :is(.sidebar-item-label, .sidebar-item-icon),
+html[data-nexlify-theme="mono"][data-nexlify-kind="business"] .body-sidebar .active-sidebar .sidebar-item-icon {
+	color: var(--nxt-row-ink);
+	--icon-stroke: var(--nxt-row-ink);
 }
 html[data-nexlify-kind="business"] .body-sidebar .sidebar-header {
 	box-shadow: 0 1px 0 rgba(255, 255, 255, 0.07);
@@ -2893,6 +2970,9 @@ html[data-nexlify-theme] .kanban .kanban-card {
 }
 .nxt-theme-preview[data-nexlify-kind="business"] .nxt-style-preview .pill {
 	background: var(--nxt-btn);
+}
+.nxt-theme-preview[data-nexlify-theme="mono"] .nxt-style-preview .sb::before {
+	background: #ffffff;
 }
 
 /* the pane under the business themes: two small cards, a dark and a light sidebar beside a white page */

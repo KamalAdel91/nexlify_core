@@ -15,7 +15,7 @@ import re
 import frappe
 from frappe import _
 
-BUSINESS = ("ledger", "slate", "indigo", "teal", "ember", "custom")
+BUSINESS = ("ledger", "slate", "indigo", "teal", "ember", "mono", "custom")
 STYLES = ("warm", "rose", "ocean", "prism", "sage", "mint", "linen", "mist")
 SCENES = ("sakura", "candy", "lavender", "nile", "sahel", "desert", "ramadan", "forest", "aurora", "night")
 NONE = "none"

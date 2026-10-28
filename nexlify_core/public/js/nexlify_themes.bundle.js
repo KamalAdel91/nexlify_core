@@ -651,6 +651,7 @@ frappe.provide("nexlify.themes");
 				{ name: "indigo", label: __("Indigo"), info: __("A violet sidebar and indigo") },
 				{ name: "teal", label: __("Teal"), info: __("A pine sidebar and teal") },
 				{ name: "ember", label: __("Ember"), info: __("A stone sidebar and orange") },
+				{ name: "mono", label: __("Mono"), info: __("Frappe's own look in black and white") },
 				{ name: "custom", label: __("Custom"), info: __("Your own accent and sidebar colors") },
 			],
 		},

@@ -19,3 +19,8 @@ def extend_bootinfo(bootinfo):
 	except frappe.DoesNotExistError:
 		reports = None
 	bootinfo["nexlify_reports_enabled"] = 1 if reports is None else int(reports)
+	# Search Box in Page Header: off until it is ticked
+	try:
+		bootinfo["nexlify_page_search"] = int(frappe.get_cached_doc("Nexlify Core Settings").get("show_page_search") or 0)
+	except frappe.DoesNotExistError:
+		bootinfo["nexlify_page_search"] = 0

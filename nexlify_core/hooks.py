@@ -24,6 +24,8 @@ app_include_js = [
 	"nexlify_reports.bundle.js",
 	# Send WhatsApp button in every form's activity bar, next to New Email
 	"nexlify_whatsapp.bundle.js",
+	# Search box in every page's header, off until ticked in Nexlify Core Settings
+	"nexlify_page_search.bundle.js",
 ]
 app_include_css = ["nexlify_themes.bundle.css", "nexlify_reports.bundle.css"]
 

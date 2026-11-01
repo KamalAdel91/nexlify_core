@@ -4,12 +4,32 @@
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
+  "section_search",
+  "show_page_search",
+  "section_raven",
   "enable_raven_chat_button",
   "notification_sound_type",
   "notification_sound",
   "notification_volume"
  ],
  "fields": [
+  {
+   "fieldname": "section_search",
+   "fieldtype": "Section Break",
+   "label": "Search"
+  },
+  {
+   "default": "0",
+   "fieldname": "show_page_search",
+   "fieldtype": "Check",
+   "label": "Search Box in Page Header",
+   "description": "A search box in every page's header, before its buttons: it opens Frappe's own search (Ctrl+K), to find a document by its name or, through Global Search, by what is in it. Shows after the page is reloaded."
+  },
+  {
+   "fieldname": "section_raven",
+   "fieldtype": "Section Break",
+   "label": "Raven Chat"
+  },
   {
    "default": "0",
    "fieldname": "enable_raven_chat_button",
@@ -40,7 +60,7 @@
   }
  ],
  "issingle": 1,
- "modified": "2026-09-27 01:41:38.204295",
+ "modified": "2026-11-01 18:00:00.000000",
  "modified_by": "Administrator",
  "module": "Nexlify Core",
  "name": "Nexlify Core Settings",

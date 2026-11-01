@@ -37,6 +37,8 @@
 .datatable .dt-scrollable {
     scrollbar-width: thin;
     scrollbar-color: var(--scrollbar-thumb-color, var(--border-color)) transparent;
+    /* a wheel that reaches the table's end stays in it, not moving the page under it */
+    overscroll-behavior: contain;
 }
 
 /* ---- Print ---- */

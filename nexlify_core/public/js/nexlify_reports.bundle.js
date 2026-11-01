@@ -843,11 +843,72 @@ nexlify_reports.on_datatable_ready = function (datatable) {
 			const isReportOrList =
 				(frappe.query_report && frappe.query_report.datatable === datatable) ||
 				(window.cur_list && cur_list.datatable === datatable);
-			if (isReportOrList) nexlify_reports.setup_report();
+			if (isReportOrList) {
+				nexlify_reports.setup_report();
+				nexlify_reports.watch_table_height(datatable);
+			}
 		} catch (e) {
 			console.error("nexlify_reports.on_datatable_ready error", e);
 		}
 	}, 0);
+};
+
+// ============================================================
+// Report height: the table fits the room left on the screen
+// ============================================================
+// Frappe makes a report's table calc(100vh - 240px) tall. With a summary, a chart or a second row of
+// filters above it, that is more than the room left, so the page under the table scrolls too: a wheel
+// that reaches the table's end moves the page, the table jumps, and the next wheels go to one or the
+// other (the shaking, and the scroll that seems stuck in one place). The table is made as tall as the
+// room left under what is above it, never taller than Frappe made it (its rows are drawn for that
+// height), again whenever the page's content or the window changes size. A wheel inside the table
+// stays in it (overscroll-behavior, nexlify_reports.bundle.css).
+
+nexlify_reports.FRAPPE_TABLE_OFFSET = 240; // calc(100vh - 240px), frappe_datatable.scss
+// a summary and a chart can leave little room: the table keeps this much, and the page scrolls to it
+nexlify_reports.MIN_TABLE_HEIGHT = 400;
+
+nexlify_reports.fit_table_height = function (scroller) {
+	const page = scroller.closest(".main-section");
+	// phones keep Frappe's own height (an !important rule there)
+	if (!page || window.innerWidth < 576) return;
+	const pageTop = page.getBoundingClientRect().top - page.scrollTop;
+	const top = scroller.getBoundingClientRect().top - pageTop;
+	// what is under the table: down to the page content's end (not the page's own height, which a short
+	// page fills with empty room), with the page's bottom padding
+	const end = Math.max(...Array.from(page.children).map((child) => child.getBoundingClientRect().bottom - pageTop));
+	const below = end + parseFloat(getComputedStyle(page).paddingBottom || 0) - (top + scroller.offsetHeight);
+	const room = page.clientHeight - top - below;
+	const height = Math.round(Math.max(nexlify_reports.MIN_TABLE_HEIGHT,
+		Math.min(room, window.innerHeight - nexlify_reports.FRAPPE_TABLE_OFFSET)));
+	if (Math.abs(height - scroller.offsetHeight) > 2) scroller.style.height = height + "px";
+};
+
+nexlify_reports.watch_table_height = function (datatable) {
+	const scroller = $(datatable.wrapper).find(".dt-scrollable")[0];
+	const page = scroller && scroller.closest(".main-section");
+	if (!page || scroller.__nexlify_height_watched) return;
+	scroller.__nexlify_height_watched = true;
+	let frame = null;
+	let observer = null;
+	const fit = () => {
+		cancelAnimationFrame(frame);
+		frame = requestAnimationFrame(() => {
+			// a table made again (another report, another set of columns): its successor is watched
+			if (!scroller.isConnected) {
+				if (observer) observer.disconnect();
+				return;
+			}
+			nexlify_reports.fit_table_height(scroller);
+		});
+	};
+	if (window.ResizeObserver) {
+		// the window, and what arrives above or below the table (the summary, the chart)
+		observer = new ResizeObserver(fit);
+		observer.observe(page);
+		Array.from(page.children).forEach((child) => observer.observe(child));
+	}
+	fit();
 };
 
 // A table refreshed with another set of columns (a report's filter that changes its columns): the
@@ -1037,7 +1098,10 @@ nexlify_reports.init_scroll_hover_suppression = function () {
 		function (e) {
 			var el = e.target;
 			if (!(el && el.classList && el.classList.contains("dt-scrollable"))) return;
-			document.body.classList.add("nexlify-is-scrolling");
+			// once per scroll, not a body change on every scroll event
+			if (!document.body.classList.contains("nexlify-is-scrolling")) {
+				document.body.classList.add("nexlify-is-scrolling");
+			}
 			clearTimeout(t);
 			t = setTimeout(function () {
 				document.body.classList.remove("nexlify-is-scrolling");

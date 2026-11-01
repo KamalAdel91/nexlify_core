@@ -15,10 +15,65 @@
 		return null;
 	}
 
+	// a list, report view or board of the page's DocType: Enter in the search filters it to what was found
+	function page_view() {
+		const route = frappe.get_route() || [];
+		if (route[0] !== "List" || !route[1]) return null;
+		const view = (frappe.views.list_view || {})[frappe.get_route_str()];
+		return view && (view.filter_area || (view._kanban && view._kanban.filter_group)) ? view : null;
+	}
+
+	function filter_page(view, doctype, names) {
+		const filter = [doctype, "name", "in", names];
+		if (view.filter_area) {
+			return Promise.resolve(view.filter_area.remove("name")).then(() => view.filter_area.add([filter]));
+		}
+		// a board: an earlier search's filter goes, this one is added (its filters are drawn one by one), then the
+		// board loads again with them
+		const board = view._kanban;
+		const group = board.filter_group;
+		(group.filters || []).filter((f) => f.fieldname === "name").forEach((f) => f.remove(true));
+		group.filters = (group.filters || []).filter((f) => f.fieldname !== "name");
+		return Promise.resolve(group.add_filters([filter])).then(() => board.apply_filters());
+	}
+
+	function bind_enter(dialog) {
+		if (dialog.__nexlify_enter) return;
+		dialog.__nexlify_enter = true;
+		dialog.$input.on("keydown.nexlify_page_search", (e) => {
+			if (e.key !== "Enter" || e.shiftKey || e.ctrlKey || e.metaKey || e.altKey) return;
+			const view = page_view();
+			const doctype = page_doctype();
+			const text = (dialog.$input.val() || "").trim();
+			if (!view || !doctype || text.length < 2) return;
+			e.preventDefault();
+			e.stopPropagation();
+			frappe
+				.xcall("frappe.utils.global_search.search", { text, start: 0, limit: 500, doctype })
+				.then((rows) => {
+					const names = [...new Set((rows || []).filter((r) => r.doctype === doctype).map((r) => r.name))];
+					if (!names.length) {
+						frappe.show_alert({ message: __("Nothing found in {0}", [__(doctype)]), indicator: "orange" });
+						return;
+					}
+					dialog.search_dialog.hide();
+					filter_page(view, doctype, names).then(() =>
+						frappe.show_alert({
+							message: __("{0} found: the page shows them (take the ID filter off to see all)", [
+								names.length,
+							]),
+							indicator: "green",
+						})
+					);
+				});
+		});
+	}
+
 	function open_search(text) {
 		const dialog = frappe.searchdialog && frappe.searchdialog.search;
 		if (!dialog) return;
 		dialog.open_global_search_dialog(text);
+		bind_enter(dialog);
 		const doctype = page_doctype();
 		if (!doctype) return;
 		// only a DocType Global Search has (Global Search Settings): another would find nothing

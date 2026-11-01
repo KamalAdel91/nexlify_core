@@ -839,6 +839,7 @@ nexlify_reports.on_datatable_ready = function (datatable) {
 	setTimeout(() => {
 		try {
 			nexlify_reports.observe_datatable(datatable);
+			nexlify_reports.refit_on_new_columns(datatable);
 			const isReportOrList =
 				(frappe.query_report && frappe.query_report.datatable === datatable) ||
 				(window.cur_list && cur_list.datatable === datatable);
@@ -847,6 +848,23 @@ nexlify_reports.on_datatable_ready = function (datatable) {
 			console.error("nexlify_reports.on_datatable_ready error", e);
 		}
 	}, 0);
+};
+
+// A table refreshed with another set of columns (a report's filter that changes its columns): the
+// width rules written for the old set would size the new columns by their place, so they go, and the
+// new set gets its own widths (saved, or measured once its rows are drawn). The first render is
+// observe_datatable's; a refresh with the same columns changes nothing.
+nexlify_reports.refit_on_new_columns = function (datatable) {
+	if (!datatable.__nexlify_last_signature) return;
+	if (nexlify_reports.get_column_signature(datatable) === datatable.__nexlify_last_signature) return;
+	const wrapperEl = $(datatable.wrapper).find(".datatable")[0];
+	if (!wrapperEl) return;
+	const instanceClass = nexlify_reports.get_instance_class(wrapperEl);
+	const styleEl = instanceClass && document.getElementById("nexlify-autofit-style-" + instanceClass);
+	if (styleEl) styleEl.textContent = "";
+	// the new signature now, so another refresh meanwhile doesn't measure twice
+	datatable.__nexlify_last_signature = nexlify_reports.get_column_signature(datatable);
+	setTimeout(() => nexlify_reports.apply_saved_or_autofit(datatable, wrapperEl), 150);
 };
 
 // ============================================================

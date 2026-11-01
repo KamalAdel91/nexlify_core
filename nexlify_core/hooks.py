@@ -98,4 +98,6 @@ permission_query_conditions = {
 override_whitelisted_methods = {
 	"frappe.desk.query_report.run": "nexlify_core.nexlify_core.active_company.run_report",
 	"frappe.desk.query_report.export_query": "nexlify_core.nexlify_core.active_company.export_report",
+	# Global Search finding part of a word too, when Nexlify Core Settings > Search Inside Words is ticked
+	"frappe.utils.global_search.search": "nexlify_core.nexlify_core.global_search.search",
 }

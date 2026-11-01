@@ -6,6 +6,7 @@
  "field_order": [
   "section_search",
   "show_page_search",
+  "search_inside_words",
   "section_raven",
   "enable_raven_chat_button",
   "notification_sound_type",
@@ -23,7 +24,14 @@
    "fieldname": "show_page_search",
    "fieldtype": "Check",
    "label": "Search Box in Page Header",
-   "description": "A search box in every page's header, before its buttons: it opens Frappe's own search (Ctrl+K), to find a document by its name or, through Global Search, by what is in it. Shows after the page is reloaded."
+   "description": "A search box in the middle of every page's header: it opens Frappe's Global Search (Ctrl+G) with what was typed, on the page's DocType when Global Search has it. Shows after the page is reloaded."
+  },
+  {
+   "default": "0",
+   "fieldname": "search_inside_words",
+   "fieldtype": "Check",
+   "label": "Search Inside Words",
+   "description": "Global Search finds whole words (00002676, not 2676). Ticked: when it finds few, it also finds the documents that have the text anywhere in what Global Search keeps of them, as the user may read them."
   },
   {
    "fieldname": "section_raven",
@@ -60,7 +68,7 @@
   }
  ],
  "issingle": 1,
- "modified": "2026-11-01 18:00:00.000000",
+ "modified": "2026-11-01 19:00:00.000000",
  "modified_by": "Administrator",
  "module": "Nexlify Core",
  "name": "Nexlify Core Settings",

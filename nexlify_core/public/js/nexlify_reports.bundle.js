@@ -865,7 +865,9 @@ nexlify_reports.on_datatable_ready = function (datatable) {
 // stays in it (overscroll-behavior, nexlify_reports.bundle.css).
 
 nexlify_reports.FRAPPE_TABLE_OFFSET = 240; // calc(100vh - 240px), frappe_datatable.scss
-// a summary and a chart can leave little room: the table keeps this much, and the page scrolls to it
+// a summary and a chart can leave little room: the table keeps this much of the window's height (and at least
+// MIN_TABLE_HEIGHT), and the page scrolls to it; a wheel in the table stays in it (overscroll-behavior)
+nexlify_reports.MIN_TABLE_SHARE = 0.75;
 nexlify_reports.MIN_TABLE_HEIGHT = 400;
 
 nexlify_reports.fit_table_height = function (scroller) {
@@ -879,8 +881,10 @@ nexlify_reports.fit_table_height = function (scroller) {
 	const end = Math.max(...Array.from(page.children).map((child) => child.getBoundingClientRect().bottom - pageTop));
 	const below = end + parseFloat(getComputedStyle(page).paddingBottom || 0) - (top + scroller.offsetHeight);
 	const room = page.clientHeight - top - below;
-	const height = Math.round(Math.max(nexlify_reports.MIN_TABLE_HEIGHT,
-		Math.min(room, window.innerHeight - nexlify_reports.FRAPPE_TABLE_OFFSET)));
+	const frappeHeight = window.innerHeight - nexlify_reports.FRAPPE_TABLE_OFFSET;
+	const least = Math.min(frappeHeight, Math.max(nexlify_reports.MIN_TABLE_HEIGHT,
+		window.innerHeight * nexlify_reports.MIN_TABLE_SHARE));
+	const height = Math.round(Math.max(least, Math.min(room, frappeHeight)));
 	if (Math.abs(height - scroller.offsetHeight) > 2) scroller.style.height = height + "px";
 };
 

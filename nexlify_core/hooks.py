@@ -74,7 +74,17 @@ doc_events = {
 	},
 }
 
-after_migrate = "nexlify_core.dashboard_filter_injector.run_after_migrate"
+after_migrate = [
+	"nexlify_core.dashboard_filter_injector.run_after_migrate",
+	"nexlify_core.overrides.invoice_lines.make_setting_field",
+]
+
+# Accounts Settings > Keep Each Invoice Line in the Ledger: an invoice line keeps its own General Ledger
+# row. extend_doctype_class layers on whichever class controls the invoice (another app's too).
+extend_doctype_class = {
+	"Sales Invoice": ["nexlify_core.overrides.invoice_lines.InvoiceLinesMixin"],
+	"Purchase Invoice": ["nexlify_core.overrides.invoice_lines.InvoiceLinesMixin"],
+}
 
 # ---------------------------------------------------------------------------
 # Restrict To Owner (merged from nexlify_access)

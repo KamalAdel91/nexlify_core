@@ -26,6 +26,8 @@ app_include_js = [
 	"nexlify_whatsapp.bundle.js",
 	# Search box in every page's header, off until ticked in Nexlify Core Settings
 	"nexlify_page_search.bundle.js",
+	# Link fields as buttons with a search panel, off until ticked in Nexlify Core Settings
+	"nexlify_link_click.bundle.js",
 ]
 app_include_css = ["nexlify_themes.bundle.css", "nexlify_reports.bundle.css"]
 

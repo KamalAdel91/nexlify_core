@@ -24,3 +24,9 @@ def extend_bootinfo(bootinfo):
 		bootinfo["nexlify_page_search"] = int(frappe.get_cached_doc("Nexlify Core Settings").get("show_page_search") or 0)
 	except frappe.DoesNotExistError:
 		bootinfo["nexlify_page_search"] = 0
+	# Link Fields > Link Fields Work as Buttons: off until it is ticked
+	try:
+		settings = frappe.get_cached_doc("Nexlify Core Settings")
+		bootinfo["nexlify_link_list_on_click"] = int(settings.get("link_list_on_click") or 0)
+	except frappe.DoesNotExistError:
+		bootinfo["nexlify_link_list_on_click"] = 0

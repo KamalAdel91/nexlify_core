@@ -238,13 +238,40 @@
 				toggle_panel(this);
 			}
 		});
+		add_clear_x(this);
 	};
+
+	// an x in the field while the mouse is on it and it has a value: a click on it empties the field. Forms keep
+	// Frappe's own buttons (x and open), with the x shown and emptying at once; filters, which have none, get one.
+	function add_clear_x(control) {
+		const $frappe_clear = control.$input_area.find(".link-btn .btn-clear");
+		if ($frappe_clear.length) {
+			control.is_clear_button_enabled = () => true;
+			// Frappe empties the text first, so the value is set without asking the text
+			$frappe_clear.on("click", () => control.set_value(""));
+			return;
+		}
+		const $x = $(`<a class="nxl-link-x" title="${__("Clear")}">${frappe.utils.icon("x", "xs")}</a>`)
+			.hide()
+			.appendTo(control.$input.parent());
+		control.$input_area.on("mouseenter", () => $x.toggle(Boolean(control.$input.val())));
+		control.$input_area.on("mouseleave", () => $x.hide());
+		$x.on("mousedown", (e) => e.preventDefault());
+		$x.on("click", (e) => {
+			e.stopPropagation();
+			$x.hide();
+			if (control.nxl_panel) control.nxl_panel.close();
+			clear_value(control);
+		});
+	}
 
 	$("<style>")
 		.text(
 			`.nxl-link-area { position: relative; }
 			.nxl-link-button { cursor: pointer !important; caret-color: transparent; user-select: none; }
 			.nxl-link-button::selection { background: transparent; }
+			.nxl-link-x { position: absolute; top: 0; bottom: 0; right: 6px; z-index: 3; display: inline-flex; align-items: center; cursor: pointer; color: var(--text-muted); }
+			.nxl-link-x:hover { color: var(--error-color); }
 			.nxl-link-panel { position: absolute; top: 100%; left: 0; right: 0; z-index: 1050; }
 			.nxl-link-panel .dropdown-menu { position: static; display: block; margin-top: 4px; }
 			.nxl-link-panel .nxl-link-note { cursor: default; white-space: normal; }

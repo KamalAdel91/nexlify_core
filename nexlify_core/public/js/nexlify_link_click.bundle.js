@@ -3,10 +3,13 @@
 // with a search box on top and the choices under it, the field's value marked. A click on a row picks it and
 // closes the panel; a click outside or Esc closes it and keeps the value. One value, as before.
 // The rows are Frappe's own: the same search (the field's filters and queries), then the filter note,
-// "Create a new ..." and "Advanced Search". Only Link and Dynamic Link; Table MultiSelect keeps its own.
+// "Create a new ..." and "Advanced Search". Autocomplete fields (a fixed list, as Party Type in General Ledger) work
+// the same way, their rows being their own list. Table MultiSelect and MultiSelect keep their own behaviour, and so
+// does an Autocomplete that asks the server for its list while it is typed in.
 (() => {
 	const FIELDTYPES = ["Link", "Dynamic Link"];
 	const Link = frappe.ui.form.ControlLink;
+	const Autocomplete = frappe.ui.form.ControlAutocomplete;
 	if (!Link) return;
 
 	const is_on = () => Boolean(frappe.boot && frappe.boot.nexlify_link_list_on_click);
@@ -73,6 +76,7 @@
 		load() {
 			const control = this.control;
 			const txt = this.$search.val() || "";
+			if (control.nxl_kind === "autocomplete") return this.load_list(txt);
 			const args = control.get_search_args(txt);
 			if (!args) return;
 			const filters = args.filters;
@@ -97,6 +101,18 @@
 			});
 		}
 
+		// an Autocomplete's own list, matched on what is typed as Frappe matches it (label, description, value)
+		load_list(txt) {
+			const needle = txt.toLowerCase();
+			const rows = (this.control.get_data() || [])
+				.map((item) => (typeof item === "object" ? item : { value: item, label: item }))
+				.filter((row) => {
+					const hay = `${row.label || ""} ${row.description || ""} ${row.value || ""}`.toLowerCase();
+					return !needle || hay.includes(needle);
+				});
+			this.render(this.with_value_first(rows, txt), null, []);
+		}
+
 		// the field's value first and marked, as the dimension filters show theirs
 		with_value_first(rows, txt) {
 			const value = this.control.get_value();
@@ -104,7 +120,7 @@
 			const others = rows.filter((row) => row.value !== value);
 			const own = rows.find((row) => row.value === value) || {
 				value,
-				label: this.control.get_label_value && this.control.get_label_value(),
+				label: this.control.get_label_value ? this.control.get_label_value() : value,
 			};
 			return [own, ...others];
 		}
@@ -133,9 +149,15 @@
 			this.highlighted = -1;
 			let html = rows
 				.map((row, index) => {
-					const label = control.get_translated(row.label || row.value);
+					const text = row.label || row.value;
+					const label = control.get_translated
+						? control.get_translated(text)
+						: control.translate_values
+						? __(text)
+						: text;
 					const show_description =
-						row.description && (control.is_title_link() || row.description !== row.value);
+						row.description &&
+						(control.is_title_link ? control.is_title_link() || row.description !== row.value : true);
 					const description = show_description
 						? `<div class="small">${esc(__(frappe.utils.html2text(row.description)))}</div>`
 						: "";
@@ -219,27 +241,46 @@
 	Link.prototype.make_input = function (...args) {
 		make_input.apply(this, args);
 		if (!is_on() || !FIELDTYPES.includes(this.df.fieldtype)) return;
-
-		// the field is a button: no typing in it, no caret, a pointer; Frappe's own list stays shut
-		this.$input.attr("readonly", true).addClass("nxl-link-button");
-		this.$input_area.addClass("nxl-link-area");
+		// Frappe's own list stays shut
 		this.on_input = () => {};
-		this.$input.on("mousedown", (e) => {
+		make_button(this);
+	};
+
+	if (Autocomplete) {
+		const make_autocomplete_input = Autocomplete.prototype.make_input;
+		Autocomplete.prototype.make_input = function (...args) {
+			make_autocomplete_input.apply(this, args);
+			if (!is_on() || this.df.fieldtype !== "Autocomplete") return;
+			if (this.get_query || this.df.get_query) return;
+			this.nxl_kind = "autocomplete";
+			// Frappe's own list stays shut: it never reaches enough typed characters to open
+			this.awesomplete.minChars = Infinity;
+			make_button(this);
+		};
+	}
+
+	// the field is a button: no typing in it, no caret, a pointer; a click or a key opens the panel
+	function make_button(control) {
+		// Link keeps its input area as jQuery; Autocomplete has only the element
+		if (!control.$input_area) control.$input_area = $(control.input_area);
+		control.$input.attr("readonly", true).addClass("nxl-link-button");
+		control.$input_area.addClass("nxl-link-area");
+		control.$input.on("mousedown", (e) => {
 			e.preventDefault();
-			toggle_panel(this);
+			toggle_panel(control);
 		});
 		// reached with Tab: the panel opens, as the dimension filters do
-		this.$input.on("keydown", (e) => {
+		control.$input.on("keydown", (e) => {
 			if (["Backspace", "Delete"].includes(e.key)) {
 				e.preventDefault();
-				clear_value(this);
-			} else if (["Enter", " ", "ArrowDown"].includes(e.key) && !this.nxl_panel) {
+				clear_value(control);
+			} else if (["Enter", " ", "ArrowDown"].includes(e.key) && !control.nxl_panel) {
 				e.preventDefault();
-				toggle_panel(this);
+				toggle_panel(control);
 			}
 		});
-		add_clear_x(this);
-	};
+		add_clear_x(control);
+	}
 
 	// an x in the field while the mouse is on it and it has a value: a click on it empties the field. Forms keep
 	// Frappe's own buttons (x and open), with the x shown and emptying at once; filters, which have none, get one.

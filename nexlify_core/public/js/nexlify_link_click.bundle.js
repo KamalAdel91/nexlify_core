@@ -33,7 +33,7 @@
 							<button class="btn btn-primary btn-xs nxl-link-clear">${__("Clear")}</button>
 						</li>
 					</ul>
-				</div>`).appendTo(control.$input_area);
+				</div>`).appendTo(document.body);
 			this.$search = this.$wrapper.find("input");
 			this.bind();
 		}
@@ -61,15 +61,48 @@
 		open() {
 			if (open_panel && open_panel !== this) open_panel.close();
 			open_panel = this;
+			// the panel sits on the page, not in the field: a table cell or a filter bar would cut it off
+			this.on_move = () => {
+				if (this.move_frame) return;
+				this.move_frame = requestAnimationFrame(() => {
+					this.move_frame = null;
+					this.place();
+				});
+			};
+			window.addEventListener("scroll", this.on_move, true);
+			window.addEventListener("resize", this.on_move);
+			this.place();
 			this.load();
 			this.$search.trigger("focus");
 		}
 
 		close() {
 			document.removeEventListener("mousedown", this.on_outside, true);
+			window.removeEventListener("scroll", this.on_move, true);
+			window.removeEventListener("resize", this.on_move);
+			if (this.move_frame) cancelAnimationFrame(this.move_frame);
 			this.$wrapper.remove();
 			if (open_panel === this) open_panel = null;
 			this.control.nxl_panel = null;
+			this.control.nxl_closed_at = Date.now();
+		}
+
+		// under the field, as wide as it (at least 300px); above it when there is no room under it; inside the screen
+		place() {
+			const input = this.control.$input[0];
+			if (!document.body.contains(input) || !input.offsetParent) return this.close();
+			const box = input.getBoundingClientRect();
+			const wrapper = this.$wrapper[0];
+			const screen_width = document.documentElement.clientWidth;
+			const screen_height = window.innerHeight;
+			const width = Math.min(Math.max(box.width, 300), screen_width - 16);
+			wrapper.style.width = `${width}px`;
+			const height = wrapper.offsetHeight;
+			let top = box.bottom + 4;
+			if (top + height > screen_height - 8 && box.top - height - 4 > 8) top = box.top - height - 4;
+			const left = Math.max(8, Math.min(box.left, screen_width - width - 8));
+			wrapper.style.top = `${top}px`;
+			wrapper.style.left = `${left}px`;
 		}
 
 		// Frappe's own search for the field, with what is typed in the panel
@@ -179,17 +212,7 @@
 				})
 				.join("");
 			this.$wrapper.find(".nxl-link-actions").html(foot);
-			this.keep_on_screen();
-		}
-
-		// a field at the right edge: the panel opens to the left, so it stays on the screen
-		keep_on_screen() {
-			const wrapper = this.$wrapper[0];
-			wrapper.classList.remove("nxl-link-panel-left");
-			const menu = wrapper.querySelector(".dropdown-menu").getBoundingClientRect();
-			if (menu.right > document.documentElement.clientWidth - 8) {
-				wrapper.classList.add("nxl-link-panel-left");
-			}
+			this.place();
 		}
 
 		pick(index) {
@@ -269,6 +292,12 @@
 			e.preventDefault();
 			toggle_panel(control);
 		});
+		// in a child table the first click turns the row into inputs and focuses this one: the panel opens then
+		control.$input.on("focus", () => {
+			const in_table = control.$input.closest(".grid-row").length > 0;
+			const just_closed = Date.now() - (control.nxl_closed_at || 0) < 400;
+			if (in_table && !control.nxl_panel && !just_closed) toggle_panel(control);
+		});
 		// reached with Tab: the panel opens, as the dimension filters do
 		control.$input.on("keydown", (e) => {
 			if (["Backspace", "Delete"].includes(e.key)) {
@@ -313,13 +342,11 @@
 			.nxl-link-button::selection { background: transparent; }
 			.nxl-link-x { position: absolute; top: 3px; bottom: 3px; right: 4px; z-index: 3; display: inline-flex; align-items: center; justify-content: center; padding: 0 5px; border-radius: var(--border-radius-sm, 6px); cursor: pointer; color: var(--text-muted); background-color: var(--control-bg); box-shadow: -8px 0 6px -2px var(--control-bg); }
 			.nxl-link-x:hover { color: var(--error-color); }
-			.nxl-link-panel { position: absolute; top: 100%; left: 0; right: 0; z-index: 1050; }
-			.nxl-link-panel .dropdown-menu { position: static; display: block; margin-top: 4px; }
+			.nxl-link-panel { position: fixed; top: 0; left: 0; z-index: 1060; }
+			.nxl-link-panel .dropdown-menu { position: static; display: block; margin: 0; width: 100%; min-width: 0; }
 			.nxl-link-panel .nxl-link-note { cursor: default; white-space: normal; }
 			.nxl-link-panel .nxl-link-action { cursor: pointer; display: flex; align-items: center; justify-content: flex-start; gap: 6px; white-space: normal; }
 			.nxl-link-panel .nxl-link-action .icon { margin: 0 !important; flex: none; }
-			.nxl-link-panel-left { left: auto; right: 0; }
-			.nxl-link-panel-left .dropdown-menu { margin-left: auto; }
 			.nxl-link-panel .nxl-link-action:hover { background-color: var(--fg-hover-color); }
 			.nxl-link-panel .nxl-link-clear-row { display: flex; justify-content: flex-end; }
 			.nxl-link-panel .nxl-link-actions:not(:empty) { border-top: 1px solid var(--border-color); }`

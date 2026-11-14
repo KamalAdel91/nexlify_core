@@ -270,7 +270,7 @@
 			`.nxl-link-area { position: relative; }
 			.nxl-link-button { cursor: pointer !important; caret-color: transparent; user-select: none; }
 			.nxl-link-button::selection { background: transparent; }
-			.nxl-link-x { position: absolute; top: 0; bottom: 0; right: 6px; z-index: 3; display: inline-flex; align-items: center; cursor: pointer; color: var(--text-muted); }
+			.nxl-link-x { position: absolute; top: 3px; bottom: 3px; right: 4px; z-index: 3; display: inline-flex; align-items: center; justify-content: center; padding: 0 5px; border-radius: var(--border-radius-sm, 6px); cursor: pointer; color: var(--text-muted); background-color: var(--control-bg); box-shadow: -8px 0 6px -2px var(--control-bg); }
 			.nxl-link-x:hover { color: var(--error-color); }
 			.nxl-link-panel { position: absolute; top: 100%; left: 0; right: 0; z-index: 1050; }
 			.nxl-link-panel .dropdown-menu { position: static; display: block; margin-top: 4px; }

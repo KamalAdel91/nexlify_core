@@ -26,6 +26,9 @@
 						</li>
 						<div class="selectable-items"></div>
 						<div class="nxl-link-actions"></div>
+						<li class="nxl-link-clear-row">
+							<button class="btn btn-primary btn-xs nxl-link-clear">${__("Clear")}</button>
+						</li>
 					</ul>
 				</div>`).appendTo(control.$input_area);
 			this.$search = this.$wrapper.find("input");
@@ -34,7 +37,14 @@
 
 		bind() {
 			// clicks in the panel keep the search box's focus
-			this.$wrapper.on("mousedown", ".selectable-item, .nxl-link-action", (e) => e.preventDefault());
+			this.$wrapper.on("mousedown", ".selectable-item, .nxl-link-action, .nxl-link-clear", (e) => e.preventDefault());
+			// the field's value goes, as erasing the text did before: a filter is removed, a field emptied
+			this.$wrapper.on("click", ".nxl-link-clear", () => {
+				const control = this.control;
+				this.close();
+				clear_value(control);
+			});
+			this.$wrapper.find(".nxl-link-clear-row").toggle(Boolean(this.control.get_value()));
 			this.$wrapper.on("click", ".selectable-item", (e) => this.pick(Number(e.currentTarget.dataset.index)));
 			this.$wrapper.on("click", ".nxl-link-action", (e) => this.run_action(Number(e.currentTarget.dataset.index)));
 			this.$search.on("input", frappe.utils.debounce(() => this.load(), 300));
@@ -195,6 +205,10 @@
 		}
 	}
 
+	function clear_value(control) {
+		if (control.get_value()) control.set_value("");
+	}
+
 	function toggle_panel(control) {
 		if (control.nxl_panel) return control.nxl_panel.close();
 		control.nxl_panel = new LinkPanel(control);
@@ -216,7 +230,10 @@
 		});
 		// reached with Tab: the panel opens, as the dimension filters do
 		this.$input.on("keydown", (e) => {
-			if (["Enter", " ", "ArrowDown"].includes(e.key) && !this.nxl_panel) {
+			if (["Backspace", "Delete"].includes(e.key)) {
+				e.preventDefault();
+				clear_value(this);
+			} else if (["Enter", " ", "ArrowDown"].includes(e.key) && !this.nxl_panel) {
 				e.preventDefault();
 				toggle_panel(this);
 			}
@@ -236,6 +253,7 @@
 			.nxl-link-panel-left { left: auto; right: 0; }
 			.nxl-link-panel-left .dropdown-menu { margin-left: auto; }
 			.nxl-link-panel .nxl-link-action:hover { background-color: var(--fg-hover-color); }
+			.nxl-link-panel .nxl-link-clear-row { display: flex; justify-content: flex-end; }
 			.nxl-link-panel .nxl-link-actions:not(:empty) { border-top: 1px solid var(--border-color); }`
 		)
 		.appendTo(document.head);

@@ -440,6 +440,7 @@ frappe.provide("nexlify.report_view");
 			this.$wrap.prop("hidden", true);
 			this.close_drawers();
 			this.release_head();
+			if (this.qr.$loading) this.qr.$loading.removeClass("nxv-hide");
 			// Frappe's own table is back: its menu items with it
 			sync_header(this.qr);
 		}
@@ -4083,6 +4084,17 @@ frappe.provide("nexlify.report_view");
 		const $msg = qr.$message;
 		const message_on = !!($msg && $msg.length && $msg.css("display") !== "none");
 		sync_header(qr);
+		// another report on the same page: the old one's rows never stay on screen while the new one loads
+		if (v && v.report_name !== name && !v.$wrap.prop("hidden")) v.hide();
+		// Frappe's "Loading..." screen: the same report runs again, so the view stays with its rows dimmed
+		// and Frappe's screen keeps out of the way (the page does not jump); otherwise Frappe's screen shows
+		const $ld = qr.$loading;
+		if ($ld && $ld.length && $ld.css("display") !== "none") {
+			const same = !!(v && v.report_name === name && !v.$wrap.prop("hidden"));
+			$ld.toggleClass("nxv-hide", same);
+			if (same) v.$wrap.addClass("nxv-loading");
+			return;
+		}
 		if (message_on) {
 			const text = $msg.text().trim();
 			if (v && !text && v.report_name === name && !v.$wrap.prop("hidden")) {
@@ -4132,7 +4144,10 @@ frappe.provide("nexlify.report_view");
 		}
 		const view = qr.__nxv;
 		// the same rows as last time: nothing to draw again
-		if (!force && view.loaded_data === qr.data && view.loaded_cols === (qr.columns || []).length && !view.$wrap.prop("hidden")) return;
+		if (!force && view.loaded_data === qr.data && view.loaded_cols === (qr.columns || []).length && !view.$wrap.prop("hidden")) {
+			view.$wrap.removeClass("nxv-loading");
+			return;
+		}
 		view.show();
 		view.load();
 		view.loaded_data = qr.data;
@@ -4230,6 +4245,10 @@ frappe.provide("nexlify.report_view");
 				mt = setTimeout(() => sync_header(qr), 60);
 			}).observe(qr.page.menu[0], { childList: true });
 		}
+		// ... shows its "Loading..." screen while a report loads ...
+		if (qr.$loading && qr.$loading.length) {
+			new MutationObserver(later).observe(qr.$loading[0], { attributes: true, attributeFilter: ["style"] });
+		}
 		// ... and shows a message while it runs, or instead of rows
 		if (qr.$message && qr.$message.length) {
 			new MutationObserver(later).observe(qr.$message[0], { attributes: true, attributeFilter: ["style"], childList: true, subtree: true });
@@ -4240,6 +4259,8 @@ frappe.provide("nexlify.report_view");
 	// the query report page Frappe has open now, once it is ready
 	function on_route() {
 		const route = frappe.get_route ? frappe.get_route() : [];
+		const current = frappe.query_report;
+		if (route[0] === "query-report" && current && current.__nxv && current.__nxv.report_name !== route[1]) current.__nxv.hide();
 		if (route[0] !== "query-report") return;
 		let tries = 0;
 		const look = () => {

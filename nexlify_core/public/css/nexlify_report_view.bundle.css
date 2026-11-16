@@ -665,3 +665,5 @@ th:hover .nxv-fbtn, .nxv-fbtn.on { opacity: 1; }
 /* while the report runs again, the toolbar and the status line wait with the old rows: nothing exported or
    marked can mix the old rows with the new filters (the Filters section stays usable) */
 .nxv.nxv-loading .nxv-topbar, .nxv.nxv-loading .nxv-status { pointer-events: none; opacity: .55; }
+/* Frappe's "Loading..." screen while the view shows the same report with its rows dimmed */
+.nxv-hide { display: none !important; }

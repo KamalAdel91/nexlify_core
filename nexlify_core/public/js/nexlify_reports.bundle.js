@@ -447,9 +447,17 @@ nexlify_reports.ensure_buttons = function (pageObj, datatableGetter) {
 	try {
 		const $wrapper = $(pageObj.page.wrapper);
 		if ($wrapper.find(".nexlify-autofit-btn").length) return;
+		// on a query report the buttons stay in both views (the header never changes when the user
+		// switches) and work on the table shown: Nexlify View's own, or Frappe's
+		const report_view = () =>
+			pageObj === frappe.query_report && window.nexlify && nexlify.report_view && nexlify.report_view.current
+				? nexlify.report_view.current(pageObj)
+				: null;
 
 		pageObj.page.add_inner_button(__("Autofit"), function () {
 			try {
+				const view = report_view();
+				if (view) return view.autofit();
 				const dt = datatableGetter();
 				if (dt && dt.wrapper) {
 					const wrapperEl = $(dt.wrapper).find(".datatable")[0];
@@ -464,6 +472,8 @@ nexlify_reports.ensure_buttons = function (pageObj, datatableGetter) {
 
 		pageObj.page.add_inner_button(__("Reset Columns"), function () {
 			try {
+				const view = report_view();
+				if (view) return view.reset_widths();
 				const dt = datatableGetter();
 				if (dt && dt.wrapper) {
 					const wrapperEl = $(dt.wrapper).find(".datatable")[0];

@@ -4,7 +4,10 @@
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
-  "enabled"
+  "enabled",
+  "report_view_section",
+  "use_report_view",
+  "report_view_excluded"
  ],
  "fields": [
   {
@@ -13,10 +16,29 @@
    "label": "Enabled",
    "default": "1",
    "description": "The report views' layout fixes, in the colors of the user's Nexlify theme. Off: reports look as Frappe draws them."
+  },
+  {
+   "fieldname": "report_view_section",
+   "fieldtype": "Section Break",
+   "label": "Nexlify Report View"
+  },
+  {
+   "fieldname": "use_report_view",
+   "fieldtype": "Check",
+   "label": "Use Nexlify Report View for All Reports",
+   "default": "0",
+   "description": "Shows every query and script report in Nexlify's own table: one table for all reports, with layouts, copy, number formats, export, print and drill-down. The report's filters, summary and chart sit in two sections above the table that open and close. A switch at the top of each report moves between Nexlify View and Frappe View. Off: reports use Frappe's table."
+  },
+  {
+   "fieldname": "report_view_excluded",
+   "fieldtype": "Table MultiSelect",
+   "label": "Keep Frappe's View for These Reports",
+   "options": "Nexlify Report View Excluded Report",
+   "depends_on": "use_report_view"
   }
  ],
  "issingle": 1,
- "modified": "2026-10-23 18:00:00.000000",
+ "modified": "2026-11-17 12:00:00.000000",
  "modified_by": "Administrator",
  "module": "Nexlify Core",
  "name": "Nexlify Reports Settings",

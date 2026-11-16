@@ -1,0 +1,79 @@
+{
+ "actions": [],
+ "autoname": "hash",
+ "creation": "2026-11-16 15:00:00.000000",
+ "description": "A saved layout of a report in Nexlify Report View: columns, sort, filters, grouping and formats. Private to its owner unless Public.",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "report",
+  "layout_name",
+  "is_public",
+  "state"
+ ],
+ "fields": [
+  {
+   "fieldname": "report",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Report",
+   "options": "Report",
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "layout_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Layout Name",
+   "reqd": 1
+  },
+  {
+   "default": "0",
+   "description": "Everyone who can open the report can use it. Only the owner can change it.",
+   "fieldname": "is_public",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Public"
+  },
+  {
+   "fieldname": "state",
+   "fieldtype": "JSON",
+   "label": "Layout",
+   "read_only": 1
+  }
+ ],
+ "links": [],
+ "modified": "2026-11-16 15:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Nexlify Core",
+ "name": "Nexlify Report Layout",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "read": 1,
+   "role": "Desk User",
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "layout_name",
+ "track_changes": 1
+}

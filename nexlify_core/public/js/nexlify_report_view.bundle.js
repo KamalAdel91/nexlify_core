@@ -1496,7 +1496,22 @@ frappe.provide("nexlify.report_view");
 							if (!r.message) return;
 							d.hide();
 							const prefs = JSON.parse(JSON.stringify(this.prefs));
-							save_prefs(r.message, prefs).then(() => frappe.set_route("query-report", r.message));
+							const name = r.message;
+							// the user stays on this report; the new one opens only when asked
+							save_prefs(name, prefs).then(() =>
+								frappe.msgprint({
+									title: __("Saved as Your Own Report"),
+									indicator: "green",
+									message: __("Saved as {0}. This report stays as it was. Your report is in the Report list, and its menu (⋯) leads back here.", [`<b>${esc(name)}</b>`]),
+									primary_action: {
+										label: __("Open {0}", [esc(name)]),
+										action: () => {
+											frappe.hide_msgprint();
+											frappe.set_route("query-report", name);
+										},
+									},
+								})
+							);
 						},
 					});
 				},
@@ -3407,9 +3422,13 @@ frappe.provide("nexlify.report_view");
 			const compare = { act: "compare", icon: "git-compare", label: __("Compare with another run"), check: 1, on: !!this.state.compare };
 			const review = { act: "review", icon: "check-check", label: __("Review figures"), check: 1, on: !!this.review_mode };
 			const frappe_view = { act: "frappe", icon: "sheet", label: __("Frappe View") };
+			// a report the user saved as their own leads back to the report it was made from
+			const doc = this.qr.report_doc;
+			const from = doc && doc.report_type === "Custom Report" && doc.reference_report;
+			const original = from ? { act: "original", val: from, icon: "undo-2", label: __("Open the original report ({0})", [__(from)]) } : null;
 			let items;
 			if (window.innerWidth > 640) {
-				items = [compare, review, "-", { act: "saveas", icon: "copy-plus", label: __("Save as my own report") }, frappe_view];
+				items = [compare, review, "-", { act: "saveas", icon: "copy-plus", label: __("Save as my own report") }, original, frappe_view];
 			} else {
 				const v = this.view_parts();
 				const full = this.$wrap.hasClass("nxv-full");
@@ -3430,6 +3449,7 @@ frappe.provide("nexlify.report_view");
 					{ act: "pdf", icon: "file", label: __("PDF") },
 					"-",
 					{ act: "full", icon: full ? "minimize-2" : "maximize-2", label: full ? __("Exit Full Screen") : __("Full Screen") },
+					original,
 					frappe_view,
 				];
 			}
@@ -3469,6 +3489,7 @@ frappe.provide("nexlify.report_view");
 			if (click) return w.find(click).trigger("click");
 			if (a === "autofit") this.autofit();
 			if (a === "saveas") this.save_as();
+			if (a === "original" && val) frappe.set_route("query-report", val);
 			if (a === "xlsx") this.export_file("xlsx");
 			if (a === "csv") this.export_file("csv");
 			if (a === "print") this.print_view(false);

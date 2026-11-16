@@ -74,6 +74,9 @@ doc_events = {
 	"Nexlify Dashboard Filter": {
 		"on_update": "nexlify_core.dashboard_filter_injector.on_dashboard_filter_config_save",
 	},
+	# Keep Each Invoice Line in the Ledger: checked after each posting, told when it stops working
+	"Sales Invoice": {"on_submit": "nexlify_core.overrides.invoice_lines.check_posted"},
+	"Purchase Invoice": {"on_submit": "nexlify_core.overrides.invoice_lines.check_posted"},
 }
 
 after_migrate = [

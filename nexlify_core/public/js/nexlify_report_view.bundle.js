@@ -4258,7 +4258,8 @@ frappe.provide("nexlify.report_view");
 
 	// the query report page Frappe has open now, once it is ready
 	function on_route() {
-		const route = frappe.get_route ? frappe.get_route() : [];
+		// early in a page's life Frappe may not know the route yet: no route is no report page
+		const route = (frappe.get_route && frappe.get_route()) || [];
 		const current = frappe.query_report;
 		if (route[0] === "query-report" && current && current.__nxv && current.__nxv.report_name !== route[1]) current.__nxv.hide();
 		if (route[0] !== "query-report") return;

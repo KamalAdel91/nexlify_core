@@ -121,7 +121,7 @@ class TestInvoiceLinesPosted(IntegrationTestCase):
 		invoice.submit()
 		rows = self.income_rows(invoice)
 		self.assertEqual([(r.remarks, r.credit) for r in rows], [("Panel repair", 100), ("Cable change", 50)])
-		self.assertFalse(frappe.db.get_single_value("Accounts Settings", invoice_lines.STOPPED))
+		self.assertIsNone(invoice_lines.stopped_since())
 
 	def test_when_it_stops_working_the_site_is_told_and_the_note_goes_once_it_works_again(self):
 		users = [u for u in frappe.utils.user.get_users_with_role("System Manager") if u not in ("Administrator", "Guest")]
@@ -131,7 +131,7 @@ class TestInvoiceLinesPosted(IntegrationTestCase):
 			invoice.insert()
 			invoice.submit()
 		self.assertEqual([r.credit for r in self.income_rows(invoice)], [150])
-		self.assertTrue(frappe.db.get_single_value("Accounts Settings", invoice_lines.STOPPED))
+		self.assertTrue(invoice_lines.stopped_since())
 		self.assertEqual(frappe.db.get_single_value("Accounts Settings", invoice_lines.MISSED), 1)
 		self.assertTrue(frappe.db.exists("Error Log", {"method": invoice_lines.ERROR_TITLE}))
 		if users:
@@ -143,5 +143,5 @@ class TestInvoiceLinesPosted(IntegrationTestCase):
 		again = two_line_invoice(self)
 		again.insert()
 		again.submit()
-		self.assertFalse(frappe.db.get_single_value("Accounts Settings", invoice_lines.STOPPED))
+		self.assertIsNone(invoice_lines.stopped_since())
 		self.assertEqual(frappe.db.get_single_value("Accounts Settings", invoice_lines.MISSED), 0)

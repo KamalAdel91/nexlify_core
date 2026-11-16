@@ -100,9 +100,15 @@ def check_posted(doc, method=None):
 		frappe.log_error(title=ERROR_TITLE, message=frappe.get_traceback())
 
 
+def stopped_since():
+	"""When it stopped working, or None while it works (an empty Datetime reads back as the year 1)."""
+	value = frappe.db.get_single_value("Accounts Settings", STOPPED)
+	return value if value and getattr(value, "year", 1) > 1 else None
+
+
 def stopped(doc, error=None):
 	"""It did not work for this invoice: counted on Accounts Settings, and told once a day."""
-	since = frappe.db.get_single_value("Accounts Settings", STOPPED)
+	since = stopped_since()
 	missed = cint(frappe.db.get_single_value("Accounts Settings", MISSED)) + 1
 	if not since:
 		since = now_datetime()
@@ -121,7 +127,7 @@ def stopped(doc, error=None):
 
 
 def working_again():
-	since = frappe.db.get_single_value("Accounts Settings", STOPPED)
+	since = stopped_since()
 	if not since:
 		return
 	missed = cint(frappe.db.get_single_value("Accounts Settings", MISSED))

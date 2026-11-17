@@ -531,7 +531,9 @@ frappe.provide("nexlify.report_view");
 			this.totals = [];
 			if (qr.raw_data && qr.raw_data.add_total_row && !qr.report_settings.tree && data.length) this.totals = [data.pop()];
 			this.totals.forEach((r) => (r.__nxtotal = true));
-			this.is_tree = !!qr.tree_report;
+			// a tree only when this run has levels: a report that turns its tree on for a filter (Eye's Group By)
+			// is a plain table without it
+			this.is_tree = !!qr.tree_report && data.some((r) => (r.indent || 0) > 0);
 			this.link_tree(data);
 			this.rows = data;
 			// review and compare keys come from the report's own columns, the same for every user
@@ -772,7 +774,10 @@ frappe.provide("nexlify.report_view");
 				}
 			} else list = rows.filter(match);
 			if (this.tree_on()) return list;
-			const sorts = this.state.sorts.map((s) => ({ c: this.col_of(s.key) || this.cols.find((x) => x.fieldname === s.key), dir: s.dir })).filter((s) => s.c);
+			// the report's own total lines stay after the rows, whatever the sort
+			const own_totals = this.is_tree ? [] : list.filter((r) => this.own_total(r));
+			if (own_totals.length) list = list.filter((r) => !this.own_total(r));
+			const sorts =this.state.sorts.map((s) => ({ c: this.col_of(s.key) || this.cols.find((x) => x.fieldname === s.key), dir: s.dir })).filter((s) => s.c);
 			if (sorts.length) {
 				list = list.slice().sort((a, b) => {
 					for (const { c, dir } of sorts) {
@@ -786,7 +791,7 @@ frappe.provide("nexlify.report_view");
 			}
 			// the report's own total lines ('Opening', 'Total', a statement's totals) are never grouped:
 			// the groups add up the rows themselves
-			return this.state.group_by.length ? this.group_rows(list.filter((r) => !r.is_total_row && !this.is_label_row(r)), sorts[0]) : list;
+			return this.state.group_by.length ? this.group_rows(list.filter((r) => !this.own_total(r) && !this.is_label_row(r)), sorts[0]) : list.concat(own_totals);
 		}
 
 		// Group by, at any number of levels: each group's subtotals are worked out here from the rows under
@@ -1098,10 +1103,15 @@ frappe.provide("nexlify.report_view");
 			return !r.__nxgroup && this.columns.some((x) => /^'.*'$/.test(String(r[x.fieldname] ?? "").trim()));
 		}
 
+		// a total line the report adds itself (Frappe's is_total_row, or a row the report marks is_total)
+		own_total(r) {
+			return !!(r.is_total_row || r.is_total);
+		}
+
 		row_cls(r, v) {
-			let cls = r.bold || r.is_total_row ? "nxv-bold" : "";
+			let cls = r.bold || this.own_total(r) ? "nxv-bold" : "";
 			// the report's own total lines stand out from the rows (they open nothing)
-			if (r.is_total_row || this.is_label_row(r)) cls = "nxv-bold nxv-tot";
+			if (this.own_total(r) || this.is_label_row(r)) cls = "nxv-bold nxv-tot";
 			if (r.__nxgroup) cls = `nxv-grp nxv-grp-l${Math.min(r.__nxglevel || 0, 3)}`;
 			if (this.tree_on() && v > -1 && r.__nxkids) cls += (r.indent || 0) === 0 ? " nxv-g1" : " nxv-g2";
 			// a top row of a tree with no rows under it and a name is the statement's total (Total Income, Net Profit)
@@ -2481,7 +2491,7 @@ frappe.provide("nexlify.report_view");
 		row_kind(r) {
 			if (r.__nxtotal) return "total";
 			if (r.__nxgroup) return "group";
-			if (r.bold || r.is_total_row || (this.tree_on() && r.__nxkids)) return "bold";
+			if (r.bold || this.own_total(r) || (this.tree_on() && r.__nxkids)) return "bold";
 			return "row";
 		}
 
@@ -2967,7 +2977,7 @@ frappe.provide("nexlify.report_view");
 			// 'Closing (Opening + Total)'): no document is behind such a line
 			const label_row = this.is_label_row(r);
 			// a total (the report's own, its footer, or a quoted line) opens nothing and says nothing
-			if (r.bold || r.is_total_row || r.__nxtotal || label_row) return;
+			if (r.bold || this.own_total(r) || r.__nxtotal || label_row) return;
 			const vcol = this.columns.find((x) => x.fieldname === "voucher_no" || (x.fieldtype === "Dynamic Link" && /voucher/i.test(x.fieldname)));
 			if (vcol && r[vcol.fieldname]) {
 				const dt = vcol.fieldtype === "Dynamic Link" ? r[vcol.options] : r.voucher_type || vcol.options;

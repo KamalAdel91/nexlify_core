@@ -24,6 +24,8 @@ frappe.provide("nexlify.report_view");
 	const SCALE_LABEL = { 1000: "K", 1000000: "M", 1000000000: "B" };
 	const SETTINGS_KEY = "nexlify_report_view";
 	const API = "nexlify_core.nexlify_core.report_view.";
+	// joins the values of nested groups into one group's key
+	const GROUP_SEP = " \u203A ";
 	const BLOCK = 40;
 	const CHEVRON =
 		'<svg width="10" height="10" viewBox="0 0 10 10"><path d="M3 1.5 6.5 5 3 8.5" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>';
@@ -277,7 +279,8 @@ frappe.provide("nexlify.report_view");
 				.slice(0, 5),
 			conds: list(s.conds).map(clean_rule).filter(Boolean).slice(0, 30),
 			col_filters: {},
-			group_by: FIELD(s.group_by) || "",
+			// group levels, outer first; an old saved view has one field as text
+			group_by: (Array.isArray(s.group_by) ? s.group_by : s.group_by ? [s.group_by] : []).map(FIELD).filter(Boolean).slice(0, 10),
 		};
 		Object.entries(map(s.widths)).forEach(([k, v]) => {
 			if (FIELD(k)) out.widths[k] = INT(v, 40, 1200, 120);
@@ -343,7 +346,7 @@ frappe.provide("nexlify.report_view");
 		}
 
 		blank_state() {
-			return { query: "", col_filters: {}, sorts: [], conds: [], group_by: "", group_open: new Set(), compare: null };
+			return { query: "", col_filters: {}, sorts: [], conds: [], group_by: [], group_open: new Set(), compare: null };
 		}
 
 		// ---------------------------------------------------------------- layout
@@ -543,7 +546,6 @@ frappe.provide("nexlify.report_view");
 			});
 			this.state.compare = null;
 			this.state.group_open = new Set();
-			if (this.is_tree) this.state.group_by = "";
 			this.bmap = new Map();
 			this.sel = null;
 			this.cur = null;
@@ -634,7 +636,7 @@ frappe.provide("nexlify.report_view");
 				const label = this.prefs.labels[c.fieldname] || c.label;
 				let width = this.prefs.widths[c.fieldname] || c.width;
 				// a grouped table shows the group's name in the first column: give it room
-				if (i === 0 && this.state.group_by) width = Math.max(width, 280);
+				if (i === 0 && this.state.group_by.length) width = Math.max(width, 280 + (this.state.group_by.length - 1) * 18);
 				add(Object.assign({}, c, { label, width, raw_label: c.label }));
 				if (cmp && NUM.has(c.fieldtype) && c.fieldtype !== "Percent" && cmp.colmap[c.fieldname]) {
 					add(Object.assign({}, c, { label: `${label} (${cmp.label})`, fieldname: c.fieldname + "__b", twin: c.fieldname, width: this.prefs.widths[c.fieldname] || c.width }));
@@ -737,13 +739,20 @@ frappe.provide("nexlify.report_view");
 			return Object.values(inc).every(Boolean);
 		}
 
+		// the rows show as the report's tree, unless the user groups them
+		tree_on() {
+			return this.is_tree && !this.state.group_by.length;
+		}
+
 		compute_view() {
-			const rows = this.rows;
+			// a tree grouped by the user: its lowest rows are grouped (the rows above them are their totals,
+			// so they would count twice)
+			const rows = this.is_tree && !this.tree_on() ? this.rows.filter((r) => !r.__nxkids) : this.rows;
 			const q = this.state.query;
 			const filtering = q || Object.keys(this.state.col_filters).length || this.state.conds.length;
 			const match = (r) => (!q || r.__nxt.includes(q)) && this.pass_filters(r);
 			let list;
-			if (this.is_tree && filtering) {
+			if (this.tree_on() && filtering) {
 				const keep = new Set();
 				rows.forEach((r, i) => {
 					if (!match(r)) return;
@@ -751,7 +760,7 @@ frappe.provide("nexlify.report_view");
 					for (let p = r.__nxparent; p > -1; p = rows[p].__nxparent) keep.add(p);
 				});
 				list = rows.filter((r, i) => keep.has(i));
-			} else if (this.is_tree) {
+			} else if (this.tree_on()) {
 				list = [];
 				let skip = null;
 				for (const r of rows) {
@@ -762,7 +771,7 @@ frappe.provide("nexlify.report_view");
 					if (r.__nxkids && !r.__nxopen) skip = ind;
 				}
 			} else list = rows.filter(match);
-			if (this.is_tree) return list;
+			if (this.tree_on()) return list;
 			const sorts = this.state.sorts.map((s) => ({ c: this.col_of(s.key) || this.cols.find((x) => x.fieldname === s.key), dir: s.dir })).filter((s) => s.c);
 			if (sorts.length) {
 				list = list.slice().sort((a, b) => {
@@ -775,34 +784,50 @@ frappe.provide("nexlify.report_view");
 					return 0;
 				});
 			}
-			return this.state.group_by ? this.group_rows(list, sorts[0]) : list;
+			// the report's own total lines ('Opening', 'Total', a statement's totals) are never grouped:
+			// the groups add up the rows themselves
+			return this.state.group_by.length ? this.group_rows(list.filter((r) => !r.is_total_row && !this.is_label_row(r)), sorts[0]) : list;
 		}
 
-		// Group by: the subtotals are worked out here from the rows under them, so they show as calculated
+		// Group by, at any number of levels: each group's subtotals are worked out here from the rows under
+		// it (so they show as calculated); a group opens to its next level's groups, the last level to its rows
 		group_rows(list, first_sort) {
-			const c = this.col_of(this.state.group_by);
-			if (!c) return list;
+			const levels = this.state.group_by.map((f) => this.col_of(f)).filter(Boolean);
+			if (!levels.length) return list;
 			const sc = first_sort && first_sort.c;
 			const dir = first_sort ? first_sort.dir : 1;
-			const groups = new Map();
-			list.forEach((r) => {
-				const k = clean(this.val(r, c)) || __("(blank)");
-				if (!groups.has(k)) groups.set(k, []);
-				groups.get(k).push(r);
-			});
-			const sum_cols = this.cols.filter((x) => AMT.has(x.fieldtype) && !x.calc && !is_rate(x));
-			let out = [...groups.entries()].map(([k, rs]) => {
-				const g = { __nxgroup: true, __nxgkey: k, __nxglabel: this.prefs.labels[c.fieldname] || c.label, __nxcount: rs.length, __nxrows: rs };
-				sum_cols.forEach((x) => (g[x.fieldname] = round6(rs.reduce((s, r) => s + (to_number(this.val(r, x)) || 0), 0))));
-				return g;
-			});
-			if (sc && NUM.has(sc.fieldtype)) out.sort((a, b) => ((to_number(this.val(a, sc)) || 0) - (to_number(this.val(b, sc)) || 0)) * dir);
-			else out.sort((a, b) => a.__nxgkey.localeCompare(b.__nxgkey));
-			const flat = [];
-			out.forEach((g) => {
-				flat.push(g);
-				if (this.state.group_open.has(g.__nxgkey)) flat.push(...g.__nxrows);
-			});
+			// a running balance (a report with debit and credit and a balance after each line) is not added up:
+			// adding the balances of many lines means nothing, so a group leaves it empty
+			const running = (x) => x.fieldname === "balance" && ["debit", "credit"].every((f) => this.report_columns.some((y) => y.fieldname === f));
+			const sum_cols = this.cols.filter((x) => AMT.has(x.fieldtype) && !x.calc && !is_rate(x) && !running(x));
+			const all_keys = [];
+			const build = (rows, depth, parent) => {
+				const c = levels[depth];
+				const groups = new Map();
+				rows.forEach((r) => {
+					const k = clean(this.val(r, c)) || __("(blank)");
+					if (!groups.has(k)) groups.set(k, []);
+					groups.get(k).push(r);
+				});
+				const list_of = [...groups.entries()].map(([val, rs]) => {
+					const key = parent === null ? val : parent + GROUP_SEP + val;
+					const g = { __nxgroup: true, __nxgkey: key, __nxgval: val, __nxglevel: depth, __nxglabel: this.prefs.labels[c.fieldname] || c.label, __nxcount: rs.length, __nxrows: rs };
+					sum_cols.forEach((x) => (g[x.fieldname] = round6(rs.reduce((s, r) => s + (to_number(this.val(r, x)) || 0), 0))));
+					return g;
+				});
+				if (sc && NUM.has(sc.fieldtype)) list_of.sort((x, y) => ((to_number(this.val(x, sc)) || 0) - (to_number(this.val(y, sc)) || 0)) * dir);
+				else list_of.sort((x, y) => x.__nxgval.localeCompare(y.__nxgval));
+				const flat = [];
+				list_of.forEach((g) => {
+					all_keys.push(g.__nxgkey);
+					const inner = depth + 1 < levels.length ? build(g.__nxrows, depth + 1, g.__nxgkey) : g.__nxrows;
+					flat.push(g);
+					if (this.state.group_open.has(g.__nxgkey)) flat.push(...inner);
+				});
+				return flat;
+			};
+			const flat = build(list, 0, null);
+			this.all_group_keys = all_keys;
 			return flat;
 		}
 
@@ -837,6 +862,9 @@ frappe.provide("nexlify.report_view");
 		}
 
 		refresh(keep_scroll) {
+			const tree_now = this.tree_on();
+			if (this.tree_shown !== undefined && this.tree_shown !== tree_now) this.render_controls();
+			this.tree_shown = tree_now;
 			this.cols = this.build_cols();
 			this.view = this.compute_view();
 			this.sel = null;
@@ -887,7 +915,7 @@ frappe.provide("nexlify.report_view");
 				this.cols
 					.map((c, ci) => {
 						const num = NUM.has(c.fieldtype);
-						const cls = [num ? "nxv-r" : "", this.is_tree ? "" : "nxv-sortable", c.twin ? "nxv-twin" : "", c.calc ? "nxv-calc" : ""].join(" ");
+						const cls = [num ? "nxv-r" : "", this.tree_on() ? "" : "nxv-sortable", c.twin ? "nxv-twin" : "", c.calc ? "nxv-calc" : ""].join(" ");
 						const si = this.state.sorts.findIndex((x) => x.key === c.fieldname);
 						const sort = si > -1 ? `<span class="nxv-sort">${this.state.sorts[si].dir > 0 ? "▲" : "▼"}${this.state.sorts.length > 1 ? si + 1 : ""}</span>` : "";
 						const fb =
@@ -1000,7 +1028,7 @@ frappe.provide("nexlify.report_view");
 				html = "";
 				if (ci === 0) {
 					const open = this.state.group_open.has(r.__nxgkey) ? "open" : "";
-					html = `<span class="nxv-acc"><span class="nxv-tw ${open}" data-g="${esc(r.__nxgkey)}" role="button" aria-label="${__("Expand or collapse")}">${CHEVRON}</span><span>${esc(r.__nxglabel)}: ${esc(r.__nxgkey)}<span class="nxv-cnt">${r.__nxcount}</span></span></span>`;
+					html = `<span class="nxv-acc" style="padding-inline-start:${(r.__nxglevel || 0) * 18}px"><span class="nxv-tw ${open}" data-g="${esc(r.__nxgkey)}" role="button" aria-label="${__("Expand or collapse")}">${CHEVRON}</span><span>${esc(r.__nxglabel)}: ${esc(r.__nxgval)}<span class="nxv-cnt">${r.__nxcount}</span></span></span>`;
 				}
 				return `<td class="${cur.trim()}${rules}" data-c="${ci}">${html}</td>`;
 			}
@@ -1016,11 +1044,11 @@ frappe.provide("nexlify.report_view");
 			}
 			if (v === -1 && ci === 0 && r.__nxcalcrow) html = `<b class="nxv-calc">${__("Total of the rows shown")}</b>`;
 			else if (v === -1 && ci === 0 && !raw) html = `<b>${__("Total")}</b>`;
-			if (ci === 0 && this.is_tree && v > -1) {
+			if (ci === 0 && this.tree_on() && v > -1) {
 				const tw = `<span class="nxv-tw ${r.__nxkids ? (r.__nxopen || this.state.query ? "open" : "") : "leaf"}" data-tw="${r.__nxi}" role="button" aria-label="${__("Expand or collapse")}">${CHEVRON}</span>`;
 				html = `<span class="nxv-acc" style="padding-inline-start:${(r.indent || 0) * 18}px">${tw}<span>${html}</span></span>`;
-			} else if (ci === 0 && this.state.group_by && v > -1) {
-				html = `<span class="nxv-acc" style="padding-inline-start:26px"><span>${html}</span></span>`;
+			} else if (ci === 0 && this.state.group_by.length && v > -1) {
+				html = `<span class="nxv-acc" style="padding-inline-start:${26 + (this.state.group_by.length - 1) * 18}px"><span>${html}</span></span>`;
 			}
 			return `<td class="${cur.trim()}${rules}" data-c="${ci}" title="${esc(clean(raw))}">${html}</td>`;
 		}
@@ -1074,10 +1102,10 @@ frappe.provide("nexlify.report_view");
 			let cls = r.bold || r.is_total_row ? "nxv-bold" : "";
 			// the report's own total lines stand out from the rows (they open nothing)
 			if (r.is_total_row || this.is_label_row(r)) cls = "nxv-bold nxv-tot";
-			if (r.__nxgroup) cls = "nxv-grp";
-			if (this.is_tree && v > -1 && r.__nxkids) cls += (r.indent || 0) === 0 ? " nxv-g1" : " nxv-g2";
+			if (r.__nxgroup) cls = `nxv-grp nxv-grp-l${Math.min(r.__nxglevel || 0, 3)}`;
+			if (this.tree_on() && v > -1 && r.__nxkids) cls += (r.indent || 0) === 0 ? " nxv-g1" : " nxv-g2";
 			// a top row of a tree with no rows under it and a name is the statement's total (Total Income, Net Profit)
-			else if (this.is_tree && v > -1 && !cls && !(r.indent > 0) && String(r[this.cols[0].fieldname] ?? "").trim()) cls = "nxv-bold";
+			else if (this.tree_on() && v > -1 && !cls && !(r.indent > 0) && String(r[this.cols[0].fieldname] ?? "").trim()) cls = "nxv-bold";
 			return cls + this.row_rule_classes(r);
 		}
 
@@ -1125,26 +1153,26 @@ frappe.provide("nexlify.report_view");
 				let cls = "nxv-row";
 				if (r.__nxgroup) {
 					const open = this.state.group_open.has(r.__nxgkey) ? "open" : "";
-					name = `<span class="nxv-tw ${open}" data-g="${esc(r.__nxgkey)}" role="button">${CHEVRON}</span><span class="nxv-row-name">${esc(r.__nxgkey)}</span>`;
+					name = `<span class="nxv-tw ${open}" data-g="${esc(r.__nxgkey)}" role="button" style="margin-inline-start:${(r.__nxglevel || 0) * 14}px">${CHEVRON}</span><span class="nxv-row-name">${esc(r.__nxgval)}</span>`;
 					sub = `${esc(r.__nxglabel)} · ${__("{0} rows", [r.__nxcount])}`;
 					cls += " nxv-row-grp";
 				} else if (tot) {
 					name = `<span class="nxv-row-name">${r.__nxcalcrow ? __("Total of the rows shown") : __("Total")}</span>`;
 					cls += " nxv-row-tot";
 				} else {
-					const tw = this.is_tree ? `<span class="nxv-tw ${r.__nxkids ? (r.__nxopen || this.state.query ? "open" : "") : "leaf"}" data-tw="${r.__nxi}" role="button">${CHEVRON}</span>` : "";
+					const tw = this.tree_on() ? `<span class="nxv-tw ${r.__nxkids ? (r.__nxopen || this.state.query ? "open" : "") : "leaf"}" data-tw="${r.__nxi}" role="button">${CHEVRON}</span>` : "";
 					name = `${tw}<span class="nxv-row-name">${esc(clean(r[name_col.fieldname]))}</span>`;
 					sub = sub_cols
 						.map((c) => (c.fieldtype === "Date" && r[c.fieldname] ? frappe.datetime.str_to_user(r[c.fieldname]) : clean(r[c.fieldname])))
 						.filter(Boolean)
 						.map(esc)
 						.join(" · ");
-					if (r.bold || (this.is_tree && r.__nxkids)) cls += " nxv-row-bold";
+					if (r.bold || (this.tree_on() && r.__nxkids)) cls += " nxv-row-bold";
 				}
-				const pad = this.is_tree && !tot ? ` style="padding-inline-start:${12 + (r.indent || 0) * 14}px"` : "";
+				const pad = this.tree_on() && !tot ? ` style="padding-inline-start:${12 + (r.indent || 0) * 14}px"` : "";
 				return `<div class="${cls}" data-v="${v}"${pad}><div class="nxv-row-main"><div class="nxv-row-title">${name}</div>${sub ? `<div class="nxv-row-sub">${sub}</div>` : ""}</div>${figure(r)}</div>`;
 			};
-			let html = main && !this.is_tree ? `<div class="nxv-row nxv-row-head"><span>${esc(name_col.title || name_col.label)}</span><span>${esc(main.title)}</span></div>` : "";
+			let html = main && !this.tree_on() ? `<div class="nxv-row nxv-row-head"><span>${esc(name_col.title || name_col.label)}</span><span>${esc(main.title)}</span></div>` : "";
 			for (let v = 0; v < n; v++) html += row(this.view[v], v, false);
 			if (this.view.length > n) html += `<button class="btn btn-default btn-sm nxv-more">${__("Show {0} more of {1}", [Math.min(40, this.view.length - n), this.view.length - n])}</button>`;
 			html += this.foot().map((r) => row(r, -1, true)).join("");
@@ -1221,7 +1249,7 @@ frappe.provide("nexlify.report_view");
 			const ok = rv.filter((x) => x.status === "Reviewed").length;
 			const fl = rv.length - ok;
 			if (rv.length) parts.push(`<span><b class="nxv-ok">✓ ${ok}</b> ${__("reviewed")} · <b class="nxv-flag">! ${fl}</b> ${__("need support")}</span>`);
-			if (this.cols.some((c) => c.calc) || this.state.group_by) parts.push(`<span class="nxv-calc-note">${__("purple italic = calculated in this view")}</span>`);
+			if (this.cols.some((c) => c.calc) || this.state.group_by.length) parts.push(`<span class="nxv-calc-note">${__("purple italic = calculated in this view")}</span>`);
 			const cells = this.sel_cells();
 			if (cells.length > 1) {
 				const sum = cells.reduce((s, k) => s + k.x, 0);
@@ -1276,19 +1304,19 @@ frappe.provide("nexlify.report_view");
 
 		render_controls() {
 			const $lv = this.$wrap.find(".nxv-levels");
-			this.$wrap.find(".nxv-levels-lbl").prop("hidden", !this.is_tree);
-			$lv.prop("hidden", !this.is_tree);
-			if (this.is_tree) {
+			this.$wrap.find(".nxv-levels-lbl").prop("hidden", !this.tree_on());
+			$lv.prop("hidden", !this.tree_on());
+			if (this.tree_on()) {
 				const levels = Math.min(this.max_indent + 1, 6);
 				$lv.html(
 					Array.from({ length: levels }, (_, k) => `<button data-l="${k + 1}" aria-pressed="${this.level === k + 1}">${k + 1}</button>`).join("") +
 						`<button data-l="99" aria-pressed="${this.level === 99}">${__("All")}</button>`
 				);
 			} else $lv.empty();
-			this.$wrap.find(".nxv-expand").prop("hidden", !this.is_tree && !this.state.group_by);
+			this.$wrap.find(".nxv-expand").prop("hidden", !this.is_tree && !this.state.group_by.length);
 			const $gb = this.$wrap.find(".nxv-gb");
-			this.$wrap.find(".nxv-gb-lbl").prop("hidden", this.is_tree);
-			$gb.prop("hidden", this.is_tree);
+			this.$wrap.find(".nxv-gb-lbl").prop("hidden", false);
+			$gb.prop("hidden", false);
 			$gb.html(
 				`<option value="">${__("No grouping")}</option>` +
 					this.columns
@@ -1296,7 +1324,13 @@ frappe.provide("nexlify.report_view");
 						.map((c) => `<option value="${esc(c.fieldname)}">${esc(this.prefs.labels[c.fieldname] || c.label)}</option>`)
 						.join("")
 			);
-			$gb.val(this.state.group_by || "");
+			const levels = this.state.group_by;
+			if (levels.length > 1) {
+				// several levels show as one choice; the levels themselves are set in View Settings > Group
+				$gb.prepend(`<option value="__levels">${esc(levels.map((f) => this.col_name(f)).join(GROUP_SEP))}</option>`);
+				$gb.val("__levels");
+			} else $gb.val(levels[0] || "");
+			$gb.append(`<option value="__more">${__("More levels…")}</option>`);
 			this.$wrap.find(".nxv-cmp-btn").attr("aria-pressed", String(!!this.state.compare));
 			this.render_variant_btn();
 		}
@@ -1470,9 +1504,8 @@ frappe.provide("nexlify.report_view");
 				const v = NO_VALUE.has(u.op) ? "" : " " + u.x + (u.op === "between" ? " " + __("and") + " " + u.x2 : "");
 				chips.push(`<button class="nxv-chip${u.exclude ? " nxv-chip-ex" : ""}" data-rmcond="${i}">${u.exclude ? __("Exclude") + ": " : ""}${esc(this.col_name(u.f))} ${esc(op)}${esc(v)} <span>×</span></button>`);
 			});
-			if (this.state.group_by) {
-				const c = this.col_of(this.state.group_by);
-				chips.push(`<button class="nxv-chip nxv-chip-calc" data-rmg="1">${__("Grouped by {0}", [esc(c ? this.prefs.labels[c.fieldname] || c.label : "")])} <span>×</span></button>`);
+			if (this.state.group_by.length) {
+				chips.push(`<button class="nxv-chip nxv-chip-calc" data-rmg="1">${__("Grouped by {0}", [esc(this.state.group_by.map((f) => this.col_name(f)).join(GROUP_SEP))])} <span>×</span></button>`);
 			}
 			if (this.review_mode) chips.push(`<button class="nxv-chip nxv-chip-rev" data-rmrev="1">${__("Review mode")} <span>×</span></button>`);
 			if (this.state.compare) chips.push(`<button class="nxv-chip" data-rmc="1">${__("Compared with")}: ${esc(this.state.compare.label)} <span>×</span></button>`);
@@ -1593,7 +1626,7 @@ frappe.provide("nexlify.report_view");
 					sorts: this.state.sorts,
 					conds: this.state.conds,
 					col_filters,
-					group_by: this.state.group_by,
+					group_by: this.state.group_by.slice(),
 					level: this.level,
 				})
 			);
@@ -1611,7 +1644,7 @@ frappe.provide("nexlify.report_view");
 			this.state.conds = JSON.parse(JSON.stringify(s.conds || []));
 			this.state.col_filters = {};
 			Object.entries(s.col_filters || {}).forEach(([f, fl]) => (this.state.col_filters[f] = fl.t === "num" ? { ...fl } : { t: fl.t, vals: new Set(fl.vals) }));
-			this.state.group_by = this.is_tree ? "" : s.group_by || "";
+			this.state.group_by = (s.group_by || []).slice();
 			this.state.group_open = new Set();
 			this.variant = variant || null;
 			this.columns = this.report_columns.slice();
@@ -1954,7 +1987,7 @@ frappe.provide("nexlify.report_view");
 				added: JSON.parse(JSON.stringify(this.prefs.added || [])),
 				sorts: JSON.parse(JSON.stringify(this.state.sorts)),
 				conds: JSON.parse(JSON.stringify(this.state.conds)),
-				group_by: this.state.group_by,
+				group_by: this.state.group_by.slice(),
 			};
 			const ordered = this.build_cols().map((c) => c.fieldname);
 			draft.order.sort((a, b) => {
@@ -1990,7 +2023,7 @@ frappe.provide("nexlify.report_view");
 						added: [],
 						sorts: [],
 						conds: [],
-						group_by: "",
+						group_by: [],
 					};
 					this.render_settings();
 				},
@@ -2115,7 +2148,7 @@ frappe.provide("nexlify.report_view");
 						<button class="nxv-del" data-sact="del-sort" data-i="${i}">×</button></div>`
 					)
 					.join("");
-				body = `${this.is_tree ? `<p class="nxv-muted">${__("This report is a tree, so it keeps the report's own order.")}</p>` : ""}${rows || `<p class="nxv-muted">${__("No sorting: rows keep the report's order.")}</p>`}
+				body = `${this.tree_on() ? `<p class="nxv-muted">${__("This report is a tree, so it keeps the report's own order.")}</p>` : ""}${rows || `<p class="nxv-muted">${__("No sorting: rows keep the report's order.")}</p>`}
 					<div><button class="btn btn-default btn-xs" data-sact="add-sort">+ ${__("Add sort")}</button></div>`;
 			} else if (t === "filter") {
 				const rows = this.draft.conds
@@ -2133,10 +2166,18 @@ frappe.provide("nexlify.report_view");
 					${rows || `<p class="nxv-muted">${__("No conditions yet.")}</p>`}
 					<div><button class="btn btn-default btn-xs" data-sact="add-cond">+ ${__("Add condition")}</button></div>`;
 			} else {
-				body = this.is_tree
-					? `<p class="nxv-muted">${__("This report is a tree: it is grouped by the report itself.")}</p>`
-					: `<div class="nxv-st-row"><span class="nxv-lbl">${__("Group by")}</span><select class="form-control input-xs" data-sgroup="1">${col_opts(this.draft.group_by, true)}</select></div>
-					<p class="nxv-muted">${__("The subtotals are worked out in this view and show in purple.")}</p>`;
+				const levels = this.draft.group_by.length ? this.draft.group_by : [""];
+				const rows = levels
+					.map(
+						(f, i) => `<div class="nxv-st-row"><span class="nxv-lbl">${i === 0 ? __("Group by") : __("Then by")}</span>
+						<select class="form-control input-xs" data-sgroup="${i}">${col_opts(f, true)}</select>
+						${i > 0 || this.draft.group_by.length > 1 ? `<button class="nxv-del" data-sact="del-group" data-i="${i}">×</button>` : ""}</div>`
+					)
+					.join("");
+				body = `${rows}
+					<div><button class="btn btn-default btn-xs" data-sact="add-group">+ ${__("Add level")}</button></div>
+					<p class="nxv-muted">${__("Each level groups the rows inside the level above it, as many levels as you like. The subtotals are worked out in this view and show in purple.")}</p>
+					${this.is_tree ? `<p class="nxv-muted">${__("This report is a tree: grouped, it shows its lowest rows in your groups, so no amount counts twice. With no grouping it is the report's own tree again.")}</p>` : ""}`;
 			}
 			d.fields_dict.body.$wrapper.html(`<div class="nxv-settings"><nav class="nxv-st-tabs">${tabs}</nav><div class="nxv-st-body">${body}</div></div>`);
 			const $b = d.fields_dict.body.$wrapper;
@@ -2369,7 +2410,7 @@ frappe.provide("nexlify.report_view");
 			}
 			if (el.dataset.sx !== undefined) dr.conds[+el.dataset.sx].x = el.value;
 			if (el.dataset.sx2 !== undefined) dr.conds[+el.dataset.sx2].x2 = el.value;
-			if (el.dataset.sgroup !== undefined) dr.group_by = el.value;
+			if (el.dataset.sgroup !== undefined) dr.group_by[+el.dataset.sgroup] = el.value;
 		}
 
 		settings_action(b) {
@@ -2392,6 +2433,11 @@ frappe.provide("nexlify.report_view");
 				return this.render_settings();
 			}
 			if (act === "add-sort") dr.sorts.push({ key: first_f, dir: 1 });
+			if (act === "add-group") {
+				if (!dr.group_by.length) dr.group_by.push("");
+				dr.group_by.push("");
+			}
+			if (act === "del-group") dr.group_by.splice(+b.dataset.i, 1);
 			if (act === "del-sort") dr.sorts.splice(+b.dataset.i, 1);
 			if (act === "add-cond") dr.conds.push({ f: first_f, op: "contains", x: "", x2: "", exclude: false });
 			if (act === "del-cond") dr.conds.splice(+b.dataset.i, 1);
@@ -2405,13 +2451,15 @@ frappe.provide("nexlify.report_view");
 			this.prefs.widths = dr.widths || this.prefs.widths;
 			this.prefs.order = dr.order.slice();
 			this.prefs.added = dr.added;
-			this.state.sorts = this.is_tree ? [] : dr.sorts.filter((s) => s.key);
+			// a tree keeps the report's order, unless the user groups it (then it is a flat table)
+			this.state.sorts = this.is_tree && !dr.group_by.filter(Boolean).length ? [] : dr.sorts.filter((s) => s.key);
 			this.state.conds = dr.conds
 				.filter((u) => u.f && (NO_VALUE.has(u.op) || String(u.x || "") !== ""))
 				.filter((u) => ![">", "<", "between"].includes(u.op) || (parse_num(u.x) !== null && (u.op !== "between" || parse_num(u.x2) !== null)));
 			const dropped = dr.conds.length - this.state.conds.length;
 			if (dropped) frappe.show_alert({ message: __("{0} conditions were left out: their value is empty or not a number", [dropped]), indicator: "orange" });
-			this.state.group_by = this.is_tree ? "" : dr.group_by || "";
+			// every level once, in the order set
+			this.state.group_by = [...new Set(dr.group_by.filter(Boolean))];
 			this.state.group_open = new Set();
 			this.columns = this.report_columns.slice();
 			this.add_linked_defs();
@@ -2433,16 +2481,16 @@ frappe.provide("nexlify.report_view");
 		row_kind(r) {
 			if (r.__nxtotal) return "total";
 			if (r.__nxgroup) return "group";
-			if (r.bold || r.is_total_row || (this.is_tree && r.__nxkids)) return "bold";
+			if (r.bold || r.is_total_row || (this.tree_on() && r.__nxkids)) return "bold";
 			return "row";
 		}
 
 		export_rows() {
 			const row = (r) => ({
 				kind: this.row_kind(r),
-				indent: this.is_tree && !r.__nxtotal ? r.indent || 0 : this.state.group_by && !r.__nxgroup && !r.__nxtotal ? 1 : 0,
+				indent: this.tree_on() && !r.__nxtotal ? r.indent || 0 : r.__nxgroup ? r.__nxglevel || 0 : this.state.group_by.length && !r.__nxtotal ? this.state.group_by.length : 0,
 				cells: this.cols.map((c, ci) => {
-					if (r.__nxgroup && ci === 0) return `${r.__nxglabel}: ${r.__nxgkey} (${r.__nxcount})`;
+					if (r.__nxgroup && ci === 0) return `${r.__nxglabel}: ${r.__nxgval} (${r.__nxcount})`;
 					if (r.__nxtotal && ci === 0 && !r[c.fieldname]) return r.__nxcalcrow ? __("Total of the rows shown") : __("Total");
 					const x = this.val(r, c);
 					if (NUM.has(c.fieldtype)) return to_number(x);
@@ -3452,7 +3500,7 @@ frappe.provide("nexlify.report_view");
 			const c = this.cols[ci];
 			if (!r || !c) return;
 			if (r.__nxgroup) return this.toggle_group(r.__nxgkey);
-			if (ci === 0 && this.is_tree && r.__nxkids) {
+			if (ci === 0 && this.tree_on() && r.__nxkids) {
 				r.__nxopen = !r.__nxopen;
 				return this.refresh(true);
 			}
@@ -3509,10 +3557,9 @@ frappe.provide("nexlify.report_view");
 		}
 
 		expand_all(open) {
-			if (this.is_tree) return this.set_level(open ? 99 : 1);
-			if (!this.state.group_by) return;
-			this.state.group_open = new Set();
-			if (open) this.view.filter((r) => r.__nxgroup).forEach((g) => this.state.group_open.add(g.__nxgkey));
+			if (this.tree_on()) return this.set_level(open ? 99 : 1);
+			if (!this.state.group_by.length) return;
+			this.state.group_open = new Set(open ? this.all_group_keys || [] : []);
 			this.refresh(true);
 		}
 
@@ -3846,7 +3893,7 @@ frappe.provide("nexlify.report_view");
 					return this.open_filter(fb.dataset.f, fb.closest("th"));
 				}
 				const th = e.target.closest("th[data-ci]");
-				if (th && !this.is_tree && !just_resized && !e.target.closest(".nxv-rz")) {
+				if (th && !this.tree_on() && !just_resized && !e.target.closest(".nxv-rz")) {
 					const c = this.cols[+th.dataset.ci];
 					const s = this.state.sorts[0];
 					this.state.sorts = s && s.key === c.fieldname ? [{ key: c.fieldname, dir: -s.dir }] : [{ key: c.fieldname, dir: NUM.has(c.fieldtype) ? -1 : 1 }];
@@ -3855,7 +3902,7 @@ frappe.provide("nexlify.report_view");
 			});
 			grid.addEventListener("dblclick", (e) => {
 				const tr = e.target.closest("tbody tr[data-v]");
-				if (!tr || e.target.closest("td.nxv-num") || !this.is_tree || this.state.query) return;
+				if (!tr || e.target.closest("td.nxv-num") || !this.tree_on() || this.state.query) return;
 				const r = this.view[+tr.dataset.v];
 				if (r && r.__nxkids) {
 					r.__nxopen = !r.__nxopen;
@@ -3977,9 +4024,16 @@ frappe.provide("nexlify.report_view");
 			w.find(".nxv-levels").on("click", "button", (e) => this.set_level(+e.currentTarget.dataset.l));
 			w.find(".nxv-expand").on("click", "button", (e) => this.expand_all(e.currentTarget.dataset.x === "1"));
 			w.find(".nxv-gb").on("change", (e) => {
-				this.state.group_by = e.target.value;
+				const val = e.target.value;
+				if (val === "__levels") return;
+				// a group inside a group: the levels are set in View Settings > Group
+				if (val === "__more") {
+					this.render_controls();
+					return this.open_settings("group");
+				}
+				this.state.group_by = val ? [val] : [];
 				this.state.group_open = new Set();
-				w.find(".nxv-expand").prop("hidden", !this.is_tree && !this.state.group_by);
+				w.find(".nxv-expand").prop("hidden", !this.is_tree && !this.state.group_by.length);
 				this.refresh();
 			});
 			w.find(".nxv-cmp-btn").on("click", () => this.open_compare());
@@ -4103,7 +4157,7 @@ frappe.provide("nexlify.report_view");
 				if (b.dataset.rmcond !== undefined) this.state.conds.splice(+b.dataset.rmcond, 1);
 				if (b.dataset.rmrev) return w.find(".nxv-rev-btn").trigger("click");
 				if (b.dataset.rmg) {
-					this.state.group_by = "";
+					this.state.group_by = [];
 					w.find(".nxv-gb").val("");
 				}
 				if (b.dataset.rmc) return this.open_compare();

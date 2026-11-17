@@ -486,12 +486,38 @@ frappe.provide("nexlify.report_view");
 			this.columns = columns.map((c, i) => ({
 				fieldname: c.fieldname || c.id,
 				label: c.label || c.name || c.fieldname,
-				fieldtype: c.fieldtype || "Data",
+				// a column with no type that names a DocType (General Ledger's Project and dimensions) is a link to it
+				fieldtype: c.fieldtype || (c.options && (frappe.boot.user.can_read || []).includes(c.options) ? "Link" : "Data"),
 				options: c.options,
 				width: parseInt(c.width, 10) || (i === 0 ? 240 : 120),
 				src: c,
 				fkey: c.fieldname || c.id,
 			}));
+			// a column with no type next to one that holds a DocType's name (General Ledger's party and
+			// party_type, a reference_name and its reference_type) links to the document named there
+			const names = new Set(this.columns.map((c) => c.fieldname));
+			this.columns.forEach((c) => {
+				if (c.src.fieldtype || c.src.options) return;
+				const f = c.fieldname || "";
+				const t = [f + "_type", f.replace(/_(name|no)$/, "_type"), f.replace(/_(name|no)$/, "_doctype")].find((x) => x !== f && names.has(x));
+				if (t) {
+					c.fieldtype = "Dynamic Link";
+					c.options = t;
+				}
+			});
+			// a plain column named like a DocType the user may read (customer, warehouse, sales_person,
+			// serial_no, or the label "Customer") holds that DocType's names: a link to it
+			const readable = new Set(frappe.boot.user.can_read || []);
+			const by_name = new Map([...readable].map((dt) => [frappe.scrub(dt), dt]));
+			const never = new Set(["Currency", "DocType", "Report", "Page", "File"]);
+			this.columns.forEach((c) => {
+				if (c.fieldtype !== "Data" || c.src.options) return;
+				const dt = (readable.has(c.src.label) && c.src.label) || by_name.get(c.fieldname);
+				if (dt && !never.has(dt)) {
+					c.fieldtype = "Link";
+					c.options = dt;
+				}
+			});
 			this.report_columns = this.columns.slice();
 			this.avail_promise = null;
 			this.add_linked_defs();

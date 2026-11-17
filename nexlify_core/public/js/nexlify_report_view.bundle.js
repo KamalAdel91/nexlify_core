@@ -2097,9 +2097,14 @@ frappe.provide("nexlify.report_view");
 			if (own.length) groups.push([__("This report"), own]);
 			const calcs = (this.prefs.calcs || []).filter((k) => !chosen.has(k.f)).map((k) => ({ f: k.f, label: k.label, type: __("calculated") }));
 			if (calcs.length) groups.push([__("Calculated columns"), calcs]);
+			// a field of a linked document named like a column the report already has is left out:
+			// the same name would show on both sides
+			const norm = (x) => String(x || "").trim().toLowerCase();
+			const report_labels = new Set(this.report_columns.flatMap((c) => [norm(c.label), norm(dr.labels[c.fieldname]), norm(__(c.label))]).filter(Boolean));
 			const by = {};
 			(this.avail_resolved || []).forEach((a) => {
 				if (chosen.has(a.f)) return;
+				if (report_labels.has(norm(a.short))) return;
 				(by[a.from] = by[a.from] || []).push({ f: a.f, label: a.short, type: __(a.fieldtype) });
 			});
 			Object.entries(by).forEach((g) => groups.push(g));

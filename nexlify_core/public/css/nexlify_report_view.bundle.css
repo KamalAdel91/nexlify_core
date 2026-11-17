@@ -667,3 +667,14 @@ th:hover .nxv-fbtn, .nxv-fbtn.on { opacity: 1; }
 .nxv.nxv-loading .nxv-topbar, .nxv.nxv-loading .nxv-status { pointer-events: none; opacity: .55; }
 /* Frappe's "Loading..." screen while the view shows the same report with its rows dimmed */
 .nxv-hide { display: none !important; }
+
+/* totals stand out: a wash of the theme, bold, a line above; they open nothing, so no pointer */
+.nxv-grid tbody tr.nxv-bold td { font-weight: 700; color: var(--heading-color, var(--nxv-ink)); }
+.nxv-grid tbody tr.nxv-tot td, .nxv-grid tbody tr.nxv-bold:not(.nxv-g1):not(.nxv-g2) td {
+	background: color-mix(in srgb, var(--nxv-theme) 9%, var(--nxv-bg));
+	border-top: 1px solid color-mix(in srgb, var(--nxv-theme) 30%, var(--nxv-bg));
+	border-bottom-color: color-mix(in srgb, var(--nxv-theme) 30%, var(--nxv-bg));
+}
+.nxv-grid tbody tr.nxv-tot td.nxv-num, .nxv-grid tbody tr.nxv-bold td.nxv-num, .nxv-grid tfoot td.nxv-num { cursor: default; }
+.nxv-grid tfoot td { background: color-mix(in srgb, var(--nxv-theme) 14%, var(--nxv-bg)); border-top: 2px solid color-mix(in srgb, var(--nxv-theme) 40%, var(--nxv-bg)); }
+.nxv-grid tbody tr.nxv-tot td.nxv-sel, .nxv-grid tbody tr.nxv-bold td.nxv-sel { background: var(--nxv-sel); }

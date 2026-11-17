@@ -1018,8 +1018,15 @@ frappe.provide("nexlify.report_view");
 			return `<tr class="${this.row_cls(r, v)}" data-v="${v}">${cells}</tr>`;
 		}
 
+		// ERPNext writes the label of a report's own line between quotes ('Opening', 'Total', 'Closing ...')
+		is_label_row(r) {
+			return !r.__nxgroup && this.columns.some((x) => /^'.*'$/.test(String(r[x.fieldname] ?? "").trim()));
+		}
+
 		row_cls(r, v) {
 			let cls = r.bold || r.is_total_row ? "nxv-bold" : "";
+			// the report's own total lines stand out from the rows (they open nothing)
+			if (r.is_total_row || this.is_label_row(r)) cls = "nxv-bold nxv-tot";
 			if (r.__nxgroup) cls = "nxv-grp";
 			if (this.is_tree && v > -1 && r.__nxkids) cls += (r.indent || 0) === 0 ? " nxv-g1" : " nxv-g2";
 			// a top row of a tree with no rows under it and a name is the statement's total (Total Income, Net Profit)
@@ -2815,7 +2822,11 @@ frappe.provide("nexlify.report_view");
 		drill(r, c) {
 			if (r.__nxgroup) return frappe.show_alert({ message: __("This subtotal is worked out in this view. Open the group to see its rows."), indicator: "blue" });
 			if (c.calc) return frappe.show_alert({ message: __("This column is calculated in this view, so no document is behind it"), indicator: "blue" });
-			if (r.bold || r.is_total_row || r.__nxtotal) return frappe.show_alert({ message: __("This total comes from the report itself"), indicator: "blue" });
+			// ERPNext writes the label of a report's own line between quotes ('Opening', 'Total',
+			// 'Closing (Opening + Total)'): no document is behind such a line
+			const label_row = this.is_label_row(r);
+			// a total (the report's own, its footer, or a quoted line) opens nothing and says nothing
+			if (r.bold || r.is_total_row || r.__nxtotal || label_row) return;
 			const vcol = this.columns.find((x) => x.fieldname === "voucher_no" || (x.fieldtype === "Dynamic Link" && /voucher/i.test(x.fieldname)));
 			if (vcol && r[vcol.fieldname]) {
 				const dt = vcol.fieldtype === "Dynamic Link" ? r[vcol.options] : r.voucher_type || vcol.options;

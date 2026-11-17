@@ -520,6 +520,7 @@ frappe.provide("nexlify.report_view");
 			});
 			this.report_columns = this.columns.slice();
 			this.avail_promise = null;
+			this.guess_promise = null;
 			this.add_linked_defs();
 			// copies: the view marks its rows, and Frappe's own data stays as Frappe left it
 			const data = (qr.data || []).map((r) => Object.assign({}, r));
@@ -1803,7 +1804,10 @@ frappe.provide("nexlify.report_view");
 					if (!seen.has(k)) out.push({ doctype: c.options, link_field: c.fieldname, label: c.label });
 					seen.add(k);
 				} else if (c.fieldtype === "Dynamic Link" && c.options) {
-					new Set((this.rows || []).map((r) => r[c.options]).filter(Boolean)).forEach((dt) => {
+					// the DocTypes its type field allows, from the tables' definitions; the rows' own types
+					// only when the definition says nothing
+					const types = c.targets && c.targets.length ? c.targets : (this.rows || []).map((r) => r[c.options]).filter(Boolean);
+					new Set(types).forEach((dt) => {
 						const k = dt + "|" + c.fieldname;
 						if (!seen.has(k)) out.push({ doctype: dt, link_field: c.fieldname, label: c.label, dynamic: c.options });
 						seen.add(k);
@@ -1843,8 +1847,47 @@ frappe.provide("nexlify.report_view");
 		}
 
 		// every field of every document the report links to, ready to add as a column
+		// how the columns link to other tables is asked once, from the definition of the report's DocType:
+		// a column the report did not mark becomes a Link or a Dynamic Link when its field there is one,
+		// and every Dynamic Link gets all the DocTypes its type field allows (not only those in the rows)
+		guess_links() {
+			if (this.guess_promise) return this.guess_promise;
+			const columns = this.report_columns.filter((c) => c.fieldtype === "Data" && !c.src.options).map((c) => c.fieldname);
+			const dynamic = this.report_columns.filter((c) => c.fieldtype === "Dynamic Link" && c.options).map((c) => [c.fieldname, c.options]);
+			if (!columns.length && !dynamic.length) return (this.guess_promise = Promise.resolve());
+			this.guess_promise = new Promise((resolve) => {
+				frappe.call({
+					method: API + "guess_links",
+					args: { report: this.report_name, columns, dynamic },
+					callback: (r) => {
+						Object.entries((r && r.message) || {}).forEach(([f, how]) => {
+							const c = this.report_columns.find((x) => x.fieldname === f);
+							if (!c || !how) return;
+							if (how.link && c.fieldtype === "Data") {
+								c.fieldtype = "Link";
+								c.options = how.link;
+							} else if (how.dynamic && this.report_columns.some((x) => x.fieldname === how.dynamic)) {
+								// the DocType of each row is in the report's own column
+								c.fieldtype = "Dynamic Link";
+								c.options = how.dynamic;
+								c.targets = how.targets || [];
+							}
+						});
+						resolve();
+					},
+					error: () => resolve(),
+				});
+			});
+			return this.guess_promise;
+		}
+
 		avail_fields() {
 			if (this.avail_promise) return this.avail_promise;
+			this.avail_promise = this.guess_links().then(() => this.linked_fields());
+			return this.avail_promise;
+		}
+
+		linked_fields() {
 			const links = this.linked_doctypes();
 			const load = (dt) =>
 				new Promise((res) => {
@@ -1857,7 +1900,7 @@ frappe.provide("nexlify.report_view");
 					}
 				});
 			const keep = ["Currency", "Float", "Int", "Percent", "Date", "Datetime", "Link", "Check", "Select", "Data", "Small Text", "Text", "Phone", "Read Only", "Dynamic Link"];
-			this.avail_promise = Promise.all(links.map((l) => load(l.doctype))).then(() => {
+			return Promise.all(links.map((l) => load(l.doctype))).then(() => {
 				const out = [];
 				links.forEach((l) => {
 					if (!frappe.get_meta(l.doctype)) return;
@@ -1883,7 +1926,6 @@ frappe.provide("nexlify.report_view");
 				});
 				return out;
 			});
-			return this.avail_promise;
 		}
 
 		toggle_added(added, order, f, on) {

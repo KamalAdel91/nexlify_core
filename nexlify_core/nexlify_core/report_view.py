@@ -167,6 +167,88 @@ def review_has_permission(doc, ptype: str | None = None, user: str | None = None
 
 
 # ---------------------------------------------------------------------------
+# How a report's columns link to other tables: from the DocTypes' definitions,
+# never from the rows a report shows
+# ---------------------------------------------------------------------------
+MAX_GUESS_COLUMNS = 60
+MAX_TARGETS = 40
+NEVER_LINKS = {"DocType", "Currency", "Report", "Page", "File", "User Permission"}
+
+
+def readable_doctype(doctype: str) -> bool:
+	if not isinstance(doctype, str) or doctype in NEVER_LINKS or not frappe.db.exists("DocType", doctype):
+		return False
+	meta = frappe.get_meta(doctype)
+	if meta.istable or meta.issingle or meta.is_virtual:
+		return False
+	return bool(frappe.has_permission(doctype, "read"))
+
+
+def table_fields(doctype: str) -> dict:
+	"""The fields of a DocType and of its child tables, by fieldname (the parent's field wins)."""
+	out = {}
+	if not doctype or not frappe.db.exists("DocType", doctype):
+		return out
+	meta = frappe.get_meta(doctype)
+	for df in meta.fields:
+		out.setdefault(df.fieldname, (doctype, df))
+	for table in meta.get_table_fields():
+		for df in frappe.get_meta(table.options).fields:
+			out.setdefault(df.fieldname, (table.options, df))
+	return out
+
+
+def dynamic_targets(table: str, type_df) -> list[str]:
+	"""The DocTypes a Dynamic Link can point to, from its type field: the records of the table the
+	type field links to (Party Type), the options of a Select, or else every type stored in that
+	column of the table (all its rows, not the report's)."""
+	if type_df.fieldtype == "Link" and type_df.options and type_df.options != "DocType":
+		names = frappe.get_all(type_df.options, pluck="name", limit_page_length=MAX_TARGETS * 2)
+	elif type_df.fieldtype == "Select":
+		names = [x.strip() for x in (type_df.options or "").split("\n") if x.strip()]
+	else:
+		names = frappe.get_all(table, fields=[type_df.fieldname], distinct=True, pluck=type_df.fieldname, limit_page_length=MAX_TARGETS * 2)
+	return [dt for dt in dict.fromkeys(names) if readable_doctype(dt)][:MAX_TARGETS]
+
+
+@frappe.whitelist()
+def guess_links(report: str, columns: str | list, dynamic: str | list | None = None) -> dict:
+	"""How the report's columns link to other tables, read from the definition of the report's DocType
+	(and its child tables): a column whose field there is a Link links to that DocType, one whose field
+	is a Dynamic Link links to every DocType its type field allows.
+	columns: fieldnames the report did not mark; dynamic: [fieldname, type fieldname] the report marked."""
+	check_report(report)
+	columns = frappe.parse_json(columns) or []
+	dynamic = frappe.parse_json(dynamic) or []
+	if not isinstance(columns, list) or not isinstance(dynamic, list):
+		frappe.throw(_("Columns are not valid"), frappe.ValidationError)
+	ref = frappe.get_cached_value("Report", report, "ref_doctype")
+	fields = table_fields(ref)
+	result = {}
+
+	def targets_of(type_fieldname: str) -> list[str]:
+		found = fields.get(type_fieldname)
+		return dynamic_targets(found[0], found[1]) if found else []
+
+	for fieldname in columns[:MAX_GUESS_COLUMNS]:
+		if not isinstance(fieldname, str) or fieldname not in fields:
+			continue
+		table, df = fields[fieldname]
+		if df.fieldtype == "Link" and df.options and readable_doctype(df.options):
+			result[fieldname] = {"link": df.options}
+		elif df.fieldtype == "Dynamic Link" and df.options:
+			result[fieldname] = {"dynamic": df.options, "targets": targets_of(df.options)}
+	for pair in dynamic[:MAX_GUESS_COLUMNS]:
+		if not (isinstance(pair, list) and len(pair) == 2 and all(isinstance(x, str) for x in pair)):
+			continue
+		fieldname, type_fieldname = pair
+		targets = targets_of(type_fieldname)
+		if targets:
+			result[fieldname] = {"dynamic": type_fieldname, "targets": targets}
+	return result
+
+
+# ---------------------------------------------------------------------------
 # Layouts: a user sees their own layouts and the public ones, and changes only
 # their own. System Managers see and change all.
 # Frappe treats None from a has_permission hook as a denial: return True or False.

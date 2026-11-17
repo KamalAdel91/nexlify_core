@@ -351,6 +351,7 @@ frappe.provide("nexlify.report_view");
 			this.$wrap = $(`<div class="nxv">
 				<div class="nxv-tools nxv-topbar">
 					<div class="nxv-tg nxv-tg-find">
+						<button type="button" class="nxv-origin" hidden></button>
 						<div class="nxv-menu-wrap nxv-variant-wrap"><button class="btn btn-default btn-sm nxv-variant-btn" title="${__("Layouts")}"></button><div class="nxv-menu nxv-variant-menu" hidden></div></div>
 						<div class="nxv-search">${icon("search", "sm")}<input type="search" class="form-control input-sm" placeholder="${__("Find in this report")}" aria-label="${__("Find in this report")}"></div>
 					</div>
@@ -425,7 +426,25 @@ frappe.provide("nexlify.report_view");
 			this.set_layout(this.prefs.layout || (window.innerWidth < 640 ? "cards" : "table"), true);
 		}
 
+		// a report the user saved as their own shows, at the start of the toolbar, the report it came from
+		original_report() {
+			const doc = this.qr.report_doc;
+			return (doc && doc.report_type === "Custom Report" && doc.reference_report) || "";
+		}
+
+		sync_origin() {
+			const from = this.original_report();
+			const $b = this.$wrap.find(".nxv-origin");
+			$b.prop("hidden", !from);
+			if (from) {
+				$b.attr("title", __("Open the original report ({0})", [__(from)]))
+					.attr("aria-label", __("Open the original report ({0})", [__(from)]))
+					.html(`${icon("undo-2", "sm")}<span>${esc(__(from))}</span>`);
+			}
+		}
+
 		show() {
+			this.sync_origin();
 			this.$wrap.removeClass("nxv-loading");
 			this.qr.$report.addClass("nxv-hidden");
 			this.qr.page.main.addClass("nxv-on");
@@ -3975,6 +3994,10 @@ frappe.provide("nexlify.report_view");
 			});
 			w.find(".nxv-settings-btn").on("click", () => this.open_settings("sort"));
 			w.find(".nxv-addcols-btn").on("click", () => this.open_settings("columns"));
+			w.find(".nxv-origin").on("click", () => {
+				const from = this.original_report();
+				if (from) frappe.set_route("query-report", from);
+			});
 
 			grid.addEventListener("dblclick", (e) => {
 				const rz = e.target.closest(".nxv-rz");
@@ -4220,6 +4243,13 @@ frappe.provide("nexlify.report_view");
 			$sw.prop("hidden", !can);
 			$sw.find("[data-nxsw=nexlify]").attr("aria-pressed", String(nexlify_on));
 			$sw.find("[data-nxsw=frappe]").attr("aria-pressed", String(!nexlify_on));
+		}
+		// a report saved as the user's own: Frappe's ⋯ menu leads back to the report it came from
+		const doc = qr.report_doc;
+		const from = can && doc && doc.report_type === "Custom Report" && doc.report_name === qr.report_name ? doc.reference_report : "";
+		if (from && page.menu && !page.menu.find(".nxv-origin-item").length) {
+			const $item = page.add_menu_item(__("Open the original report ({0})", [__(from)]), () => frappe.set_route("query-report", from));
+			if ($item) $item.closest("li").addClass("nxv-origin-item");
 		}
 		if (page.menu) {
 			FRAPPE_COPIES.forEach((label) => {

@@ -678,3 +678,9 @@ th:hover .nxv-fbtn, .nxv-fbtn.on { opacity: 1; }
 .nxv-grid tbody tr.nxv-tot td.nxv-num, .nxv-grid tbody tr.nxv-bold td.nxv-num, .nxv-grid tfoot td.nxv-num { cursor: default; }
 .nxv-grid tfoot td { background: color-mix(in srgb, var(--nxv-theme) 14%, var(--nxv-bg)); border-top: 2px solid color-mix(in srgb, var(--nxv-theme) 40%, var(--nxv-bg)); }
 .nxv-grid tbody tr.nxv-tot td.nxv-sel, .nxv-grid tbody tr.nxv-bold td.nxv-sel { background: var(--nxv-sel); }
+/* the way back from a report saved as the user's own to the report it came from */
+.nxv-origin { display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 10px; border: 1px solid color-mix(in srgb, var(--nxv-theme) 25%, var(--nxv-bg)); border-radius: 8px; background: var(--nxv-bg); color: var(--nxv-head-ink); font-size: var(--text-sm, 13px); font-weight: 600; cursor: pointer; white-space: nowrap; max-width: 260px; }
+.nxv-origin span { overflow: hidden; text-overflow: ellipsis; }
+.nxv-origin:hover { background: color-mix(in srgb, var(--nxv-theme) 8%, var(--nxv-bg)); }
+.nxv-origin[hidden] { display: none !important; }
+[dir="rtl"] .nxv-origin .icon { transform: scaleX(-1); }

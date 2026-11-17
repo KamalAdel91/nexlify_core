@@ -444,6 +444,7 @@ frappe.provide("nexlify.report_view");
 		}
 
 		show() {
+			set_pending(false);
 			this.sync_origin();
 			this.$wrap.removeClass("nxv-loading");
 			this.qr.$report.addClass("nxv-hidden");
@@ -3667,7 +3668,7 @@ frappe.provide("nexlify.report_view");
 		// the report's own summary figures, as [label, value, color Frappe gave the value]
 		summary_items() {
 			const $s = this.qr.$summary;
-			if (!$s || !$s.length || $s.css("display") === "none") return [];
+			if (!frappe_shows($s)) return [];
 			return $s
 				.find(".summary-item")
 				.toArray()
@@ -3716,7 +3717,7 @@ frappe.provide("nexlify.report_view");
 
 		sync_sections() {
 			const qr = this.qr;
-			const shown = ($el) => !!($el && $el.length && $el.css("display") !== "none" && $el.children().length);
+			const shown = ($el) => frappe_shows($el) && !!$el.children().length;
 			const closed = this.prefs.closed || {};
 			const has_filters = !!(qr.page && qr.page.page_form && this.$wrap.find(".nxv-sec[data-sec=filters] .page-form").length);
 			const has_summary = shown(qr.$summary);
@@ -4172,6 +4173,8 @@ frappe.provide("nexlify.report_view");
 	nexlify.report_view.use_frappe_view = function (qr, on) {
 		const prefs = Object.assign({}, user_prefs(qr.report_name), { frappe_view: on ? 1 : 0 });
 		save_prefs(qr.report_name, prefs);
+		local_frappe_view(qr.report_name, !!on);
+		if (on) set_pending(false);
 		if (on) {
 			frappe.show_alert({ message: __("This report now uses Frappe's table for you. Use the switch at the top to go back."), indicator: "blue" }, 6);
 		}
@@ -4180,6 +4183,49 @@ frappe.provide("nexlify.report_view");
 		// Frappe's table was drawn while hidden: Frappe draws it again at its real size
 		if (on && qr.datatable && qr.render_datatable) qr.render_datatable();
 	};
+
+	// ------------------------------------------------------------------ before the view is ready
+	// From the moment a report page opens until the view is drawn, Frappe's own table, loading screen
+	// and filters wait out of sight and a skeleton of the view shows, so the page never shows Frappe's
+	// table first and the view after it. A report that keeps Frappe's table shows it at once.
+	const PENDING = "nxv-pending";
+	let pending_timer = null;
+
+	// the user's choice of Frappe View, kept in the browser too: it is known before the user settings load
+	function local_frappe_view(name, value) {
+		try {
+			const key = "nxv-frappe-view:" + name;
+			if (value === undefined) return localStorage.getItem(key) === "1";
+			if (value) localStorage.setItem(key, "1");
+			else localStorage.removeItem(key);
+		} catch (e) {
+			return false;
+		}
+	}
+
+	function skeleton_html() {
+		const rows = Array.from({ length: 12 }, (_, i) => `<div class="nxv-skel-row"><i style="width:${38 + ((i * 17) % 30)}%"></i><i></i><i></i></div>`).join("");
+		return `<div class="nxv-skel" aria-busy="true" aria-label="${__("Loading")}">
+			<div class="nxv-skel-bar"><i></i><i></i><span></span><i></i></div>
+			<div class="nxv-skel-sec"><i></i></div><div class="nxv-skel-sec"><i></i></div>
+			<div class="nxv-skel-head"></div>${rows}</div>`;
+	}
+
+	function set_pending(on, qr) {
+		clearTimeout(pending_timer);
+		document.body.classList.toggle(PENDING, !!on);
+		if (!on) return $(".nxv-skel").remove();
+		const main = qr && qr.page && qr.page.main;
+		if (main && main.length && !main.children(".nxv-skel").length) main.prepend(skeleton_html());
+		// never longer than this: a report that answers nothing still gets its page back
+		pending_timer = setTimeout(() => set_pending(false), 30000);
+	}
+
+	// what Frappe asked for with its own show() and hide(), not what the screen shows: while the view
+	// waits it keeps Frappe's parts out of sight, and they must still be read as Frappe set them
+	function frappe_shows($el) {
+		return !!($el && $el.length && $el[0].style.display !== "none" && !$el.prop("hidden"));
+	}
 
 	function too_big(qr) {
 		return (qr.data || []).length > (cint(frappe.boot.sysdefaults.max_report_rows) || 100000);
@@ -4210,14 +4256,14 @@ frappe.provide("nexlify.report_view");
 		const c = config();
 		const v = qr.__nxv;
 		const $msg = qr.$message;
-		const message_on = !!($msg && $msg.length && $msg.css("display") !== "none");
+		const message_on = frappe_shows($msg);
 		sync_header(qr);
 		// another report on the same page: the old one's rows never stay on screen while the new one loads
 		if (v && v.report_name !== name && !v.$wrap.prop("hidden")) v.hide();
 		// Frappe's "Loading..." screen: the same report runs again, so the view stays with its rows dimmed
 		// and Frappe's screen keeps out of the way (the page does not jump); otherwise Frappe's screen shows
 		const $ld = qr.$loading;
-		if ($ld && $ld.length && $ld.css("display") !== "none") {
+		if (frappe_shows($ld)) {
 			const same = !!(v && v.report_name === name && !v.$wrap.prop("hidden"));
 			$ld.toggleClass("nxv-hide", same);
 			if (same) v.$wrap.addClass("nxv-loading");
@@ -4228,15 +4274,18 @@ frappe.provide("nexlify.report_view");
 			if (v && !text && v.report_name === name && !v.$wrap.prop("hidden")) {
 				// the report runs again (a filter changed): the view stays with its filters, the old rows wait dimmed
 				v.$wrap.addClass("nxv-loading");
-			} else if (v) {
+			} else {
 				// a message instead of rows: Frappe's page shows it, with the filters back in their place
-				v.hide();
+				if (v) v.hide();
+				if (text) set_pending(false);
 			}
 			return;
 		}
 		if (v && v.report_name !== name) v.hide();
 		if (!shows_rows(qr)) {
 			if (v) v.hide();
+			// too many rows for the view: Frappe's table shows them
+			if (too_big(qr)) set_pending(false);
 			return;
 		}
 		if (!settings_loaded.has(name)) {
@@ -4250,6 +4299,7 @@ frappe.provide("nexlify.report_view");
 				.then(() => {
 					settings_loaded.add(name);
 					if (!wanted_for(qr)) {
+						set_pending(false);
 						qr.$report.removeClass("nxv-hidden");
 						if (qr.datatable && qr.render_datatable) qr.render_datatable();
 						return;
@@ -4261,6 +4311,7 @@ frappe.provide("nexlify.report_view");
 		}
 		if (!wanted_for(qr)) {
 			if (v) v.hide();
+			set_pending(false);
 			return;
 		}
 		// Frappe has one report page for every report: a new report gets a new view
@@ -4340,6 +4391,7 @@ frappe.provide("nexlify.report_view");
 			remove_strays(qr);
 			if (qr.$report) qr.$report.removeClass("nxv-hidden");
 			if (qr.page && qr.page.main) qr.page.main.removeClass("nxv-on");
+			set_pending(false);
 			sync_header(qr);
 		} catch (e2) {
 			console.error("Nexlify Report View", e2);
@@ -4380,8 +4432,9 @@ frappe.provide("nexlify.report_view");
 				mt = setTimeout(() => sync_header(qr), 60);
 			}).observe(qr.page.menu[0], { childList: true });
 		}
-		// ... shows its "Loading..." screen while a report loads ...
+		// ... shows its "Loading..." screen while a report loads (never over the view: the view dims instead) ...
 		if (qr.$loading && qr.$loading.length) {
+			qr.$loading.addClass("nxv-frappe-loading");
 			new MutationObserver(later).observe(qr.$loading[0], { attributes: true, attributeFilter: ["style"] });
 		}
 		// ... and shows a message while it runs, or instead of rows
@@ -4397,10 +4450,17 @@ frappe.provide("nexlify.report_view");
 		const route = (frappe.get_route && frappe.get_route()) || [];
 		const current = frappe.query_report;
 		if (route[0] === "query-report" && current && current.__nxv && current.__nxv.report_name !== route[1]) current.__nxv.hide();
-		if (route[0] !== "query-report") return;
+		if (route[0] !== "query-report") return set_pending(false);
+		const name = route[1];
+		const c = config();
+		// back on a report whose view is already drawn (Frappe does not run it again): nothing to wait for
+		const drawn = !!(current && current.report_name === name && current.__nxv && current.__nxv.report_name === name && !current.__nxv.$wrap.prop("hidden"));
+		const view_coming = c.enabled && !(c.excluded || []).includes(name) && !user_prefs(name).frappe_view && !local_frappe_view(name);
+		set_pending(view_coming && !drawn, current);
 		let tries = 0;
 		const look = () => {
 			const qr = frappe.query_report;
+			if (qr && document.body.classList.contains(PENDING)) set_pending(true, qr);
 			if (qr && qr.report_name === route[1] && qr.$report && qr.$report.length) return watch(qr);
 			if (++tries < 100) setTimeout(look, 100);
 		};

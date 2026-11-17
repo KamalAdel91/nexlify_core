@@ -684,3 +684,35 @@ th:hover .nxv-fbtn, .nxv-fbtn.on { opacity: 1; }
 .nxv-origin:hover { background: color-mix(in srgb, var(--nxv-theme) 8%, var(--nxv-bg)); }
 .nxv-origin[hidden] { display: none !important; }
 [dir="rtl"] .nxv-origin .icon { transform: scaleX(-1); }
+
+/* ===================== before the view is ready: Frappe's page parts wait, a skeleton of the view shows ===================== */
+body.nxv-pending #page-query-report .layout-main-section > :not(.nxv):not(.nxv-skel) { display: none !important; }
+body:not(.nxv-pending) .nxv-skel { display: none !important; }
+.nxv-skel {
+	--sk-bg: var(--fg-color, #fff);
+	--sk-line: var(--border-color, #e3e6ec);
+	--sk-theme: var(--nxt-accent, var(--primary, #2456d6));
+	--sk-wash: color-mix(in srgb, var(--sk-theme) 10%, var(--sk-bg));
+	--sk-wash-2: color-mix(in srgb, var(--sk-theme) 6%, var(--sk-bg));
+	--sk-block: color-mix(in srgb, var(--text-color, #1b2130) 8%, var(--sk-bg));
+	background: var(--sk-bg); border: 1px solid var(--sk-line); border-radius: 10px; overflow: hidden; margin-bottom: 12px;
+}
+.nxv-skel i, .nxv-skel span { display: block; height: 12px; border-radius: 6px; background: var(--sk-block); }
+.nxv-skel-bar { display: flex; align-items: center; gap: 12px; height: 48px; padding: 0 12px; background: var(--sk-wash); border-bottom: 1px solid color-mix(in srgb, var(--sk-theme) 22%, var(--sk-bg)); }
+.nxv-skel-bar i:nth-child(1) { width: 90px; height: 16px; }
+.nxv-skel-bar i:nth-child(2) { width: 240px; height: 30px; border-radius: 8px; background: var(--sk-bg); }
+.nxv-skel-bar span { flex: 1; background: none; }
+.nxv-skel-bar i:last-child { width: 260px; height: 16px; }
+.nxv-skel-sec { height: 38px; display: flex; align-items: center; padding: 0 14px; background: var(--sk-wash-2); border-inline-start: 3px solid var(--sk-theme); border-bottom: 1px solid color-mix(in srgb, var(--sk-theme) 18%, var(--sk-bg)); }
+.nxv-skel-sec i { width: 70%; max-width: 520px; height: 14px; border-radius: 999px; background: var(--sk-bg); }
+.nxv-skel-head { height: 34px; background: color-mix(in srgb, var(--sk-theme) 6%, var(--sk-bg)); border-bottom: 1px solid var(--sk-line); }
+.nxv-skel-row { display: grid; grid-template-columns: 1fr 140px 140px; gap: 24px; align-items: center; height: 34px; padding: 0 12px; border-bottom: 1px solid color-mix(in srgb, var(--sk-line) 70%, transparent); }
+.nxv-skel-row i:nth-child(2), .nxv-skel-row i:nth-child(3) { justify-self: end; width: 90px; }
+/* a soft light passes over the blocks while the report loads */
+.nxv-skel i { background: linear-gradient(90deg, var(--sk-block) 0%, color-mix(in srgb, var(--sk-block) 40%, var(--sk-bg)) 50%, var(--sk-block) 100%); background-size: 200% 100%; animation: nxv-skel-shine 1.3s ease-in-out infinite; }
+.nxv-skel-bar i:nth-child(2), .nxv-skel-sec i { animation: none; background: var(--sk-bg); }
+@keyframes nxv-skel-shine { from { background-position: 100% 0; } to { background-position: -100% 0; } }
+@media (prefers-reduced-motion: reduce) { .nxv-skel i { animation: none; } }
+@media (max-width: 640px) { .nxv-skel-bar i:last-child { display: none; } .nxv-skel-row { grid-template-columns: 1fr 90px; } .nxv-skel-row i:nth-child(3) { display: none; } }
+/* Frappe's "Loading..." screen never shows over the view: the view dims its rows instead */
+.layout-main-section.nxv-on > .nxv-frappe-loading { display: none !important; }

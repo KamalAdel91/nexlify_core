@@ -774,10 +774,11 @@ frappe.provide("nexlify.report_view");
 				}
 			} else list = rows.filter(match);
 			if (this.tree_on()) return list;
-			// the report's own total lines stay after the rows, whatever the sort
-			const own_totals = this.is_tree ? [] : list.filter((r) => this.own_total(r));
-			if (own_totals.length) list = list.filter((r) => !this.own_total(r));
-			const sorts =this.state.sorts.map((s) => ({ c: this.col_of(s.key) || this.cols.find((x) => x.fieldname === s.key), dir: s.dir })).filter((s) => s.c);
+			const sorts = this.state.sorts.map((s) => ({ c: this.col_of(s.key) || this.cols.find((x) => x.fieldname === s.key), dir: s.dir })).filter((s) => s.c);
+			// sorted by the user: the report's own total lines stay after the rows, and its group headings
+			// (a row it marks is_group) go, as the rows leave their groups; unsorted, all stay where the report put them
+			const own_totals = sorts.length && !this.is_tree ? list.filter((r) => this.own_total(r)) : [];
+			if (sorts.length && !this.is_tree) list = list.filter((r) => !this.own_total(r) && !this.own_heading(r));
 			if (sorts.length) {
 				list = list.slice().sort((a, b) => {
 					for (const { c, dir } of sorts) {
@@ -791,7 +792,7 @@ frappe.provide("nexlify.report_view");
 			}
 			// the report's own total lines ('Opening', 'Total', a statement's totals) are never grouped:
 			// the groups add up the rows themselves
-			return this.state.group_by.length ? this.group_rows(list.filter((r) => !this.own_total(r) && !this.is_label_row(r)), sorts[0]) : list.concat(own_totals);
+			return this.state.group_by.length ? this.group_rows(list.filter((r) => !this.own_total(r) && !this.own_heading(r) && !this.is_label_row(r)), sorts[0]) : list.concat(own_totals);
 		}
 
 		// Group by, at any number of levels: each group's subtotals are worked out here from the rows under
@@ -1106,6 +1107,12 @@ frappe.provide("nexlify.report_view");
 		// a total line the report adds itself (Frappe's is_total_row, or a row the report marks is_total)
 		own_total(r) {
 			return !!(r.is_total_row || r.is_total);
+		}
+
+		// a group heading the report adds itself to a flat table (a row it marks is_group): grouped in the view,
+		// it is not one of the rows
+		own_heading(r) {
+			return !this.is_tree && !!r.is_group;
 		}
 
 		row_cls(r, v) {

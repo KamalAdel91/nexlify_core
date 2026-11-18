@@ -496,6 +496,8 @@ frappe.provide("nexlify.report_view");
 				width: parseInt(c.width, 10) || (i === 0 ? 240 : 120),
 				src: c,
 				fkey: c.fieldname || c.id,
+				// an amount that repeats on each row of a document (see sum_of)
+				once_per: c.once_per || (c.docfield && c.docfield.once_per) || undefined,
 			}));
 			// a column with no type next to one that holds a DocType's name (General Ledger's party and
 			// party_type, a reference_name and its reference_type) links to the document named there
@@ -818,7 +820,7 @@ frappe.provide("nexlify.report_view");
 				const list_of = [...groups.entries()].map(([val, rs]) => {
 					const key = parent === null ? val : parent + GROUP_SEP + val;
 					const g = { __nxgroup: true, __nxgkey: key, __nxgval: val, __nxglevel: depth, __nxglabel: this.prefs.labels[c.fieldname] || c.label, __nxcount: rs.length, __nxrows: rs };
-					sum_cols.forEach((x) => (g[x.fieldname] = round6(rs.reduce((s, r) => s + (to_number(this.val(r, x)) || 0), 0))));
+					sum_cols.forEach((x) => (g[x.fieldname] = this.sum_of(rs, x)));
 					return g;
 				});
 				if (sc && NUM.has(sc.fieldtype)) list_of.sort((x, y) => ((to_number(this.val(x, sc)) || 0) - (to_number(this.val(y, sc)) || 0)) * dir);
@@ -861,7 +863,7 @@ frappe.provide("nexlify.report_view");
 			this.cols.forEach((c) => {
 				if (!NUM.has(c.fieldtype) || c.fieldtype === "Percent" || c.delta || c.fn !== undefined || is_rate(c)) return;
 				const key = c.twin ? c.twin + "__b" : c.fieldname;
-				t[key] = round6(rows.reduce((sum, r) => sum + (to_number(this.val(r, c)) || 0), 0));
+				t[key] = this.sum_of(rows, c);
 			});
 			this.foot_cache = { view: this.view, cols: this.cols, rows: [t] };
 			return this.foot_cache.rows;
@@ -1107,6 +1109,23 @@ frappe.provide("nexlify.report_view");
 		// a total line the report adds itself (Frappe's is_total_row, or a row the report marks is_total)
 		own_total(r) {
 			return !!(r.is_total_row || r.is_total);
+		}
+
+		// A column's total over rows. A column the report marks once_per (the fieldname of the column naming
+		// a document) repeats that document's amount on each of its rows, say a balance's on each of its deals:
+		// each document counts once.
+		sum_of(rows, c) {
+			const seen = c.once_per ? new Set() : null;
+			return round6(
+				rows.reduce((sum, r) => {
+					const doc = seen ? r[c.once_per] : null;
+					if (doc != null && doc !== "") {
+						if (seen.has(doc)) return sum;
+						seen.add(doc);
+					}
+					return sum + (to_number(this.val(r, c)) || 0);
+				}, 0)
+			);
 		}
 
 		// a group heading the report adds itself to a flat table (a row it marks is_group): grouped in the view,

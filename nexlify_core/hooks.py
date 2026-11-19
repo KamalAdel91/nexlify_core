@@ -74,22 +74,21 @@ doc_events = {
 	"Nexlify Dashboard Filter": {
 		"on_update": "nexlify_core.dashboard_filter_injector.on_dashboard_filter_config_save",
 	},
-	# Keep Each Invoice Line in the Ledger: checked after each posting, told when it stops working
-	"Sales Invoice": {"on_submit": "nexlify_core.overrides.invoice_lines.check_posted"},
-	"Purchase Invoice": {"on_submit": "nexlify_core.overrides.invoice_lines.check_posted"},
+	# Keep Each Line in the Ledger: a line's row gets the line's words when saved; each invoice posted is
+	# checked, and the site is told when it stops working
+	"GL Entry": {"before_insert": "nexlify_core.overrides.ledger_lines.put_line_words"},
+	"Sales Invoice": {"on_submit": "nexlify_core.overrides.ledger_lines.check_posted"},
+	"Purchase Invoice": {"on_submit": "nexlify_core.overrides.ledger_lines.check_posted"},
 }
 
 after_migrate = [
 	"nexlify_core.dashboard_filter_injector.run_after_migrate",
-	"nexlify_core.overrides.invoice_lines.make_setting_field",
+	"nexlify_core.overrides.ledger_lines.make_setting_field",
 ]
 
-# Accounts Settings > Keep Each Invoice Line in the Ledger: an invoice line keeps its own General Ledger
-# row. extend_doctype_class layers on whichever class controls the invoice (another app's too).
-extend_doctype_class = {
-	"Sales Invoice": ["nexlify_core.overrides.invoice_lines.InvoiceLinesMixin"],
-	"Purchase Invoice": ["nexlify_core.overrides.invoice_lines.InvoiceLinesMixin"],
-}
+# Accounts Settings > Keep Each Line in the Ledger: ERPNext calls this for every General Ledger row it
+# builds, of any document (any app's); a row made from a line keeps that line's own row.
+update_gl_dict_with_app_based_fields = ["nexlify_core.overrides.ledger_lines.tag_row"]
 
 # ---------------------------------------------------------------------------
 # Restrict To Owner (merged from nexlify_access)

@@ -53,6 +53,7 @@ table.nxv-grid {
 	border-inline-end: 1px solid var(--nxv-line);
 }
 .nxv-grid .nxv-r { text-align: end; }
+.nxv-grid tbody td > div { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .nxv-grid td.nxv-idx,
 .nxv-grid th.nxv-idx { text-align: center; color: var(--nxv-muted); padding: 0 4px; }
 
@@ -152,9 +153,48 @@ table.nxv-grid {
 	border-top: 1px solid var(--nxv-line);
 }
 
-/* Group By: a heading, the rows, a total */
-.nxv-grid tr.nxv-g td { font-weight: 600; background: var(--nxv-head); }
-.nxv-grid tr.nxv-g-total td { background: var(--nxv-bg); border-top: 1px solid var(--nxv-muted); }
+/* Group By: one line a group (its name, its count, its totals), a lighter shade at each level inside */
+.nxv-grid tr.nxv-g td { font-weight: 600; }
+.nxv-grid tr.nxv-g.nxv-l0 td { background: color-mix(in srgb, var(--text-color) 8%, var(--fg-color)); }
+.nxv-grid tr.nxv-g.nxv-l1 td { background: color-mix(in srgb, var(--text-color) 5%, var(--fg-color)); }
+.nxv-grid tr.nxv-g.nxv-l2 td { background: color-mix(in srgb, var(--text-color) 2.5%, var(--fg-color)); }
+.nxv-grid tr.nxv-g.nxv-l0 td.nxv-glabel { color: var(--heading-color, var(--text-color)); }
+.nxv-grid tr.nxv-g .nxv-cnt { font-weight: normal; }
+/* totals in more than one currency, side by side in one cell */
+.nxv-sum-sep::before { content: "·"; margin: 0 6px; color: var(--text-muted); font-weight: normal; }
+.nxv-sum-part,
+.nxv-sum-part > div { display: inline !important; white-space: nowrap; }
+
+/* compact rows: shorter, a smaller type, less room around the text */
+.nxv.nxv-compact { --nxv-row-h: 26px; }
+.nxv.nxv-compact .nxv-grid { font-size: 12px; }
+.nxv.nxv-compact .nxv-grid th,
+.nxv.nxv-compact .nxv-grid td { padding: 0 6px; }
+.nxv.nxv-compact .nxv-grid thead tr.nxv-fr th { height: 28px; padding: 3px; }
+.nxv.nxv-compact .nxv-filter { height: 22px; font-size: 12px; }
+.nxv.nxv-compact .nxv-tw { width: 16px; height: 16px; }
+.nxv-corner button[aria-pressed="true"] { color: var(--blue-500, #2490ef); }
+
+/* the corner above the row numbers: open or close every group at once */
+.nxv-grid thead th.nxv-corner { padding: 0 !important; overflow: visible; text-overflow: clip; }
+.nxv-corner-btns { display: flex; align-items: center; justify-content: center; gap: 0; width: 100%; }
+.nxv-corner button {
+	flex: none;
+	width: 22px;
+	height: 22px;
+	display: grid;
+	place-items: center;
+	padding: 0;
+	border: 0;
+	border-radius: 5px;
+	background: transparent;
+	color: var(--text-muted);
+	cursor: pointer;
+	vertical-align: middle;
+}
+.nxv-corner button:hover:not([disabled]) { background: var(--fg-color); color: var(--text-color); }
+.nxv-corner button[disabled] { opacity: 0.35; cursor: default; }
+.nxv-corner svg { width: 14px; height: 14px; }
 .nxv-grid tr.nxv-g td.nxv-glabel { overflow: visible; }
 .nxv-grid tr.nxv-g td.nxv-glabel:not([data-fz]) { position: relative; z-index: 1; }
 .nxv-grid tr.nxv-g td.nxv-glabel[data-fz] { z-index: 3; }

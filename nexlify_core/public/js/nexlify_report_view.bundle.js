@@ -2531,6 +2531,12 @@ frappe.provide("nexlify.report_view");
 		if (qr.page && qr.page.page_form && qr.page.page_form.length) {
 			new MutationObserver(() => settle(qr)).observe(qr.page.page_form[0], { childList: true, subtree: true });
 		}
+		// the table takes the room left whenever a part above it changes height: Frappe's own filter arrow,
+		// a filter that shows or hides another, the summary, the chart, the line about a prepared report
+		if (window.ResizeObserver) {
+			const ro = new ResizeObserver(() => refit(qr));
+			[qr.page && qr.page.page_form, qr.$summary, qr.$chart, qr.$report_message].forEach(($e) => $e && $e[0] && ro.observe($e[0]));
+		}
 		// and the buttons of the header
 		if (qr.page && qr.page.inner_toolbar && qr.page.inner_toolbar.length) {
 			new MutationObserver(() => {

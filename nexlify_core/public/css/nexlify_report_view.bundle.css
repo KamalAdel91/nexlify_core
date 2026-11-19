@@ -122,9 +122,7 @@ table.nxv-grid {
 /* frozen columns: the row numbers and the first columns stay on the left while the table scrolls sideways */
 .nxv-grid [data-fz] { position: sticky; z-index: 2; }
 .nxv-grid thead th[data-fz] { z-index: 4; }
-.nxv-grid tfoot td[data-fz] { z-index: 3; }
-.nxv-grid [data-fz="last"] { box-shadow: inset -1px 0 0 var(--nxv-muted); }
-[dir="rtl"] .nxv-grid [data-fz="last"] { box-shadow: inset 1px 0 0 var(--nxv-muted); }
+.nxv-grid tfoot td[data-fz] { z-index: 4; }
 .nxv-colmenu-line { height: 1px; margin: 4px 0; background: var(--border-color); }
 
 /* the current cell: moved with the arrow keys */
@@ -143,22 +141,27 @@ table.nxv-grid {
 .nxv-grid tr.nxv-empty td { height: 120px; text-align: center; color: var(--nxv-muted); }
 .nxv-grid tr.nxv-tot td { font-weight: 600; }
 
-/* the total row: at the bottom, bold, as in Frappe's table */
+/* the total: at the bottom, bold, as in Frappe's table; a total in several currencies takes several lines,
+   so the whole block stays at the bottom (not each cell, or the lines would lie on one another) */
+.nxv-grid tfoot { position: sticky; bottom: 0; z-index: 3; }
 .nxv-grid tfoot td {
-	position: sticky;
-	bottom: 0;
-	z-index: 2;
 	font-weight: bold;
 	background: var(--nxv-head);
-	border-top: 1px solid var(--nxv-line);
 }
+.nxv-grid tfoot tr:first-child td { border-top: 1px solid var(--nxv-line); }
+/* the table's total lines at the end of the rows: bold, nothing else */
+.nxv-grid tbody tr.nxv-foot td { font-weight: 700; background: color-mix(in srgb, var(--text-color) 2.5%, var(--fg-color)); }
+.nxv-grid tbody tr.nxv-foot td.nxv-glabel { overflow: visible; }
+.nxv-grid tfoot td.nxv-glabel { overflow: visible; }
+.nxv-grid tfoot td.nxv-glabel > span { position: relative; z-index: 1; white-space: nowrap; }
 
-/* Group By: one line a group (its name, its count, its totals), a lighter shade at each level inside */
+/* Group By: a heading (a lighter shade at each level inside), the rows, a bold total line with no shade */
 .nxv-grid tr.nxv-g td { font-weight: 600; }
-.nxv-grid tr.nxv-g.nxv-l0 td { background: color-mix(in srgb, var(--text-color) 8%, var(--fg-color)); }
-.nxv-grid tr.nxv-g.nxv-l1 td { background: color-mix(in srgb, var(--text-color) 5%, var(--fg-color)); }
-.nxv-grid tr.nxv-g.nxv-l2 td { background: color-mix(in srgb, var(--text-color) 2.5%, var(--fg-color)); }
-.nxv-grid tr.nxv-g.nxv-l0 td.nxv-glabel { color: var(--heading-color, var(--text-color)); }
+.nxv-grid tr.nxv-g-head.nxv-l0 td { background: color-mix(in srgb, var(--text-color) 4%, var(--fg-color)); }
+.nxv-grid tr.nxv-g-head.nxv-l1 td { background: color-mix(in srgb, var(--text-color) 2.5%, var(--fg-color)); }
+.nxv-grid tr.nxv-g-head.nxv-l2 td { background: color-mix(in srgb, var(--text-color) 1.5%, var(--fg-color)); }
+.nxv-grid tr.nxv-g-head.nxv-l0 td.nxv-glabel { color: var(--heading-color, var(--text-color)); }
+.nxv-grid tr.nxv-g-total td { font-weight: 700; background: var(--nxv-bg); }
 .nxv-grid tr.nxv-g .nxv-cnt { font-weight: normal; }
 /* totals in more than one currency, side by side in one cell */
 .nxv-sum-sep::before { content: "·"; margin: 0 6px; color: var(--text-muted); font-weight: normal; }

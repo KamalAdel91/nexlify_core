@@ -275,6 +275,7 @@ frappe.provide("nexlify.report_view");
 			// a tree only when this run has levels: a report that turns its tree on for a filter is a plain table without it
 			this.is_tree = !!qr.tree_report && data.some((r) => (r.indent || 0) > 0);
 			this.link_tree(data);
+			if (data.some((r) => r.is_group) && this.report_grouping()) this.state.group_by = [];
 			this.rows = data;
 			const keys = this.report_columns.map((c) => c.fieldname);
 			data.forEach((r) => (r.__nxt = keys.map((k) => clean(r[k])).join(" ").toLowerCase()));
@@ -289,7 +290,36 @@ frappe.provide("nexlify.report_view");
 			const fit = this.measure(this.columns, this.rows);
 			this.columns.forEach((c) => (c.width = Math.min(400, fit[c.fieldname] || c.width)));
 			this.refresh();
+			// the totals at the bottom are bold and can be longer than any row: their columns grow to show them whole
+			if (this.fit_totals()) this.refresh(true);
+			// grouped by one column the report's own Group By offers (a layout opened with the report): the report groups
+			if (this.state.group_by.length === 1 && !this.report_grouping() && this.report_option(this.state.group_by[0])) {
+				setTimeout(() => this.set_groups(this.state.group_by.slice()), 0);
+			}
 			this.fetch_linked();
+		}
+
+		fit_totals() {
+			const lines = this.foot_row() || [];
+			if (!lines.length) return false;
+			const ctx = (this.canvas = this.canvas || document.createElement("canvas")).getContext("2d");
+			const cs = getComputedStyle(this.grid);
+			ctx.font = `700 ${cs.fontSize} ${cs.fontFamily}`;
+			let grew = false;
+			this.columns.forEach((c) => {
+				if (!NUM.has(c.fieldtype) || this.layout.widths[c.fieldname]) return;
+				lines.forEach((line) => {
+					if (line.__nxpart === "other" && this.currency_field(c)) return;
+					if (line.__nxpart === "own" && !this.currency_field(c)) return;
+					const text = $("<div>").html(this.sum_html(line.__nxrows, c)).text();
+					const w = Math.ceil(ctx.measureText(text).width * 1.08 + 24);
+					if (w > c.width && w <= 400) {
+						c.width = w;
+						grew = true;
+					}
+				});
+			});
+			return grew;
 		}
 
 		// A column with no type that names a DocType links to it (General Ledger's Project and dimensions);
@@ -476,7 +506,7 @@ frappe.provide("nexlify.report_view");
 			const td = this.grid.tBodies[0].querySelector("tr[data-v] td:not(.nxv-idx)") || this.grid;
 			const cs = getComputedStyle(td);
 			const font = `${cs.fontSize} ${cs.fontFamily}`;
-			const sample = rows.filter((r) => !r.__nxg).slice(0, 300);
+			const sample = rows.filter((r) => !r.__nxg && !r.__nxfoot).slice(0, 300);
 			const out = {};
 			cols.forEach((c, ci) => {
 				ctx.font = "600 " + font;
@@ -701,6 +731,8 @@ frappe.provide("nexlify.report_view");
 			this.group_keys = [];
 			let head = null;
 			list.forEach((r) => {
+				// how the line looks: a group's heading and total as the view's, the report's last totals as its total
+				r.__nxown = r.is_group ? "head" : this.own_total(r) ? (head ? "total" : "foot") : "";
 				if (r.is_group) {
 					head = r;
 					r.__nxkey = "own\u241f" + r.__nxi;
@@ -756,11 +788,13 @@ frappe.provide("nexlify.report_view");
 					const key = parent + "\u241f" + k;
 					const closed = this.closed.has(key);
 					this.group_keys.push(key);
-					// one line a group: its name, its rows' count and its totals; its rows (or inner groups) under it
+					// a group: its heading (name and count), its rows (or inner groups), its total line under them;
+					// a closed group is its heading alone, with the totals on it
 					out.push({ __nxg: "head", __nxlevel: depth, __nxlabel: `${__(c.label)}: ${shown}`, __nxkey: key, __nxclosed: closed, __nxrows: rs });
 					if (closed) return;
 					if (depth + 1 < levels.length) build(rs, depth + 1, key);
 					else out.push(...rs);
+					this.total_lines(rs, `${__("Total")} ${shown}`).forEach((t) => out.push(Object.assign(t, { __nxg: "total", __nxlevel: depth })));
 				});
 			};
 			build(list, 0, "");
@@ -835,18 +869,46 @@ frappe.provide("nexlify.report_view");
 		}
 
 		// the footer: Frappe's table adds up the rows it shows; so does this one
+		// The table's total, at the bottom: when the report asks Frappe for one, when the view groups the rows,
+		// and for any report with amounts that does not add its own total lines ('Total', 'Closing', a group's
+		// total) and is not a tree (a statement's tree would add income and expenses together)
+		// The lines a total takes. Rows in one currency: one line. Rows in several: a line for the columns that do
+		// not follow the row's currency (counts, amounts in the company's currency), then one line per currency for
+		// the amounts in the rows' own currency ("Total · EGP"), as the reports themselves show them
+		total_lines(rows, label) {
+			const own = this.columns.filter((c) => SUMMED.has(c.fieldtype) && this.currency_field(c));
+			const field = own.length ? this.currency_field(own[0]) : null;
+			const codes = field ? [...new Set(rows.map((r) => r[field] || ""))].sort() : [];
+			if (codes.length < 2) return [{ __nxlabel: label, __nxrows: rows }];
+			const lines = [];
+			if (this.columns.some((c) => SUMMED.has(c.fieldtype) && !this.currency_field(c))) lines.push({ __nxlabel: label, __nxrows: rows, __nxpart: "other" });
+			codes.forEach((code) => lines.push({ __nxlabel: `${label} · ${code || __("Not Set")}`, __nxrows: rows.filter((r) => (r[field] || "") === code), __nxpart: "own" }));
+			return lines;
+		}
+
 		foot_row() {
-			if (!this.show_total) return null;
+			if (!this.show_total && !this.state.group_by.length) {
+				if (this.is_tree || this.rows.some((r) => this.own_line(r))) return null;
+				if (!this.columns.some((c) => SUMMED.has(c.fieldtype) && !is_rate(c))) return null;
+			}
 			// a tree: its lowest rows (the rows above them are their totals)
 			const rows = this.is_tree
 				? this.rows.filter((r) => !r.__nxkids && (!this.filtering() || this.pass_filters(r)))
-				: this.view.flatMap((r) => (r.__nxg === "head" && r.__nxclosed ? r.__nxrows : r.__nxg ? [] : [r])).filter((r) => !this.own_total(r));
-			return { __nxfoot: true, __nxrows: rows };
+				: this.view.flatMap((r) => (r.__nxg === "head" && r.__nxclosed ? r.__nxrows : r.__nxg || r.__nxfoot ? [] : [r])).filter((r) => !this.own_total(r));
+			return this.total_lines(rows, __("Total")).map((t) => Object.assign(t, { __nxfoot: true }));
+		}
+
+		// the rows shown, and the table's total lines after them: plain bold lines at the end of the table,
+		// reached by scrolling, as the reports' own total lines are
+		set_view(view) {
+			this.view = view;
+			const foot = this.foot_row();
+			if (foot) this.view = view.concat(foot);
 		}
 
 		refresh(keep_scroll) {
 			this.cols = this.build_cols();
-			this.view = this.compute_view();
+			this.set_view(this.compute_view());
 			if (!keep_scroll) this.scroller.scrollTop = 0;
 			this.render_head();
 			this.render_body(true);
@@ -911,8 +973,7 @@ frappe.provide("nexlify.report_view");
 				`<th class="nxv-idx nxv-corner"><span class="nxv-corner-btns"><button type="button" data-density="1" title="${tip}" aria-label="${tip}" aria-pressed="${dense}">${icon(dense ? "unfold-vertical" : "fold-vertical")}</button></span></th>`
 			);
 			this.grid.tHead.innerHTML = `<tr class="nxv-hr">${corner}${head}</tr><tr class="nxv-fr">${density}${filters}</tr>`;
-			const foot = this.foot_row();
-			this.grid.tFoot.innerHTML = foot ? this.row_html(foot, -1) : "";
+			this.grid.tFoot.innerHTML = "";
 		}
 
 		// Frappe's table calls a column's format with the row's cells and the column's place
@@ -937,14 +998,20 @@ frappe.provide("nexlify.report_view");
 				const tw = `<span class="nxv-tw ${r.__nxclosed ? "" : "open"}" data-g="${esc(r.__nxkey)}" role="button" aria-label="${__("Expand or collapse")}">${CHEVRON}</span>`;
 				return `<td class="nxv-glabel"><span class="nxv-acc" style="padding-inline-start:${r.__nxlevel * 16}px">${tw}<span>${esc(r.__nxlabel)}</span><span class="nxv-cnt">${r.__nxrows.length}</span></span></td>`;
 			}
-			// a group's line and the total line: each amount column added up over their rows
+			// a group's total line, a closed group's heading and the table's total: each amount added up over their rows
 			if (r.__nxg || r.__nxfoot) {
-				if (ci === 0 && r.__nxfoot) return `<td>${__("Total")}</td>`;
-				if (!NUM.has(c.fieldtype)) return "<td></td>";
+				if (ci === 0 && r.__nxfoot) return `<td class="nxv-glabel"><span>${esc(r.__nxlabel)}</span></td>`;
+				if (ci === 0 && r.__nxg === "total") return `<td class="nxv-glabel"><span style="padding-inline-start:${r.__nxlevel * 16 + 22}px">${esc(r.__nxlabel)}</span></td>`;
+				if (!NUM.has(c.fieldtype) || (r.__nxg === "head" && !r.__nxclosed)) return "<td></td>";
+				// a line of a total in several currencies: each amount on its own line, once
+				if (r.__nxpart === "other" && this.currency_field(c)) return "<td></td>";
+				if (r.__nxpart === "own" && !this.currency_field(c)) return "<td></td>";
 				const html = this.sum_html(r.__nxrows, c);
 				const tip = html.includes("nxv-sum-sep") ? ` title="${esc($("<div>").html(html.replace(/<span class="nxv-sum-sep"><\/span>/g, " · ")).text())}"` : "";
 				return `<td class="${num}"${tip}>${html}</td>`;
 			}
+			// a heading or a total line the report made: empty where it has nothing, as the view's own lines
+			if (ci > 0 && this.own_groups && r.__nxown && (r.__nxown === "head" || !NUM.has(c.fieldtype))) return "<td></td>";
 			const raw = r[c.fieldname];
 			let html;
 			try {
@@ -965,7 +1032,16 @@ frappe.provide("nexlify.report_view");
 		}
 
 		row_html(r, v, no) {
-			const cls = r.__nxg ? `nxv-g nxv-g-${r.__nxg} nxv-l${Math.min(r.__nxlevel, 2)}` : r.__nxfoot ? "nxv-foot" : this.own_total(r) ? "nxv-tot" : "";
+			const own = this.own_groups && r.__nxown;
+			const cls = r.__nxg
+				? `nxv-g nxv-g-${r.__nxg} nxv-l${Math.min(r.__nxlevel, 2)}`
+				: r.__nxfoot || own === "foot"
+				? "nxv-foot"
+				: own
+				? `nxv-g nxv-g-${own} nxv-l0`
+				: this.own_total(r)
+				? "nxv-tot"
+				: "";
 			const idx = this.fz_idx(`<td class="nxv-idx">${no || ""}</td>`);
 			return `<tr class="${cls}" data-v="${v}">${idx}${this.cols.map((c, ci) => this.fz_cell(this.cell(r, c, ci), ci)).join("")}</tr>`;
 		}
@@ -975,7 +1051,7 @@ frappe.provide("nexlify.report_view");
 			const n = this.view.length;
 			if (!this.numbers || force) {
 				let k = 0;
-				this.numbers = this.view.map((r) => (r.__nxg ? "" : ++k));
+				this.numbers = this.view.map((r) => (r.__nxg || r.__nxfoot || (this.own_groups && r.__nxown) ? "" : ++k));
 			}
 			let s = 0;
 			let e = n;
@@ -1142,7 +1218,7 @@ frappe.provide("nexlify.report_view");
 				labels: Object.assign({}, this.layout.labels),
 				sorts: JSON.parse(JSON.stringify(this.state.sorts)),
 				conds: JSON.parse(JSON.stringify(this.state.conds)),
-				group_by: this.state.group_by.slice(),
+				group_by: this.groups_now(),
 				added: JSON.parse(JSON.stringify(this.layout.added || [])),
 				freeze: this.layout.freeze || 0,
 				density: this.layout.density ? 1 : 0,
@@ -1165,11 +1241,12 @@ frappe.provide("nexlify.report_view");
 			if (this.rows) this.add_linked_columns();
 			this.state.sorts = st.sorts;
 			this.state.conds = st.conds || [];
-			this.state.group_by = st.group_by.filter((f) => this.col_of(f));
+			const keys = st.group_by.filter((f) => this.col_of(f));
 			if (this.rows) {
-				this.refresh();
+				// the grouping through the report's own filter when it offers the column
+				this.set_groups(keys);
 				this.fetch_linked();
-			}
+			} else this.state.group_by = keys;
 			if (saved) this.mark_saved();
 		}
 
@@ -1186,9 +1263,57 @@ frappe.provide("nexlify.report_view");
 			this.use_state(st);
 		}
 
+		// A report's own Group By (a Select filter named group_by): the report groups its rows on the server, as
+		// Frappe runs it, so Export and Print show the groups too. The view's Group By uses it when the report offers
+		// the column; any other column, or more levels, the view groups itself. The last choice is the one in use.
+		report_grouper() {
+			const f = (this.qr.filters || []).find((x) => x && x.df && x.df.fieldname === "group_by" && x.df.fieldtype === "Select");
+			if (!f) return null;
+			let opts = f.df.options;
+			if (typeof opts === "string") opts = opts.split("\n");
+			opts = (opts || []).map((o) => (o && typeof o === "object" ? o.value : o)).filter(Boolean);
+			return opts.length ? { f, opts } : null;
+		}
+
+		// the report's option that names a column ("Salesperson" for salesperson)
+		report_option(fieldname) {
+			const g = this.report_grouper();
+			const c = this.col_of(fieldname);
+			if (!g || !c) return null;
+			const norm = (x) => String(x || "").trim().toLowerCase();
+			return g.opts.find((o) => frappe.scrub(o) === fieldname || norm(o) === norm(c.label) || norm(__(o)) === norm(__(c.label))) || null;
+		}
+
+		// what the report groups by now, through its own filter: [the column, the option]
+		report_grouping() {
+			const g = this.report_grouper();
+			const v = g && g.f.get_value();
+			if (!v) return null;
+			const c = this.columns.find((x) => this.report_option(x.fieldname) === v);
+			return [c ? c.fieldname : null, v];
+		}
+
+		// the grouping in use, whoever makes it
+		groups_now() {
+			const r = this.report_grouping();
+			if (r) return r[0] ? [r[0]] : [];
+			return this.state.group_by.slice();
+		}
+
 		set_groups(keys) {
-			this.state.group_by = keys.filter((f) => this.col_of(f)).slice(0, MAX_LEVELS);
+			keys = keys.filter((f) => this.col_of(f)).slice(0, MAX_LEVELS);
 			this.closed = new Set();
+			const g = this.report_grouper();
+			const opt = keys.length === 1 ? this.report_option(keys[0]) : null;
+			if (g && opt) {
+				// the report groups (a new run); the view shows its groups
+				this.state.group_by = [];
+				if (g.f.get_value() !== opt) return this.qr.set_filter_value("group_by", opt);
+				return this.refresh();
+			}
+			this.state.group_by = keys;
+			// the report stops grouping (a new run); the view groups the rows when they come
+			if (g && g.f.get_value()) return this.qr.set_filter_value("group_by", "");
 			this.refresh();
 		}
 
@@ -1218,7 +1343,7 @@ frappe.provide("nexlify.report_view");
 				item("asc", __("Sort Ascending"), this.tree_on()) +
 					item("desc", __("Sort Descending"), this.tree_on()) +
 					item("none", __("Reset Sorting"), !sorted) +
-					item("group", __("Group By This Column"), NUM.has(c.fieldtype) || this.state.group_by.includes(c.fieldname)) +
+					item("group", __("Group By This Column"), NUM.has(c.fieldtype) || this.groups_now().includes(c.fieldname)) +
 					item("remove", __("Remove Column"), this.cols.length < 2) +
 					'<div class="nxv-colmenu-line"></div>' +
 					item("freeze", ci === 0 ? __("Freeze This Column") : __("Freeze Up to This Column"), (this.layout.freeze || 0) === ci + 1) +
@@ -1243,7 +1368,7 @@ frappe.provide("nexlify.report_view");
 			if (act === "desc") this.set_sort(c.fieldname, -1);
 			if (act === "none") this.set_sort(null, 0);
 			if (act === "remove") this.hide_column(c.fieldname);
-			if (act === "group") this.set_groups(this.state.group_by.concat([c.fieldname]));
+			if (act === "group") this.set_groups(this.groups_now().concat([c.fieldname]));
 			if (act === "freeze" || act === "unfreeze") {
 				this.layout.freeze = act === "freeze" ? ci + 1 : 0;
 				this.refresh(true);
@@ -1350,11 +1475,9 @@ frappe.provide("nexlify.report_view");
 					const q = inp.value.trim();
 					if (q) this.state.filters[inp.dataset.f] = q;
 					else delete this.state.filters[inp.dataset.f];
-					this.view = this.compute_view();
+					this.set_view(this.compute_view());
 					this.scroller.scrollTop = 0;
 					this.render_body(true);
-					const foot = this.foot_row();
-					this.grid.tFoot.innerHTML = foot ? this.row_html(foot, -1) : "";
 				}, 250);
 			});
 
@@ -1470,11 +1593,13 @@ frappe.provide("nexlify.report_view");
 			.find(".nxr-layout-btn")
 			.text(__("Layout") + ": " + name + (view.is_dirty() ? " *" : ""))
 			.attr("title", view.is_dirty() ? __("Changed since it was saved") : name);
-		const g = view.state.group_by;
+		// the grouping in use: the view's, or the report's own (named as the report names it)
+		const rg = view.report_grouping();
+		const names = rg ? [rg[0] ? col_label(view, rg[0]) : __(rg[1])] : view.state.group_by.map((f) => col_label(view, f));
 		page.inner_toolbar
 			.find(".nxr-group-btn")
-			.text(g.length ? __("Group By") + ": " + col_label(view, g[0]) + (g.length > 1 ? " +" + (g.length - 1) : "") : __("Group By"))
-			.attr("title", g.map((f) => col_label(view, f)).join(" › "));
+			.text(names.length ? __("Group By") + ": " + names[0] + (names.length > 1 ? " +" + (names.length - 1) : "") : __("Group By"))
+			.attr("title", names.join(" › "));
 	}
 
 	function choose_layout(view, layout) {
@@ -1567,7 +1692,7 @@ frappe.provide("nexlify.report_view");
 				widths: Object.assign({}, v.layout.widths),
 				sorts: clone(v.state.sorts),
 				conds: clone(v.state.conds),
-				group_by: v.state.group_by.slice(),
+				group_by: v.groups_now(),
 				added: clone(v.layout.added || []),
 			};
 		}

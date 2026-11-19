@@ -2374,10 +2374,11 @@ frappe.provide("nexlify.report_view");
 		refit(qr);
 	}
 
-	// the table takes the room left when a part above it opens or closes
+	// the table takes the room left when a part above it opens or closes, at once: a resize observer and the
+	// page's observers run before the screen is painted, so the table never shows at its old height
 	function refit(qr) {
 		const v = qr.__nxv;
-		if (v && v.report_name === qr.report_name && !v.$wrap.prop("hidden")) requestAnimationFrame(() => v.fit_height());
+		if (v && v.report_name === qr.report_name && !v.$wrap.prop("hidden")) v.fit_height();
 	}
 
 	function sec_button(qr, key, $el, title, chips) {

@@ -28,7 +28,7 @@ app_include_js = [
 	"nexlify_page_search.bundle.js",
 	# Link fields as buttons with a search panel, off until ticked in Nexlify Core Settings
 	"nexlify_link_click.bundle.js",
-	# Nexlify Report View: one table for every query report, off until ticked in Nexlify Reports Settings
+	# Nexlify Report View: the report table that never shakes, with Layout and Group By; off until ticked in Nexlify Reports Settings
 	"nexlify_report_view.bundle.js",
 ]
 app_include_css = ["nexlify_themes.bundle.css", "nexlify_reports.bundle.css", "nexlify_report_view.bundle.css"]
@@ -103,9 +103,7 @@ has_permission = {
 		"nexlify_core.nexlify_core.active_company.has_permission",
 	],
 	# Nexlify Report Layout: own layouts and public ones only
-	"Nexlify Report Layout": "nexlify_core.nexlify_core.report_view.layout_has_permission",
-	# Nexlify Report Review: only on reports the user may open
-	"Nexlify Report Review": "nexlify_core.nexlify_core.report_view.review_has_permission",
+	"Nexlify Report Layout": "nexlify_core.nexlify_core.report_layouts.layout_has_permission",
 }
 
 permission_query_conditions = {
@@ -113,8 +111,7 @@ permission_query_conditions = {
 		"nexlify_core.nexlify_core.visibility_permissions.visibility_query_conditions",
 		"nexlify_core.nexlify_core.active_company.query_conditions",
 	],
-	"Nexlify Report Layout": "nexlify_core.nexlify_core.report_view.layout_query_conditions",
-	"Nexlify Report Review": "nexlify_core.nexlify_core.report_view.review_query_conditions",
+	"Nexlify Report Layout": "nexlify_core.nexlify_core.report_layouts.layout_query_conditions",
 }
 
 # Active Company: force the Company filter of query reports to the session's company

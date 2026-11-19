@@ -6,8 +6,7 @@
  "field_order": [
   "enabled",
   "report_view_section",
-  "use_report_view",
-  "report_view_excluded"
+  "use_report_view"
  ],
  "fields": [
   {
@@ -27,18 +26,11 @@
    "fieldtype": "Check",
    "label": "Use Nexlify Report View for All Reports",
    "default": "0",
-   "description": "Shows every query and script report in Nexlify's own table: one table for all reports, with layouts, copy, number formats, export, print and drill-down. The report's filters, summary and chart sit in two sections above the table that open and close. A switch at the top of each report moves between Nexlify View and Frappe View. Off: reports use Frappe's table."
-  },
-  {
-   "fieldname": "report_view_excluded",
-   "fieldtype": "Table MultiSelect",
-   "label": "Keep Frappe's View for These Reports",
-   "options": "Nexlify Report View Excluded Report",
-   "depends_on": "use_report_view"
+   "description": "Shows every query and script report in a table that looks like Frappe's but never shakes while you scroll. Two buttons in the report's header: Layout (save the columns, their order and widths, the sort and the grouping, for you or for everyone) and Group By (a heading, the rows and a total for each group). Reports that pick rows with check boxes keep Frappe's table. Off: reports use Frappe's table."
   }
  ],
  "issingle": 1,
- "modified": "2026-11-17 12:00:00.000000",
+ "modified": "2026-11-19 14:00:00.000000",
  "modified_by": "Administrator",
  "module": "Nexlify Core",
  "name": "Nexlify Reports Settings",

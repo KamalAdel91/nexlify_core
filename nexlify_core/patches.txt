@@ -7,3 +7,4 @@
 nexlify_core.patches.v16.remove_placeholder_workspaces
 nexlify_core.patches.v16.theme_and_reports_settings
 nexlify_core.patches.v16.default_theme_ledger
+nexlify_core.patches.v16.report_view_layouts_only

@@ -5,7 +5,7 @@ from frappe.model.document import Document
 
 class NexlifyReportLayout(Document):
 	def validate(self):
-		from nexlify_core.nexlify_core.report_view import check_report, validate_layout_state
+		from nexlify_core.nexlify_core.report_layouts import check_report, validate_layout_state
 
 		check_report(self.report)
 		validate_layout_state(self.state)

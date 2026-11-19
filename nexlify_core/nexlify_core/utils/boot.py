@@ -20,10 +20,9 @@ def extend_bootinfo(bootinfo):
 	# settings never saved have no value: the reports stay on
 	reports = reports_settings.get("enabled") if reports_settings else None
 	bootinfo["nexlify_reports_enabled"] = 1 if reports is None else int(reports)
-	# Nexlify Report View: off until it is ticked, with the reports that keep Frappe's table
+	# Nexlify Report View: off until it is ticked
 	bootinfo["nexlify_report_view"] = {
 		"enabled": int(reports_settings.get("use_report_view") or 0) if reports_settings else 0,
-		"excluded": [row.report for row in reports_settings.get("report_view_excluded") or []] if reports_settings else [],
 	}
 	# Search Box in Page Header: off until it is ticked
 	try:

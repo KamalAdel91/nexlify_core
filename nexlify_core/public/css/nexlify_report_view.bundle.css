@@ -163,6 +163,8 @@ table.nxv-grid {
 .nxv-grid tr.nxv-g-head.nxv-l0 td.nxv-glabel { color: var(--heading-color, var(--text-color)); }
 .nxv-grid tr.nxv-g-total td { font-weight: 700; background: var(--nxv-bg); }
 .nxv-grid tr.nxv-g .nxv-cnt { font-weight: normal; }
+/* a report that makes its own heading and total lines bold: as bold as the view's, not bolder */
+.nxv-grid tr.nxv-g td b, .nxv-grid tr.nxv-g td strong, .nxv-grid tr.nxv-foot td b, .nxv-grid tr.nxv-foot td strong { font-weight: inherit; }
 /* totals in more than one currency, side by side in one cell */
 .nxv-sum-sep::before { content: "·"; margin: 0 6px; color: var(--text-muted); font-weight: normal; }
 .nxv-sum-part,

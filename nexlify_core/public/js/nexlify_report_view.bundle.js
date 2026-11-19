@@ -19,6 +19,8 @@ frappe.provide("nexlify.report_view");
 	const LAYOUT = "Nexlify Report Layout";
 	const STANDARD = "";
 	const MAX_LEVELS = 3;
+	// the level that groups rows under the headings their report made (each row's __nxhead)
+	const HEADS = { fieldname: "__nxhead", fieldtype: "Int", label: "" };
 	const BLOCK = 40;
 	const CHEVRON =
 		'<svg width="10" height="10" viewBox="0 0 10 10"><path d="M3 1.5 6.5 5 3 8.5" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>';
@@ -530,10 +532,15 @@ frappe.provide("nexlify.report_view");
 		}
 
 		link_tree(data) {
+			// a row under a heading the report made (is_group), up to that group's total line, belongs to that heading
+			let head = -1;
 			data.forEach((r, i) => {
 				r.__nxi = i;
 				r.__nxkids = false;
 				r.__nxparent = -1;
+				if (r.is_group) head = i;
+				r.__nxhead = r.is_group || this.own_total(r) ? -1 : head;
+				if (this.own_total(r)) head = -1;
 			});
 			if (!this.is_tree) return;
 			const stack = [];
@@ -678,6 +685,7 @@ frappe.provide("nexlify.report_view");
 
 		compute_view() {
 			this.own_groups = false;
+			this.grouped_by = [];
 			const filtering = this.filtering();
 			if (this.tree_on()) {
 				if (filtering) {
@@ -704,6 +712,12 @@ frappe.provide("nexlify.report_view");
 			const source = this.is_tree ? this.rows.filter((r) => !r.__nxkids) : this.rows;
 			let list = filtering ? source.filter((r) => this.pass_filters(r)) : source;
 			const sorts = this.state.sorts.map((x) => ({ c: this.col_of(x.key), dir: x.dir })).filter((x) => x.c);
+			// The groups the table makes itself: the view's; or, when the report made groups and the user filters or
+			// sorts, the report's groups again: their heading and total lines are for all the rows, so the table puts
+			// the rows shown under their own headings and adds them up itself
+			let levels = this.state.group_by;
+			if (!levels.length && !this.is_tree && (filtering || sorts.length) && source.some((r) => r.is_group)) levels = [HEADS];
+			this.grouped_by = levels;
 			if (sorts.length) {
 				// sorted: the report's own total lines stay after the rows
 				const totals = list.filter((r) => this.own_total(r));
@@ -715,9 +729,9 @@ frappe.provide("nexlify.report_view");
 					}
 					return 0;
 				});
-				if (!this.state.group_by.length) list = list.concat(totals);
+				if (!levels.length) list = list.concat(totals);
 			}
-			if (this.state.group_by.length) return this.group_rows(list.filter((r) => !this.own_line(r)));
+			if (levels.length) return this.group_rows(list.filter((r) => !this.own_line(r)), levels);
 			// the report's own groups (a heading it marks is_group, its rows, its is_total line): they open and close
 			// too, while the rows keep the report's order
 			this.own_groups = !sorts.length && list.some((r) => r.is_group);
@@ -765,8 +779,8 @@ frappe.provide("nexlify.report_view");
 		}
 
 		// Group By, at up to three levels: for each group a heading, its rows (or its inner groups), its total
-		group_rows(list) {
-			const levels = this.state.group_by.map((f) => this.col_of(f)).filter(Boolean);
+		group_rows(list, keys) {
+			const levels = (keys || this.state.group_by).map((f) => (f === HEADS ? f : this.col_of(f))).filter(Boolean);
 			if (!levels.length) return list;
 			const out = [];
 			this.group_keys = [];
@@ -779,18 +793,21 @@ frappe.provide("nexlify.report_view");
 					groups.get(k).push(r);
 				});
 				const keys = [...groups.keys()].sort((a, b) => {
+					// the report's groups keep the report's order
+					if (c === HEADS) return Number(a) - Number(b);
 					if (!a || !b) return a === b ? 0 : !a ? 1 : -1;
 					return a.localeCompare(b, undefined, { numeric: true, sensitivity: "base" });
 				});
 				keys.forEach((k) => {
 					const rs = groups.get(k);
-					const shown = k ? this.plain(rs[0], c) : __("Not Set");
-					const key = parent + "\u241f" + k;
+					const shown = c === HEADS ? this.head_label(Number(k)) : k ? this.plain(rs[0], c) : __("Not Set");
+					// a report's group keeps its key, so it stays open or closed as it was
+					const key = (c === HEADS ? "own" : parent) + "\u241f" + k;
 					const closed = this.closed.has(key);
 					this.group_keys.push(key);
 					// a group: its heading (name and count), its rows (or inner groups), its total line under them;
 					// a closed group is its heading alone, with the totals on it
-					out.push({ __nxg: "head", __nxlevel: depth, __nxlabel: `${__(c.label)}: ${shown}`, __nxkey: key, __nxclosed: closed, __nxrows: rs });
+					out.push({ __nxg: "head", __nxlevel: depth, __nxlabel: c === HEADS ? shown : `${__(c.label)}: ${shown}`, __nxkey: key, __nxclosed: closed, __nxrows: rs });
 					if (closed) return;
 					if (depth + 1 < levels.length) build(rs, depth + 1, key);
 					else out.push(...rs);
@@ -799,6 +816,14 @@ frappe.provide("nexlify.report_view");
 			};
 			build(list, 0, "");
 			return out;
+		}
+
+		// a report's group heading as the report shows it: its first column
+		head_label(i) {
+			const h = this.rows[i];
+			if (!h) return __("Not Set");
+			const c = this.cols[0];
+			return (c && this.plain(h, c)) || clean(h.group_label || h.name) || __("Not Set");
 		}
 
 		// a value as the user reads it, without its link
@@ -887,7 +912,7 @@ frappe.provide("nexlify.report_view");
 		}
 
 		foot_row() {
-			if (!this.show_total && !this.state.group_by.length) {
+			if (!this.show_total && !(this.grouped_by || []).length) {
 				if (this.is_tree || this.rows.some((r) => this.own_line(r))) return null;
 				if (!this.columns.some((c) => SUMMED.has(c.fieldtype) && !is_rate(c))) return null;
 			}
@@ -960,7 +985,7 @@ frappe.provide("nexlify.report_view");
 			const idx = this.fz_idx('<th class="nxv-idx"></th>');
 			// open or close every group (or every level of a tree) at once: always in their place, dimmed
 			// when the table has nothing to open or close
-			const can = !!(this.state.group_by.length || this.tree_on() || this.own_groups);
+			const can = !!((this.grouped_by || []).length || this.tree_on() || this.own_groups);
 			const off = can ? "" : " disabled";
 			const xtip = (t) => (can ? t : __("Group the rows to open or close them"));
 			const corner = this.fz_idx(
@@ -1012,6 +1037,15 @@ frappe.provide("nexlify.report_view");
 			}
 			// a heading or a total line the report made: empty where it has nothing, as the view's own lines
 			if (ci > 0 && this.own_groups && r.__nxown && (r.__nxown === "head" || !NUM.has(c.fieldtype))) return "<td></td>";
+			// and its name as the view's own lines show theirs: plain, the total's under the heading's name
+			if (ci === 0 && this.own_groups && r.__nxown) {
+				const name = esc(this.plain(r, c));
+				if (r.__nxown === "head" && r.__nxkey) {
+					const tw = `<span class="nxv-tw ${this.closed.has(r.__nxkey) ? "" : "open"}" data-g="${esc(r.__nxkey)}" role="button" aria-label="${__("Expand or collapse")}">${CHEVRON}</span>`;
+					return `<td class="nxv-glabel"><span class="nxv-acc">${tw}<span>${name}</span><span class="nxv-cnt">${r.__nxcount}</span></span></td>`;
+				}
+				return `<td class="nxv-glabel"><span${r.__nxown === "total" ? ' style="padding-inline-start:22px"' : ""}>${name}</span></td>`;
+			}
 			const raw = r[c.fieldname];
 			let html;
 			try {
@@ -1022,10 +1056,6 @@ frappe.provide("nexlify.report_view");
 			if (ci === 0 && this.tree_on()) {
 				const tw = `<span class="nxv-tw ${r.__nxkids ? (r.__nxopen || this.filtering() ? "open" : "") : "leaf"}" data-tw="${r.__nxi}" role="button" aria-label="${__("Expand or collapse")}">${CHEVRON}</span>`;
 				html = `<span class="nxv-acc" style="padding-inline-start:${(r.indent || 0) * 20}px">${tw}<span>${html}</span></span>`;
-			} else if (ci === 0 && this.own_groups && r.is_group && r.__nxkey) {
-				// a heading the report made: the same toggle and count as the view's own groups
-				const tw = `<span class="nxv-tw ${this.closed.has(r.__nxkey) ? "" : "open"}" data-g="${esc(r.__nxkey)}" role="button" aria-label="${__("Expand or collapse")}">${CHEVRON}</span>`;
-				html = `<span class="nxv-acc">${tw}<span>${html}</span><span class="nxv-cnt">${r.__nxcount}</span></span>`;
 			}
 			const tip = typeof raw === "string" || typeof raw === "number" ? ` title="${esc(clean(raw))}"` : "";
 			return `<td class="${num}"${tip}>${html}</td>`;
@@ -1439,7 +1469,7 @@ frappe.provide("nexlify.report_view");
 				const x = e.target.closest("[data-xall]");
 				if (x) {
 					const open = x.dataset.xall === "1";
-					if (this.state.group_by.length || this.own_groups) this.closed = open ? new Set() : new Set(this.group_keys || []);
+					if ((this.grouped_by || []).length || this.own_groups) this.closed = open ? new Set() : new Set(this.group_keys || []);
 					else (this.rows || []).forEach((r) => r.__nxkids && (r.__nxopen = open));
 					return this.refresh(true);
 				}

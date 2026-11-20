@@ -382,3 +382,12 @@ body:not(.nxv-pending) .nxv-skel { display: none !important; }
 .nxv-col-grid { display: grid; grid-template-columns: 20px minmax(0, 1fr) minmax(0, 160px) 90px 20px; align-items: center; gap: 8px; }
 .nxv-col-head { padding: 0 12px 4px; }
 .nxv-set-cols .nxv-col-grid { height: auto; min-height: 30px; margin-bottom: 4px; padding: 2px 12px; }
+
+/* View Settings: no taller than it needs (Frappe's settings window takes the whole screen), with OK and Cancel */
+.nxv-settings-dlg .modal-dialog { max-width: min(1000px, 96vw); }
+.nxv-settings-dlg .modal-content { height: min(600px, calc(100vh - 8rem)); }
+.nxv-settings-dlg .settings-dialog-panel { padding: 1.25rem 1.25rem 0.75rem; }
+/* a line of Sort, Filter and Group: Frappe's .row without its outer margins, so the panel never scrolls sideways */
+.nxv-set-line.row { margin: 0 0 8px; flex-wrap: nowrap; }
+.nxv-set-line.row > [class*="col"] { padding-inline: 4px; min-width: 0; }
+.nxv-set-line.row > [class*="col"]:first-child { padding-inline-start: 0; }

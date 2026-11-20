@@ -1988,10 +1988,29 @@ frappe.provide("nexlify.report_view");
 		}
 
 		show() {
-			const item = (id, label, icon, render) => ({ id, label, icon, render: (p) => render.call(this, p) });
+			// a panel draws again each time it opens: a column added on Columns is offered on Sort, Filter and Group
+			const item = (id, label, icon, render) => ({
+				id,
+				label,
+				icon,
+				render: (p) => render.call(this, p),
+				on_activate: (p) => {
+					if (p.__nxv_drawn) p.refresh();
+					p.__nxv_drawn = true;
+				},
+			});
+			// the table as it was when the window opened: Cancel (or closing it) puts it back
+			this.keep();
 			const d = (this.dialog = new frappe.ui.SettingsDialog({
 				title: __("View Settings"),
 				default_tab: this.tab,
+				primary_action_label: __("OK"),
+				primary_action: () => {
+					this.done = true;
+					d.hide();
+				},
+				secondary_action_label: __("Cancel"),
+				secondary_action: () => d.hide(),
 				tabs: [
 					{ group: __("Layouts"), items: [item("layouts", __("Layouts"), "bookmark", this.layouts_panel)] },
 					{
@@ -2005,9 +2024,25 @@ frappe.provide("nexlify.report_view");
 					},
 				],
 			}));
-			// a closed settings window leaves the page: a new one is made each time
-			d.onhide = () => setTimeout(() => d.$wrapper.remove(), 400);
+			d.$wrapper.addClass("nxv-settings-dlg");
+			d.onhide = () => {
+				if (!this.done) this.restore();
+				// a closed settings window leaves the page: a new one is made each time
+				setTimeout(() => d.$wrapper.remove(), 400);
+			};
 			d.show();
+		}
+
+		// the table's settings now: what Cancel goes back to (taken again when a layout is used or saved)
+		keep() {
+			this.kept = { state: clone(this.view.current_state()), active: this.view.active };
+		}
+
+		restore() {
+			const k = this.kept;
+			if (!k || JSON.stringify(this.view.current_state()) === JSON.stringify(k.state)) return;
+			this.view.active = k.active;
+			this.view.use_state(k.state);
 		}
 
 		// a panel drawn again (the panels already opened; the others draw when they open)
@@ -2035,8 +2070,12 @@ frappe.provide("nexlify.report_view");
 			const entry = layout_store[v.report_name];
 			const active = active_layout(v);
 			const dirty = v.is_dirty();
-			const actions = [{ label: __("Save As New Layout"), icon: "plus", click: () => save_layout_as(v, () => this.redraw("layouts")) }];
-			if (active && mine(active) && dirty) actions.push({ label: __("Save to {0}", [active.layout_name]), icon: "save", variant: "solid", click: () => save_layout(v, () => this.redraw("layouts")) });
+			const saved = () => {
+				this.keep();
+				this.redraw("layouts");
+			};
+			const actions = [{ label: __("Save As New Layout"), icon: "plus", click: () => save_layout_as(v, saved) }];
+			if (active && mine(active) && dirty) actions.push({ label: __("Save to {0}", [active.layout_name]), icon: "save", variant: "solid", click: () => save_layout(v, saved) });
 			p.set_header({
 				title: __("Layouts"),
 				description: dirty ? __("The table has changed since its layout was saved.") : __("The layout you pick opens this report next time."),
@@ -2067,9 +2106,13 @@ frappe.provide("nexlify.report_view");
 				const act = e.currentTarget.dataset.lact;
 				const name = $(e.currentTarget).closest("[data-name]").attr("data-name");
 				const l = entry.list.find((x) => x.name === name) || null;
-				const again = () => this.redraw("layouts");
+				const again = () => {
+					this.keep();
+					this.redraw("layouts");
+				};
 				if (act === "use") {
 					choose_layout(v, l);
+					this.keep();
 					this.take_view();
 					["layouts", "columns", "sort", "filter", "group"].forEach((id) => this.redraw(id));
 				}

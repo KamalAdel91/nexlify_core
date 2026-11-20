@@ -218,7 +218,6 @@ frappe.provide("nexlify.report_view");
 		make() {
 			this.$wrap = $(`<div class="nxv" hidden>
 				<div class="nxv-scroller" tabindex="0" aria-label="${__("Report table")}"><table class="nxv-grid"><colgroup></colgroup><thead></thead><tbody></tbody><tfoot></tfoot></table></div>
-				<div class="nxv-colmenu" role="menu" hidden></div>
 			</div>`);
 			this.$wrap.insertAfter(this.qr.$report);
 			this.$scroller = this.$wrap.find(".nxv-scroller");
@@ -239,14 +238,12 @@ frappe.provide("nexlify.report_view");
 		hide() {
 			this.qr.page.main.removeClass("nxv-on");
 			this.$wrap.prop("hidden", true);
-			this.close_colmenu();
 			if (this.qr.$loading) this.qr.$loading.removeClass("nxv-hide");
 		}
 
 		destroy() {
 			document.removeEventListener("mousemove", this.on_move);
 			document.removeEventListener("mouseup", this.on_up);
-			document.removeEventListener("click", this.on_doc_click);
 			window.removeEventListener("resize", this.on_resize);
 			this.$wrap.remove();
 		}
@@ -284,7 +281,6 @@ frappe.provide("nexlify.report_view");
 			// a tree only when this run has levels: a report that turns its tree on for a filter is a plain table without it
 			this.is_tree = !!qr.tree_report && data.some((r) => (r.indent || 0) > 0);
 			this.link_tree(data);
-			if (data.some((r) => r.is_group) && this.report_grouping()) this.state.group_by = [];
 			this.rows = data;
 			const keys = this.report_columns.map((c) => c.fieldname);
 			data.forEach((r) => (r.__nxt = keys.map((k) => clean(r[k])).join(" ").toLowerCase()));
@@ -301,10 +297,6 @@ frappe.provide("nexlify.report_view");
 			this.refresh();
 			// the totals at the bottom are bold and can be longer than any row: their columns grow to show them whole
 			if (this.fit_totals()) this.refresh(true);
-			// grouped by one column the report's own Group By offers (a layout opened with the report): the report groups
-			if (this.state.group_by.length === 1 && !this.report_grouping() && this.report_option(this.state.group_by[0])) {
-				setTimeout(() => this.set_groups(this.state.group_by.slice()), 0);
-			}
 			this.fetch_linked();
 		}
 
@@ -454,6 +446,10 @@ frappe.provide("nexlify.report_view");
 			const jobs = (this.layout.added || [])
 				.filter((a) => this.columns.find((c) => c.fieldname === a.f))
 				.map((a) => {
+					// a field the database does not keep (a virtual field, as Stock Entry's Last Scanned Warehouse)
+					// has no value to read: Frappe's call fails on it, so it is not asked (a layout saved before kept one)
+					const df = !a.line && frappe.get_meta(a.doctype) ? frappe.meta.get_docfield(a.doctype, a.field) : null;
+					if (df && df.is_virtual) return Promise.resolve();
 					// only the documents not read yet
 					const have = this.linked_vals[a.f] || {};
 					const names = [...new Set(this.rows.filter((r) => !a.dynamic || r[a.dynamic] === a.doctype).map((r) => r[a.link_field]).filter((n) => n && !(n in have)))];
@@ -571,7 +567,7 @@ frappe.provide("nexlify.report_view");
 						const from = __(l.doctype) + (l.label && l.label !== l.doctype ? ` (${__(l.label)})` : "");
 						frappe.meta
 							.get_docfields(l.doctype)
-							.filter((df) => keep.includes(df.fieldtype) && !df.hidden && df.label)
+							.filter((df) => keep.includes(df.fieldtype) && !df.hidden && !df.is_virtual && df.label)
 							.forEach((df) => {
 								const type = ["Currency", "Float", "Int", "Percent", "Date", "Link", "Check"].includes(df.fieldtype) ? df.fieldtype : "Data";
 								out.push({
@@ -798,7 +794,7 @@ frappe.provide("nexlify.report_view");
 		}
 
 		tree_on() {
-			return this.is_tree && !this.state.group_by.length;
+			return this.is_tree && !this.groups_now().length;
 		}
 
 		// the report's own total lines: Frappe's is_total_row, a row the report marks is_total or is_group,
@@ -840,11 +836,12 @@ frappe.provide("nexlify.report_view");
 			const source = this.is_tree ? this.rows.filter((r) => !r.__nxkids) : this.rows;
 			let list = filtering ? source.filter((r) => this.pass_filters(r)) : source;
 			const sorts = this.state.sorts.map((x) => ({ c: this.col_of(x.key), dir: x.dir })).filter((x) => x.c);
-			// The groups the table makes itself: the view's; or, when the report made groups and the user filters or
-			// sorts, the report's groups again: their heading and total lines are for all the rows, so the table puts
-			// the rows shown under their own headings and adds them up itself
-			let levels = this.state.group_by;
-			if (!levels.length && !this.is_tree && (filtering || sorts.length) && source.some((r) => r.is_group)) levels = [HEADS];
+			// The groups the table makes itself: the user's levels. When the report made groups too (its own Group By
+			// filter), they stay the outer level and the user's go inside them; and when the user filters or sorts, the
+			// report's heading and total lines are for all its rows, so the table puts the rows shown under the same
+			// headings and adds them up itself
+			let levels = this.groups_now();
+			if (!this.is_tree && source.some((r) => r.is_group) && (levels.length || filtering || sorts.length)) levels = [HEADS, ...levels];
 			this.grouped_by = levels;
 			if (sorts.length) {
 				// sorted: the report's own total lines stay after the rows
@@ -1376,7 +1373,7 @@ frappe.provide("nexlify.report_view");
 				labels: Object.assign({}, this.layout.labels),
 				sorts: JSON.parse(JSON.stringify(this.state.sorts)),
 				conds: JSON.parse(JSON.stringify(this.state.conds)),
-				group_by: this.groups_now(),
+				group_by: this.state.group_by.slice(),
 				added: JSON.parse(JSON.stringify(this.layout.added || [])),
 				freeze: this.layout.freeze || 0,
 				density: this.layout.density ? 1 : 0,
@@ -1399,12 +1396,11 @@ frappe.provide("nexlify.report_view");
 			if (this.rows) this.add_linked_columns();
 			this.state.sorts = st.sorts;
 			this.state.conds = st.conds || [];
-			const keys = st.group_by.filter((f) => this.col_of(f));
+			this.state.group_by = st.group_by.slice(0, MAX_LEVELS);
 			if (this.rows) {
-				// the grouping through the report's own filter when it offers the column
-				this.set_groups(keys);
+				this.refresh();
 				this.fetch_linked();
-			} else this.state.group_by = keys;
+			}
 			if (saved) this.mark_saved();
 		}
 
@@ -1421,57 +1417,15 @@ frappe.provide("nexlify.report_view");
 			this.use_state(st);
 		}
 
-		// A report's own Group By (a Select filter named group_by): the report groups its rows on the server, as
-		// Frappe runs it, so Export and Print show the groups too. The view's Group By uses it when the report offers
-		// the column; any other column, or more levels, the view groups itself. The last choice is the one in use.
-		report_grouper() {
-			const f = (this.qr.filters || []).find((x) => x && x.df && x.df.fieldname === "group_by" && x.df.fieldtype === "Select");
-			if (!f) return null;
-			let opts = f.df.options;
-			if (typeof opts === "string") opts = opts.split("\n");
-			opts = (opts || []).map((o) => (o && typeof o === "object" ? o.value : o)).filter(Boolean);
-			return opts.length ? { f, opts } : null;
-		}
-
-		// the report's option that names a column ("Salesperson" for salesperson)
-		report_option(fieldname) {
-			const g = this.report_grouper();
-			const c = this.col_of(fieldname);
-			if (!g || !c) return null;
-			const norm = (x) => String(x || "").trim().toLowerCase();
-			return g.opts.find((o) => frappe.scrub(o) === fieldname || norm(o) === norm(c.label) || norm(__(o)) === norm(__(c.label))) || null;
-		}
-
-		// what the report groups by now, through its own filter: [the column, the option]
-		report_grouping() {
-			const g = this.report_grouper();
-			const v = g && g.f.get_value();
-			if (!v) return null;
-			const c = this.columns.find((x) => this.report_option(x.fieldname) === v);
-			return [c ? c.fieldname : null, v];
-		}
-
-		// the grouping in use, whoever makes it
+		// the user's levels whose column the table has now (a level on a column the report leaves out this run,
+		// or a linked column not added yet, waits: it is kept, not dropped)
 		groups_now() {
-			const r = this.report_grouping();
-			if (r) return r[0] ? [r[0]] : [];
-			return this.state.group_by.slice();
+			return this.state.group_by.filter((f) => this.col_of(f));
 		}
 
 		set_groups(keys) {
-			keys = keys.filter((f) => this.col_of(f)).slice(0, MAX_LEVELS);
+			this.state.group_by = [...new Set(keys)].slice(0, MAX_LEVELS);
 			this.closed = new Set();
-			const g = this.report_grouper();
-			const opt = keys.length === 1 ? this.report_option(keys[0]) : null;
-			if (g && opt) {
-				// the report groups (a new run); the view shows its groups
-				this.state.group_by = [];
-				if (g.f.get_value() !== opt) return this.qr.set_filter_value("group_by", opt);
-				return this.refresh();
-			}
-			this.state.group_by = keys;
-			// the report stops grouping (a new run); the view groups the rows when they come
-			if (g && g.f.get_value()) return this.qr.set_filter_value("group_by", "");
 			this.refresh();
 		}
 
@@ -1491,46 +1445,39 @@ frappe.provide("nexlify.report_view");
 		}
 
 		// ---------------------------------------------------------------- the column menu
-		open_colmenu(ci, btn) {
+		// Frappe's own menu (frappe.ui.Dropdown) on the arrow of each header: made on the first click, and
+		// built again each time it opens, so it always reads the table as it is
+		open_colmenu(btn) {
+			if (btn.__nxv_menu) return;
+			btn.__nxv_menu = new frappe.ui.Dropdown({ trigger: btn, align: "end", options: () => this.colmenu_items(+btn.dataset.ci) });
+			btn.__nxv_menu.open();
+		}
+
+		colmenu_items(ci) {
 			const c = this.cols[ci];
-			if (!c) return;
-			const $m = this.$wrap.find(".nxv-colmenu");
+			if (!c) return [];
 			const sorted = this.state.sorts[0] && this.state.sorts[0].key === c.fieldname;
-			const item = (act, text, off) => `<button type="button" data-act="${act}"${off ? " disabled" : ""}>${esc(text)}</button>`;
-			$m.html(
-				item("asc", __("Sort Ascending"), this.tree_on()) +
-					item("desc", __("Sort Descending"), this.tree_on()) +
-					item("none", __("Reset Sorting"), !sorted) +
-					item("group", __("Group By This Column"), NUM.has(c.fieldtype) || this.groups_now().includes(c.fieldname)) +
-					item("remove", __("Remove Column"), this.cols.length < 2) +
-					'<div class="nxv-colmenu-line"></div>' +
-					item("freeze", ci === 0 ? __("Freeze This Column") : __("Freeze Up to This Column"), (this.layout.freeze || 0) === ci + 1) +
-					item("unfreeze", __("Unfreeze Columns"), !this.layout.freeze)
-			);
-			$m.attr("data-ci", ci).prop("hidden", false);
-			const b = btn.getBoundingClientRect();
-			const w = this.$wrap[0].getBoundingClientRect();
-			const left = Math.min(b.left - w.left - 140, w.width - 200);
-			$m.css({ top: b.bottom - w.top + 4, left: Math.max(0, left) });
+			const freeze = this.layout.freeze || 0;
+			return [
+				{ label: __("Sort Ascending"), icon: "arrow-up", disabled: this.tree_on(), onclick: () => this.set_sort(c.fieldname, 1) },
+				{ label: __("Sort Descending"), icon: "arrow-down", disabled: this.tree_on(), onclick: () => this.set_sort(c.fieldname, -1) },
+				{ label: __("Reset Sorting"), icon: "x", disabled: !sorted, onclick: () => this.set_sort(null, 0) },
+				{ label: __("Group By This Column"), icon: "layers", disabled: NUM.has(c.fieldtype) || this.groups_now().includes(c.fieldname), onclick: () => this.set_groups(this.groups_now().concat([c.fieldname])) },
+				{ label: __("Remove Column"), icon: "trash-2", disabled: this.cols.length < 2, onclick: () => this.hide_column(c.fieldname) },
+				{
+					group: "",
+					hide_label: true,
+					options: [
+						{ label: ci === 0 ? __("Freeze This Column") : __("Freeze Up to This Column"), icon: "lock", disabled: freeze === ci + 1, onclick: () => this.set_freeze(ci + 1) },
+						{ label: __("Unfreeze Columns"), icon: "lock-open", disabled: !freeze, onclick: () => this.set_freeze(0) },
+					],
+				},
+			];
 		}
 
-		close_colmenu() {
-			this.$wrap.find(".nxv-colmenu").prop("hidden", true);
-		}
-
-		colmenu_action(act, ci) {
-			const c = this.cols[ci];
-			this.close_colmenu();
-			if (!c) return;
-			if (act === "asc") this.set_sort(c.fieldname, 1);
-			if (act === "desc") this.set_sort(c.fieldname, -1);
-			if (act === "none") this.set_sort(null, 0);
-			if (act === "remove") this.hide_column(c.fieldname);
-			if (act === "group") this.set_groups(this.groups_now().concat([c.fieldname]));
-			if (act === "freeze" || act === "unfreeze") {
-				this.layout.freeze = act === "freeze" ? ci + 1 : 0;
-				this.refresh(true);
-			}
+		set_freeze(n) {
+			this.layout.freeze = n;
+			this.refresh(true);
 		}
 
 		// ---------------------------------------------------------------- events
@@ -1611,9 +1558,7 @@ frappe.provide("nexlify.report_view");
 				const mb = e.target.closest(".nxv-th-menu");
 				if (mb) {
 					e.stopPropagation();
-					const $m = this.$wrap.find(".nxv-colmenu");
-					if (!$m.prop("hidden") && $m.attr("data-ci") === mb.dataset.ci) return this.close_colmenu();
-					return this.open_colmenu(+mb.dataset.ci, mb);
+					return this.open_colmenu(mb);
 				}
 				const th = e.target.closest("th.nxv-th");
 				if (th && !this.tree_on() && !just_resized && !e.target.closest(".nxv-rz")) {
@@ -1693,22 +1638,16 @@ frappe.provide("nexlify.report_view");
 				{ passive: true }
 			);
 
-			this.$wrap.find(".nxv-colmenu").on("click", "button[data-act]", (e) => {
-				e.stopPropagation();
-				this.colmenu_action(e.currentTarget.dataset.act, +this.$wrap.find(".nxv-colmenu").attr("data-ci"));
-			});
-			this.on_doc_click = (e) => {
-				if (!e.target.closest(".nxv-colmenu, .nxv-th-menu")) this.close_colmenu();
-			};
-			document.addEventListener("click", this.on_doc_click);
 			this.on_resize = frappe.utils.debounce(() => this.fit_height(), 120);
 			window.addEventListener("resize", this.on_resize);
 		}
 	}
 
 	// ------------------------------------------------------------------ Layout and Group By buttons
-	// Two buttons in the report's header, next to Frappe's own. Each opens View Settings: the layouts,
-	// the columns, the sort, the filter and the grouping of the table, in one window.
+	// Two buttons in the report's header, next to Frappe's own. Layout opens a menu of the saved layouts, as
+	// Frappe's list view opens its own (Standard, the public layouts, the user's, then Save, Save As, View
+	// Settings and Manage Layouts); the layout picked last opens the report next time, as in Frappe's list.
+	// Group By opens View Settings on its Group tab.
 
 	function active_layout(view) {
 		const entry = layout_store[view.report_name];
@@ -1724,8 +1663,14 @@ frappe.provide("nexlify.report_view");
 		const page = qr && qr.page;
 		if (!page || !page.inner_toolbar) return;
 		if (!page.inner_toolbar.find(".nxr-layout-btn").length) {
-			page.add_inner_button(__("Layout"), () => qr.__nxv && open_settings(qr.__nxv, "layouts")).addClass("nxr-layout-btn");
-			page.add_inner_button(__("Group By"), () => qr.__nxv && open_settings(qr.__nxv, "group")).addClass("nxr-group-btn");
+			const $layout = page.add_inner_button(__("Layout"), () => {}).addClass("nxr-layout-btn");
+			new frappe.ui.Dropdown({
+				trigger: $layout,
+				align: "end",
+				options: () => (qr.__nxv && qr.__nxv.cols ? layout_menu(qr.__nxv) : []),
+				empty_text: __("Run the report first"),
+			});
+			page.add_inner_button(__("Group By"), () => qr.__nxv && qr.__nxv.cols && open_settings(qr.__nxv, "group")).addClass("nxr-group-btn");
 		}
 		// the buttons stay while the report opens or runs (they never come and go): only a report shown in
 		// Frappe's table (one with row check boxes, or too many rows) has none
@@ -1751,26 +1696,59 @@ frappe.provide("nexlify.report_view");
 			.find(".nxr-layout-btn")
 			.text(__("Layout") + ": " + name + (view.is_dirty() ? " *" : ""))
 			.attr("title", view.is_dirty() ? __("Changed since it was saved") : name);
-		// the grouping in use: the view's, or the report's own (named as the report names it)
-		const rg = view.report_grouping();
-		const names = rg ? [rg[0] ? col_label(view, rg[0]) : __(rg[1])] : view.state.group_by.map((f) => col_label(view, f));
+		const names = view.groups_now().map((f) => col_label(view, f));
 		page.inner_toolbar
 			.find(".nxr-group-btn")
 			.text(names.length ? __("Group By") + ": " + names[0] + (names.length > 1 ? " +" + (names.length - 1) : "") : __("Group By"))
 			.attr("title", names.join(" › "));
 	}
 
+	// the Layout menu: built again each time it opens, so it always shows the layout in use
+	function layout_menu(view) {
+		const entry = layout_store[view.report_name] || { list: [] };
+		const me = frappe.session.user;
+		const active = active_layout(view);
+		const row = (l) => ({
+			label: l ? l.layout_name : __("Standard"),
+			selected: (active ? active.name : STANDARD) === (l ? l.name : STANDARD),
+			onclick: () => choose_layout(view, l),
+		});
+		const shared = entry.list.filter((l) => l.is_public && l.owner !== me);
+		const own = entry.list.filter((l) => l.owner === me);
+		const items = [row(null)];
+		if (shared.length) items.push({ group: __("Public Layouts"), options: shared.map(row) });
+		if (own.length) items.push({ group: __("Your Layouts"), options: own.map(row) });
+		items.push({
+			group: "",
+			hide_label: true,
+			options: [
+				{
+					label: active ? __("Save to {0}", [active.layout_name]) : __("Save"),
+					icon: "save",
+					disabled: !(active && mine(active) && view.is_dirty()),
+					onclick: () => save_layout(view),
+				},
+				{ label: __("Save As New Layout"), icon: "plus", onclick: () => save_layout_as(view) },
+				{ label: __("View Settings"), icon: "columns-3", onclick: () => open_settings(view, "columns") },
+				{ label: __("Manage Layouts"), icon: "settings", onclick: () => open_settings(view, "layouts") },
+			],
+		});
+		return items;
+	}
+
+	// a layout picked: the table takes it, and the report opens with it next time
 	function choose_layout(view, layout) {
 		view.active = layout ? layout.name : STANDARD;
 		view.use_state(parse_layout(layout), true);
+		set_default(view, view.active);
 	}
 
 	function save_layout(view, after) {
 		const layout = active_layout(view);
 		if (!layout) return save_layout_as(view, after);
-		if (!mine(layout)) return frappe.msgprint(__("This layout belongs to {0}. Use Save As to keep your own copy.", [esc(layout.owner)]));
+		if (!mine(layout)) return frappe.msgprint(__("This layout belongs to {0}. Use Save As to keep your own copy.", [esc(frappe.user.full_name(layout.owner))]));
 		const state = JSON.stringify(view.current_state());
-		frappe.db.set_value(LAYOUT, layout.name, "state", state).then(() => {
+		return frappe.db.set_value(LAYOUT, layout.name, "state", state).then(() => {
 			layout.state = state;
 			view.mark_saved();
 			frappe.show_alert({ message: __("Layout {0} saved", [esc(layout.layout_name)]), indicator: "green" });
@@ -1778,38 +1756,82 @@ frappe.provide("nexlify.report_view");
 		});
 	}
 
-	function save_layout_as(view, after) {
+	// a new layout: of the table as it is now, or a copy of another layout (Duplicate)
+	function save_layout_as(view, after, from) {
+		const entry = layouts_of(view.report_name);
 		const d = new frappe.ui.Dialog({
-			title: __("Save Layout As"),
+			title: from ? __("Duplicate Layout") : __("Save Layout As"),
 			fields: [
-				{ fieldname: "layout_name", fieldtype: "Data", label: __("Layout Name"), reqd: 1 },
-				{ fieldname: "is_default", fieldtype: "Check", label: __("Set as Default"), description: __("Opens this report with this layout, for you") },
-				{ fieldname: "is_public", fieldtype: "Check", label: __("Public"), description: __("Everyone who can open this report can use it") },
+				{ fieldname: "layout_name", fieldtype: "Data", label: __("Layout Name"), reqd: 1, default: from ? __("{0} (Copy)", [from.layout_name]) : "" },
+				{ fieldname: "is_public", fieldtype: "Check", label: __("Available to all users"), description: __("Everyone who can open this report can use it") },
 			],
 			primary_action_label: __("Save"),
 			primary_action(values) {
-				frappe.db
-					.insert({
-						doctype: LAYOUT,
-						report: view.report_name,
-						layout_name: values.layout_name.trim(),
-						is_public: values.is_public ? 1 : 0,
-						state: JSON.stringify(view.current_state()),
-					})
+				const name = values.layout_name.trim();
+				if (entry.list.some((l) => l.owner === frappe.session.user && l.layout_name === name)) return frappe.msgprint(__("A layout with this name already exists"));
+				d.disable_primary_action();
+				Promise.resolve(frappe.db.insert({ doctype: LAYOUT, report: view.report_name, layout_name: name, is_public: values.is_public ? 1 : 0, state: from ? from.state : JSON.stringify(view.current_state()) }))
 					.then((doc) => {
 						d.hide();
-						const entry = layouts_of(view.report_name);
 						entry.list.push({ name: doc.name, layout_name: doc.layout_name, is_public: doc.is_public, owner: doc.owner, state: doc.state });
 						entry.list.sort((a, b) => a.layout_name.localeCompare(b.layout_name));
-						view.active = doc.name;
-						view.mark_saved();
-						if (values.is_default) set_default(view, doc.name);
+						if (from) choose_layout(view, entry.list.find((l) => l.name === doc.name));
+						else {
+							view.active = doc.name;
+							view.mark_saved();
+							set_default(view, doc.name);
+						}
 						frappe.show_alert({ message: __("Layout {0} saved", [esc(doc.layout_name)]), indicator: "green" });
 						if (after) after();
-					});
+					})
+					.finally(() => d.enable_primary_action());
 			},
 		});
 		d.show();
+	}
+
+	// a layout's name, and whether everyone can use it
+	function edit_layout(view, layout, after) {
+		const d = new frappe.ui.Dialog({
+			title: __("Edit Layout"),
+			fields: [
+				{ fieldname: "layout_name", fieldtype: "Data", label: __("Layout Name"), reqd: 1, default: layout.layout_name },
+				{ fieldname: "is_public", fieldtype: "Check", label: __("Available to all users"), default: layout.is_public ? 1 : 0, description: __("Everyone who can open this report can use it") },
+			],
+			primary_action_label: __("Update"),
+			primary_action(values) {
+				const name = values.layout_name.trim();
+				d.disable_primary_action();
+				// Frappe's set_value answers with a jQuery promise: made a real one, so finally() works
+				Promise.resolve(frappe.db.set_value(LAYOUT, layout.name, { layout_name: name, is_public: values.is_public ? 1 : 0 }))
+					.then(() => {
+						d.hide();
+						layout.layout_name = name;
+						layout.is_public = values.is_public ? 1 : 0;
+						update_buttons(view.qr, view);
+						frappe.show_alert({ message: __("Layout {0} updated", [esc(name)]), indicator: "green" });
+						if (after) after();
+					})
+					.finally(() => d.enable_primary_action());
+			},
+		});
+		d.show();
+	}
+
+	function delete_layout(view, layout, after) {
+		frappe.confirm(__("Delete the layout {0}?", [esc(layout.layout_name)]), () => {
+			frappe.db.delete_doc(LAYOUT, layout.name).then(() => {
+				const entry = layouts_of(view.report_name);
+				entry.list = entry.list.filter((x) => x.name !== layout.name);
+				if (entry.def === layout.name) set_default(view, STANDARD);
+				if (view.active === layout.name) {
+					view.active = STANDARD;
+					view.mark_saved();
+				}
+				frappe.show_alert({ message: __("Layout {0} deleted", [esc(layout.layout_name)]), indicator: "green" });
+				if (after) after();
+			});
+		});
 	}
 
 	function set_default(view, name) {
@@ -1818,6 +1840,8 @@ frappe.provide("nexlify.report_view");
 	}
 
 	// ------------------------------------------------------------------ View Settings
+	// Frappe's own settings window (frappe.ui.SettingsDialog, as DocType Settings): a list of tabs on the left,
+	// a panel on the right. Each change goes to the table at once; a condition with no value yet waits.
 	function open_settings(view, tab) {
 		layouts_of(view.report_name).ready.then(() => new ViewSettings(view, tab).show());
 	}
@@ -1828,12 +1852,6 @@ frappe.provide("nexlify.report_view");
 		constructor(view, tab) {
 			this.view = view;
 			this.tab = tab || "columns";
-			this.sel = { a: new Set(), s: new Set() };
-			this.last = { a: null, s: null };
-			this.q = { a: "", s: "" };
-			this.drag = null;
-			// the groups open on the left: the report's own columns, and the linked documents the user opens
-			this.open_groups = new Set([__("This report")]);
 			this.avail = null;
 			this.take_view();
 		}
@@ -1850,29 +1868,21 @@ frappe.provide("nexlify.report_view");
 				widths: Object.assign({}, v.layout.widths),
 				sorts: clone(v.state.sorts),
 				conds: clone(v.state.conds),
-				group_by: v.groups_now(),
+				group_by: v.state.group_by.slice(),
 				added: clone(v.layout.added || []),
 			};
 		}
 
-		// the report's own settings: its columns in its order, no sort, no filter, no groups
-		take_report() {
-			this.draft = { order: this.view.report_columns.map((c) => c.fieldname), hidden: new Set(), labels: {}, widths: {}, sorts: [], conds: [], group_by: [], added: [] };
-		}
-
-		// the settings the table gets: conditions with no value (or a word where a number is needed) are left out
+		// the settings the table gets: conditions with no value yet (or a word where a number is needed) wait
 		draft_state() {
 			const d = this.draft;
-			const conds = d.conds.filter((u) => this.cond_ready(u));
-			const dropped = d.conds.length - conds.length;
-			if (dropped) frappe.show_alert({ message: __("{0} conditions were left out: they have no value yet", [dropped]), indicator: "orange" });
 			return {
 				order: d.order.filter((f) => !d.hidden.has(f)),
 				hidden: [...d.hidden],
 				widths: Object.assign({}, d.widths),
 				labels: Object.assign({}, d.labels),
 				sorts: this.view.tree_on() && !d.group_by.filter(Boolean).length ? [] : d.sorts.filter((x) => x.key),
-				conds,
+				conds: d.conds.filter((u) => this.cond_ready(u)),
 				group_by: [...new Set(d.group_by.filter(Boolean))],
 				added: clone(d.added),
 				freeze: this.view.layout.freeze || 0,
@@ -1893,87 +1903,17 @@ frappe.provide("nexlify.report_view");
 			return has(u.x);
 		}
 
+		// the table takes the settings at once
 		apply() {
 			this.view.use_state(this.draft_state());
-			this.take_view();
+			if (this.dialog) this.redraw("layouts");
 		}
 
 		col(f) {
 			const c = this.view.report_columns.find((x) => x.fieldname === f);
-			if (c) return { f, label: c.label, type: __(c.fieldtype) };
+			if (c) return { f, label: c.label, from: __("This report") };
 			const a = this.draft.added.find((x) => x.f === f) || (this.avail || []).find((x) => x.f === f);
-			return a ? { f, label: a.label, type: a.line ? __("Document line") : __(a.doctype), linked: true } : null;
-		}
-
-		show() {
-			const d = (this.dialog = new frappe.ui.Dialog({
-				title: __("View Settings"),
-				size: "large",
-				fields: [{ fieldtype: "HTML", fieldname: "body" }],
-				primary_action_label: __("OK"),
-				primary_action: () => {
-					this.apply();
-					d.hide();
-				},
-				secondary_action_label: __("Reset"),
-				secondary_action: () => {
-					this.take_report();
-					this.render();
-				},
-			}));
-			d.$wrapper.addClass("nxv-settings-dialog");
-			// a closed settings window leaves the page: a new one is made each time
-			d.onhide = () => setTimeout(() => d.$wrapper.remove(), 400);
-			this.bind();
-			this.render();
-			d.show();
-		}
-
-		render() {
-			const t = this.tab;
-			const d = this.draft;
-			const n = {
-				columns: d.hidden.size ? d.hidden.size : 0,
-				sort: d.sorts.length,
-				filter: d.conds.length,
-				group: d.group_by.filter(Boolean).length,
-			};
-			const tabs = [
-				["layouts", __("Layouts"), "bookmark"],
-				["columns", __("Columns"), "columns-3"],
-				["sort", __("Sort"), "arrow-down-up"],
-				["filter", __("Filter"), "filter"],
-				["group", __("Group"), "layers"],
-			]
-				.map(([k, l, ic]) => {
-					const badge = k !== "columns" && n[k] ? `<span class="nxv-st-badge">${n[k]}</span>` : "";
-					return `<button type="button" class="nxv-st-tab" data-st="${k}" aria-selected="${t === k}">${icon(ic)}<span>${l}</span>${badge}</button>`;
-				})
-				.join("");
-			const intro = {
-				layouts: __("Switch to a saved layout, or save the settings of the other tabs as one."),
-				columns: __("Pick the columns to show and their order. Fields of the documents the report links to are on the left too."),
-				sort: __("The order of the rows. The first sort counts most."),
-				filter: __("Keep or leave out rows of what the report returned. On one column, a row stays when any Include holds."),
-				group: __("Each group shows a heading, its rows and its total. Up to three levels."),
-			}[t];
-			const body = { layouts: () => this.layouts_html(), columns: () => this.dual_html(), sort: () => this.sort_html(), filter: () => this.filter_html(), group: () => this.group_html() }[t]();
-			const $b = this.dialog.fields_dict.body.$wrapper;
-			$b.html(`<div class="nxv-settings"><nav class="nxv-st-tabs" role="tablist">${tabs}</nav><p class="nxv-st-intro">${intro}</p><div class="nxv-st-body nxv-st-${t}">${body}</div></div>`);
-			if (t === "filter") this.mount_controls();
-			if (t === "columns" && !this.avail) {
-				this.view.avail_fields().then((list) => {
-					this.avail = list || [];
-					if (this.tab === "columns" && this.dialog.$wrapper.is(":visible")) this.render();
-				});
-			}
-			if (t === "columns") {
-				$b.find('.nxv-dual-search[data-side="a"]').val(this.q.a);
-				$b.find('.nxv-dual-search[data-side="s"]').val(this.q.s);
-				this.dual_filter("a");
-				this.dual_filter("s");
-				this.dual_marks();
-			}
+			return a ? { f, label: a.label, from: a.line ? __("Document line") : __(a.doctype), linked: true } : null;
 		}
 
 		col_opts(val, with_none) {
@@ -1984,309 +1924,388 @@ frappe.provide("nexlify.report_view");
 			);
 		}
 
-		// ---------------------------------------------------------------- Layouts
-		layouts_html() {
+		show() {
+			const item = (id, label, icon, render) => ({ id, label, icon, render: (p) => render.call(this, p) });
+			const d = (this.dialog = new frappe.ui.SettingsDialog({
+				title: __("View Settings"),
+				default_tab: this.tab,
+				tabs: [
+					{ group: __("Layouts"), items: [item("layouts", __("Layouts"), "bookmark", this.layouts_panel)] },
+					{
+						group: __("Table"),
+						items: [
+							item("columns", __("Columns"), "columns-3", this.columns_panel),
+							item("sort", __("Sort"), "arrow-down-up", this.sort_panel),
+							item("filter", __("Filter"), "funnel", this.filter_panel),
+							item("group", __("Group"), "layers", this.group_panel),
+						],
+					},
+				],
+			}));
+			// a closed settings window leaves the page: a new one is made each time
+			d.onhide = () => setTimeout(() => d.$wrapper.remove(), 400);
+			d.show();
+		}
+
+		// a panel drawn again (the panels already opened; the others draw when they open)
+		redraw(id) {
+			const p = this.dialog && this.dialog.get_panel(id);
+			if (p) p.refresh();
+		}
+
+		// a line of a panel: Frappe's grid row, the controls side by side
+		line(lane, controls, remove) {
+			return `<div class="row align-items-center mb-2 nxv-set-line">
+				${lane !== null ? `<div class="col-2 text-muted text-sm">${lane}</div>` : ""}
+				${controls}
+				<div class="col-auto">${remove ? frappe.ui.button.html({ icon: "x", variant: "ghost", title: __("Remove"), attrs: remove }) : ""}</div>
+			</div>`;
+		}
+
+		empty(icon_name, title, description) {
+			return frappe.ui.empty_state.html({ icon: icon_name, title, description });
+		}
+
+		// ---------------------------------------------------------------- Layouts: as Frappe's Manage Layouts
+		layouts_panel(p) {
 			const v = this.view;
 			const entry = layout_store[v.report_name];
-			const me = frappe.session.user;
 			const active = active_layout(v);
+			const dirty = v.is_dirty();
+			const actions = [{ label: __("Save As New Layout"), icon: "plus", click: () => save_layout_as(v, () => this.redraw("layouts")) }];
+			if (active && mine(active) && dirty) actions.push({ label: __("Save to {0}", [active.layout_name]), icon: "save", variant: "solid", click: () => save_layout(v, () => this.redraw("layouts")) });
+			p.set_header({
+				title: __("Layouts"),
+				description: dirty ? __("The table has changed since its layout was saved.") : __("The layout you pick opens this report next time."),
+				actions,
+			});
+			const me = frappe.session.user;
+			const button = (icon_name, title, act, disabled) => frappe.ui.button.html({ icon: icon_name, title, variant: "ghost", disabled, attrs: { "data-lact": act } });
 			const row = (l) => {
-				const name = l ? l.name : "";
-				const on = (active ? active.name : "") === name;
-				const own = l && l.owner === me;
-				const def = entry.def === name;
-				const chips = [
-					on ? `<span class="nxv-chip nxv-chip-on">${__("In use")}${v.is_dirty() ? " *" : ""}</span>` : "",
-					l && l.is_public ? `<span class="nxv-chip">${__("Public")}</span>` : "",
-				].join("");
-				const who = l ? (own ? __("You") : esc(frappe.user.full_name(l.owner))) : __("As the report comes");
-				return `<div class="nxv-lay-row${on ? " is-on" : ""}" data-name="${esc(name)}">
-					<button type="button" class="nxv-lay-star${def ? " is-def" : ""}" data-lact="default" title="${def ? __("Opens this report") : __("Open this report with this layout")}" aria-pressed="${def}">${icon("star")}</button>
-					<div class="nxv-lay-main"><div class="nxv-lay-name">${esc(l ? l.layout_name : __("Standard"))}${chips}</div><div class="nxv-lay-who">${who}</div></div>
-					<label class="nxv-lay-pub" title="${__("Everyone who can open this report can use it")}">${l && own ? `<input type="checkbox" data-lact="public" ${l.is_public ? "checked" : ""}> ${__("Public")}` : ""}</label>
-					<div class="nxv-lay-acts">
-						${on ? "" : `<button type="button" class="btn btn-default btn-xs" data-lact="use">${__("Use")}</button>`}
-						${own ? `<button type="button" class="nxv-icon-btn" data-lact="delete" title="${__("Delete")}" aria-label="${__("Delete")}">${icon("trash-2")}</button>` : ""}
+				const on = (active ? active.name : STANDARD) === (l ? l.name : STANDARD);
+				const scope = !l ? __("Standard") : l.is_public ? __("Public") : __("Personal");
+				const who = l && l.owner !== me ? `<div class="text-sm text-muted truncate">${esc(frappe.user.full_name(l.owner))}</div>` : "";
+				const acts = l
+					? button("pencil", __("Edit"), "edit", !mine(l)) + button("copy", __("Duplicate"), "duplicate") + button("trash-2", __("Delete"), "delete", !mine(l))
+					: "";
+				return `<div class="layout-manage-row flex items-center justify-between py-2 border-b" data-name="${esc(l ? l.name : "")}">
+					<div class="min-w-0 pe-2">
+						<div class="flex gap-1 items-center">
+							<div class="truncate text-base-semibold text-ink-gray-8">${esc(l ? l.layout_name : __("Standard"))}</div>
+							${frappe.ui.badge.html({ label: scope })}
+							${on ? frappe.ui.badge.html({ label: __("In use") + (dirty ? " *" : ""), theme: "green" }) : ""}
+						</div>${who}
 					</div>
+					<div class="flex shrink-0 gap-1">${on ? "" : frappe.ui.button.html({ label: __("Use"), variant: "subtle", attrs: { "data-lact": "use" } })}${acts}</div>
 				</div>`;
 			};
-			const can_save = active && mine(active);
-			return `<div class="nxv-lay-list">${row(null)}${entry.list.map(row).join("")}</div>
-				<div class="nxv-lay-foot">
-					<button type="button" class="btn btn-primary btn-sm" data-lact="save" ${can_save ? "" : "disabled"}>${icon("save")} ${active ? __("Save to {0}", [esc(active.layout_name)]) : __("Save")}</button>
-					<button type="button" class="btn btn-default btn-sm" data-lact="save_as">${icon("plus")} ${__("Save As New Layout")}</button>
-					<span class="nxv-spacer"></span>
-					<a class="nxv-lay-all" href="/app/${frappe.router.slug(LAYOUT)}?report=${encodeURIComponent(v.report_name)}">${__("All layouts of this report")}</a>
-				</div>`;
-		}
-
-		layout_action(el) {
-			const v = this.view;
-			const act = el.dataset.lact;
-			const tr = el.closest("[data-name]");
-			const entry = layout_store[v.report_name];
-			const l = tr ? entry.list.find((x) => x.name === tr.dataset.name) || null : null;
-			if (act === "use") {
-				choose_layout(v, l);
-				this.dialog.hide();
-			} else if (act === "default") {
-				set_default(v, l ? l.name : STANDARD).then(() => {
-					frappe.show_alert({ message: __("This report now opens with {0}", [esc(l ? l.layout_name : __("Standard"))]), indicator: "green" });
-					this.render();
-				});
-			} else if (act === "public" && l) {
-				const on = el.checked ? 1 : 0;
-				frappe.db.set_value(LAYOUT, l.name, "is_public", on).then(() => (l.is_public = on));
-			} else if (act === "delete" && l) {
-				frappe.confirm(__("Delete the layout {0}?", [esc(l.layout_name)]), () => {
-					frappe.db.delete_doc(LAYOUT, l.name).then(() => {
-						entry.list = entry.list.filter((x) => x.name !== l.name);
-						if (entry.def === l.name) set_default(v, STANDARD);
-						if (v.active === l.name) {
-							v.active = STANDARD;
-							v.mark_saved();
-						}
-						this.render();
-					});
-				});
-			} else if (act === "save") {
-				this.apply();
-				save_layout(v, () => this.render());
-			} else if (act === "save_as") {
-				this.apply();
-				save_layout_as(v, () => this.render());
-			}
-		}
-
-		// ---------------------------------------------------------------- Columns: available on one side, selected on the other
-		lists() {
-			const d = this.draft;
-			const selected = d.order.filter((f) => !d.hidden.has(f) && this.col(f));
-			const chosen = new Set(selected);
-			const groups = [];
-			const own = this.view.report_columns.filter((c) => !chosen.has(c.fieldname)).map((c) => ({ f: c.fieldname, label: __(c.label), type: __(c.fieldtype) }));
-			groups.push({ key: __("This report"), name: __("This report"), via: "", list: own });
-			// a field of a linked document named like a column the report already has is left out:
-			// the same name would show on both sides
-			const norm = (x) => String(x || "").trim().toLowerCase();
-			const report_labels = new Set(this.view.report_columns.flatMap((c) => [norm(c.label), norm(__(c.label)), norm(d.labels[c.fieldname])]).filter(Boolean));
-			const by = new Map();
-			(this.avail || []).forEach((a) => {
-				if (chosen.has(a.f) || report_labels.has(norm(a.short))) return;
-				if (!by.has(a.from)) by.set(a.from, { key: a.from, name: a.dt || a.from, via: a.via || "", list: [] });
-				by.get(a.from).list.push({ f: a.f, label: a.short, type: __(a.fieldtype) });
+			p.body.html(`<div class="layout-manage-list">${row(null)}${entry.list.map(row).join("")}</div>`);
+			p.body.off("click.nxv").on("click.nxv", "[data-lact]", (e) => {
+				const act = e.currentTarget.dataset.lact;
+				const name = $(e.currentTarget).closest("[data-name]").attr("data-name");
+				const l = entry.list.find((x) => x.name === name) || null;
+				const again = () => this.redraw("layouts");
+				if (act === "use") {
+					choose_layout(v, l);
+					this.take_view();
+					["layouts", "columns", "sort", "filter", "group"].forEach((id) => this.redraw(id));
+				}
+				if (act === "edit" && l) edit_layout(v, l, again);
+				if (act === "duplicate" && l) save_layout_as(v, again, l);
+				if (act === "delete" && l) delete_layout(v, l, again);
 			});
-			by.forEach((g) => groups.push(g));
-			return { selected, groups };
 		}
 
-		dual_html() {
-			const { selected, groups } = this.lists();
-			const txt = (c) => esc((c.label + " " + c.type + " " + c.f).toLowerCase());
-			const left = groups
-				.map(
-					(g) =>
-						`<div class="nxv-dual-group" data-g="${esc(g.key)}"><span class="nxv-dual-caret">${icon("chevron-right")}</span><span class="nxv-g-name">${esc(g.name)}</span>${
-							g.via ? `<span class="nxv-g-via">${__("by {0}", [esc(g.via)])}</span>` : ""
-						}<span class="nxv-dual-count">${g.list.length}</span></div>` +
-						g.list
-							.map((c) => `<div class="nxv-dual-item" draggable="true" data-side="a" data-f="${esc(c.f)}" data-g="${esc(g.key)}" data-txt="${txt(c)}"><span class="nxv-dual-check"></span><span class="nxv-dual-name">${esc(c.label)}</span><span class="nxv-lbl">${esc(c.type)}</span></div>`)
-							.join("")
-				)
-				.join("");
-			const count = groups.reduce((k, g) => k + g.list.length, 0);
-			const right = selected
+		// ---------------------------------------------------------------- Columns: as Frappe's layout field picker
+		columns_panel(p) {
+			p.set_header({
+				title: __("Columns"),
+				description: __("The columns the table shows, in their order. Drag a column to move it."),
+				actions: [{ label: __("Add / Remove Columns"), icon: "plus", click: () => this.pick_columns() }],
+			});
+			const d = this.draft;
+			const shown = d.order.filter((f) => !d.hidden.has(f) && this.col(f));
+			const rows = shown
 				.map((f) => {
 					const c = this.col(f);
-					const shown = c.linked ? c.label : __(c.label);
-					return `<div class="nxv-dual-item" draggable="true" data-side="s" data-f="${esc(f)}" data-txt="${txt(c)}">
-						<span class="nxv-dual-grip" title="${__("Drag to move")}">${icon("grip-vertical")}</span><span class="nxv-dual-check"></span>
-						<input class="nxv-dual-label" data-slabel="${esc(f)}" value="${esc(this.draft.labels[f] || shown)}" aria-label="${__("Name")}" title="${__("Type a new name")}">
-						<span class="nxv-dual-wbox" title="${__("Width")}"><input class="nxv-dual-w" type="number" min="50" step="10" data-swidth="${esc(f)}" value="${this.draft.widths[f] || (this.view.col_of(f) || {}).width || 150}" aria-label="${__("Width")}"><i>px</i></span>
-						<span class="nxv-lbl">${esc(c.type)}</span></div>`;
+					const width = d.widths[f] || (this.view.col_of(f) || {}).width || 150;
+					return `<div class="control-input form-control fields_order sortable flex mb-1" data-f="${esc(f)}">
+						<div class="row flex-fill align-items-center">
+							<div class="col-1 flex align-items-center justify-content-center px-1">${frappe.utils.icon("grip", "xs", "", "", "sortable-handle")}</div>
+							<div class="col px-0"><input class="form-control nxv-set-label" data-slabel="${esc(f)}" value="${esc(d.labels[f] || __(c.label))}" title="${__("Type a new name")}" aria-label="${__("Name")}"></div>
+							<div class="col-3 text-muted text-sm truncate">${esc(c.from)}</div>
+							<div class="col-2"><input inputmode="numeric" class="form-control text-right nxv-set-width" data-swidth="${esc(f)}" value="${width}" aria-label="${__("Width (px)")}"></div>
+							<div class="col-1 flex align-items-center justify-content-center px-0">${
+								shown.length > 1 ? `<a class="text-muted" role="button" data-sremove="${esc(f)}" title="${__("Remove")}">${frappe.utils.icon("x", "xs")}</a>` : ""
+							}</div>
+						</div>
+					</div>`;
 				})
 				.join("");
-			const loading = this.avail ? "" : `<div class="nxv-dual-loading">${__("Loading the fields of linked documents")}…</div>`;
-			const search = (side, ph) => `<label class="nxv-dual-find">${icon("search")}<input class="nxv-dual-search" data-side="${side}" placeholder="${ph}"></label>`;
-			return `<div class="nxv-dual">
-				<section class="nxv-dual-pane">
-					<header class="nxv-dual-hd"><b>${__("Available")}</b><span class="nxv-dual-count">${count}</span></header>
-					${search("a", __("Search, e.g. territory"))}
-					<div class="nxv-dual-list" data-side="a">${left}${loading}</div>
-				</section>
-				<div class="nxv-dual-mid">
-					<button type="button" class="nxv-move" data-sact="to-sel" title="${__("Show the ticked columns")}">${icon("chevron-right")}<span class="nxv-dual-n" data-n="a"></span></button>
-					<button type="button" class="nxv-move" data-sact="to-avail" title="${__("Hide the ticked columns")}">${icon("chevron-left")}<span class="nxv-dual-n" data-n="s"></span></button>
+			p.body.html(`<div class="form-group mb-0">
+				<div class="row flex-fill px-1 mb-1 text-muted text-xs">
+					<div class="col-1"></div><div class="col px-0">${__("Column")}</div><div class="col-3">${__("From")}</div>
+					<div class="col-2 text-right pr-2">${__("Width (px)")}</div><div class="col-1"></div>
 				</div>
-				<section class="nxv-dual-pane">
-					<header class="nxv-dual-hd"><b>${__("Shown in the table")}</b><span class="nxv-dual-count">${selected.length}</span><span class="nxv-spacer"></span>
-						<span class="nxv-order">
-							<button type="button" class="nxv-icon-btn" data-sact="top" title="${__("To the top")}">${icon("chevrons-up")}</button>
-							<button type="button" class="nxv-icon-btn" data-sact="up" title="${__("Up")}">${icon("arrow-up")}</button>
-							<button type="button" class="nxv-icon-btn" data-sact="down" title="${__("Down")}">${icon("arrow-down")}</button>
-							<button type="button" class="nxv-icon-btn" data-sact="bottom" title="${__("To the bottom")}">${icon("chevrons-down")}</button>
-						</span>
-					</header>
-					${search("s", __("Search the shown columns"))}
-					<div class="nxv-dual-list" data-side="s">${right}</div>
-				</section>
-			</div>
-			<p class="nxv-st-hint">${__("Tick columns and press an arrow, drag them across or up and down, or double-click one. Shift ticks a range.")}</p>`;
-		}
-
-		dual_filter(side) {
-			const $b = this.dialog.fields_dict.body.$wrapper;
-			const q = this.q[side];
-			const $list = $b.find(`.nxv-dual-list[data-side="${side}"]`);
-			$list.find(".nxv-dual-item").each((i, it) => {
-				const hit = !q || it.dataset.txt.includes(q);
-				it.hidden = !hit || (side === "a" && !q && !this.open_groups.has(it.dataset.g));
+				<div class="nxv-set-cols">${rows}</div>
+			</div>`);
+			new Sortable(p.body.find(".nxv-set-cols")[0], {
+				handle: ".sortable-handle",
+				draggable: ".sortable",
+				animation: 150,
+				onUpdate: () => {
+					const now = p.body.find(".fields_order").map((i, el) => el.dataset.f).get();
+					d.order = now.concat(d.order.filter((f) => !now.includes(f)));
+					this.apply();
+				},
 			});
-			if (side !== "a") return;
-			$list.find(".nxv-dual-group").each((i, g) => {
-				const items = $list.find(`.nxv-dual-item[data-g="${CSS.escape(g.dataset.g)}"]`).toArray();
-				g.hidden = !items.some((it) => !q || it.dataset.txt.includes(q));
-				g.classList.toggle("open", !!q || this.open_groups.has(g.dataset.g));
+			p.body.off(".nxv");
+			p.body.on("change.nxv", "[data-slabel]", (e) => {
+				const f = e.target.dataset.slabel;
+				const c = this.col(f);
+				const v = e.target.value.trim();
+				if (!v || (c && (v === c.label || v === __(c.label)))) delete d.labels[f];
+				else d.labels[f] = v;
+				this.apply();
+			});
+			p.body.on("change.nxv", "[data-swidth]", (e) => {
+				d.widths[e.target.dataset.swidth] = Math.max(50, cint(e.target.value) || 50);
+				this.apply();
+			});
+			p.body.on("click.nxv", "[data-sremove]", (e) => {
+				d.hidden.add(e.currentTarget.dataset.sremove);
+				this.apply();
+				this.redraw("columns");
 			});
 		}
 
-		// a field of a linked document joins the layout's added columns; it leaves them when it is sent back
-		add_field(f) {
+		// Add / Remove Columns: two lists side by side, in Frappe's own field rows. On the left the columns the
+		// table can show (the report's own, then each linked document's, each under its name); on the right the
+		// ones it shows, in their order. Tick columns and send them across with the arrows in the middle (or all
+		// the columns listed at once); a double click sends one; drag on the right moves a column up or down.
+		pick_columns() {
+			const ready = this.avail ? Promise.resolve(this.avail) : this.view.avail_fields().then((list) => (this.avail = list || []));
+			frappe.dom.freeze(__("Loading the fields of linked documents") + "…");
+			ready.finally(() => frappe.dom.unfreeze()).then(() => this.pick_dialog());
+		}
+
+		pick_dialog() {
 			const d = this.draft;
-			if (this.view.report_columns.find((c) => c.fieldname === f) || d.added.find((x) => x.f === f)) return;
-			const a = (this.avail || []).find((x) => x.f === f);
-			if (!a) return;
-			d.added.push({ f, doctype: a.doctype, field: a.field, link_field: a.link_field, dynamic: a.dynamic, line: a.line ? 1 : 0, label: a.label, fieldtype: a.fieldtype, options: a.options });
-		}
-
-		dual_pick(el, range) {
-			const side = el.dataset.side;
-			const f = el.dataset.f;
-			const set = this.sel[side];
-			if (range && this.last[side]) {
-				const all = $(el).closest(".nxv-dual-list").find(".nxv-dual-item:not([hidden])").toArray().map((x) => x.dataset.f);
-				const a = all.indexOf(this.last[side]);
-				const b = all.indexOf(f);
-				all.slice(Math.min(a, b), Math.max(a, b) + 1).forEach((x) => set.add(x));
-			} else {
-				if (set.has(f)) set.delete(f);
-				else set.add(f);
-				this.last[side] = f;
-			}
-			this.sel[side === "a" ? "s" : "a"].clear();
-			this.dual_marks();
-		}
-
-		dual_marks() {
-			const $b = this.dialog.fields_dict.body.$wrapper;
-			// a block body: jQuery's each stops at the first callback that returns false
-			$b.find(".nxv-dual-item").each((i, it) => {
-				it.classList.toggle("on", this.sel[it.dataset.side].has(it.dataset.f));
+			const norm = (x) => String(x || "").trim().toLowerCase();
+			const shown = new Set(d.order.filter((f) => !d.hidden.has(f) && this.col(f)));
+			// every column that can be picked, each in its section
+			const all = new Map();
+			const groups = [{ key: "report", name: __("This report"), list: [] }];
+			const put = (g, x) => {
+				g.list.push(x);
+				all.set(x.f, x);
+			};
+			this.view.report_columns.forEach((c) => put(groups[0], { f: c.fieldname, label: __(c.label), g: groups[0] }));
+			// a field of a linked document named like a column the report already has is left out: the same name
+			// would show twice
+			const report_labels = new Set(this.view.report_columns.flatMap((c) => [norm(c.label), norm(__(c.label))]));
+			const by = new Map();
+			(this.avail || []).forEach((a) => {
+				if (!shown.has(a.f) && report_labels.has(norm(a.short))) return;
+				if (!by.has(a.from)) by.set(a.from, { key: a.from, name: a.via ? __("{0} by {1}", [a.dt, a.via]) : a.dt, list: [] });
+				put(by.get(a.from), { f: a.f, label: a.short, g: by.get(a.from) });
 			});
-			["a", "s"].forEach((side) => $b.find(`.nxv-dual-n[data-n="${side}"]`).text(this.sel[side].size || ""));
+			by.forEach((g) => groups.push(g));
+			let picked = d.order.filter((f) => shown.has(f) && all.has(f));
+			// the sections open on the left: the report's own, and those with a column shown
+			const open = new Set(["report", ...picked.map((f) => all.get(f).g.key)]);
+			const q = { a: "", s: "" };
+			const hit = (x, text) => !text || norm(x.label).includes(text) || norm(x.g.name).includes(text);
+
+			const dialog = new frappe.ui.Dialog({
+				title: __("Add / Remove Columns"),
+				size: "extra-large",
+				fields: [{ fieldtype: "HTML", fieldname: "body" }],
+				primary_action_label: __("Apply"),
+				primary_action: () => {
+					const keep = new Set(picked);
+					// a new linked column joins the layout's added columns; one taken away leaves them
+					picked.forEach((f) => {
+						if (this.view.report_columns.some((c) => c.fieldname === f) || d.added.some((a) => a.f === f)) return;
+						const a = this.avail.find((x) => x.f === f);
+						if (a) d.added.push({ f: a.f, doctype: a.doctype, field: a.field, link_field: a.link_field, dynamic: a.dynamic, line: a.line ? 1 : 0, label: a.short, fieldtype: a.fieldtype, options: a.options });
+					});
+					d.added = d.added.filter((a) => keep.has(a.f));
+					const rest = this.view.report_columns.map((c) => c.fieldname).filter((f) => !keep.has(f));
+					d.order = picked.concat(rest);
+					d.hidden = new Set(rest);
+					dialog.hide();
+					this.apply();
+					this.redraw("columns");
+				},
+			});
+			const $b = dialog.get_field("body").$wrapper;
+			// the ticked columns on each side
+			const sel = { a: new Set(), s: new Set() };
+			const side = (key, title, holder) => `<div class="nxv-pick-side">
+				<div class="nxv-pick-top"><label class="control-label mb-0">${title}</label><span class="text-muted text-xs" data-n="${key}"></span></div>
+				<input type="text" class="form-control mb-2" data-q="${key}" placeholder="${esc(holder)}" aria-label="${esc(holder)}">
+				<div class="nxv-pick-list" data-side="${key}"></div>
+			</div>`;
+			const move = (act, icon_name, title) => frappe.ui.button.html({ icon: icon_name, title, variant: "subtle", attrs: { "data-move": act } });
+			$b.html(`<div class="nxv-pick">
+				${side("a", __("Available"), __("Search, e.g. territory"))}
+				<div class="nxv-pick-mid">
+					${move("to-s", "chevron-right", __("Show the ticked columns"))}
+					${move("to-a", "chevron-left", __("Hide the ticked columns"))}
+					${move("all-s", "chevrons-right", __("Show all the columns listed"))}
+					${move("all-a", "chevrons-left", __("Hide all the columns listed"))}
+				</div>
+				${side("s", __("Shown in the table"), __("Search"))}
+			</div>`);
+			const row = (x, where) => `<label class="form-control nxv-pick-row${where === "s" ? " sortable" : ""}" data-f="${esc(x.f)}" data-side="${where}">
+				${where === "s" ? frappe.utils.icon("grip", "xs", "", "", "sortable-handle") : ""}
+				<input type="checkbox" ${sel[where].has(x.f) ? "checked" : ""} aria-label="${esc(x.label)}">
+				<span class="nxv-pick-name">${esc(x.label)}</span>
+				${where === "s" && x.g.key !== "report" ? `<span class="text-muted text-xs nxv-pick-from">${esc(x.g.name)}</span>` : ""}
+			</label>`;
+			// the columns each side lists now (a search narrows them)
+			const listed = (where) => {
+				const on = new Set(picked);
+				if (where === "s") return picked.filter((f) => hit(all.get(f), q.s));
+				return groups.flatMap((g) => g.list.filter((x) => !on.has(x.f) && hit(x, q.a)).map((x) => x.f));
+			};
+			const draw = () => {
+				const on = new Set(picked);
+				const left = groups
+					.map((g) => {
+						const items = g.list.filter((x) => !on.has(x.f) && hit(x, q.a));
+						if (!items.length) return "";
+						const unfolded = open.has(g.key) || !!q.a;
+						return `<div class="text-sm nxv-pick-head" data-g="${esc(g.key)}" role="button" aria-expanded="${unfolded}">
+								${frappe.utils.icon(unfolded ? "chevron-down" : "chevron-right", "xs")}<span class="truncate">${esc(g.name)}</span><span class="text-muted text-xs">${items.length}</span>
+							</div>` + (unfolded ? items.map((x) => row(x, "a")).join("") : "");
+					})
+					.join("");
+				$b.find('[data-side="a"]').html(left || `<p class="text-muted text-sm">${__("Nothing left to add")}</p>`);
+				$b.find('[data-side="s"]').html(listed("s").map((f) => row(all.get(f), "s")).join(""));
+				$b.find('[data-n="a"]').text(sel.a.size ? __("{0} of {1} ticked", [sel.a.size, all.size - picked.length]) : all.size - picked.length);
+				$b.find('[data-n="s"]').text(sel.s.size ? __("{0} of {1} ticked", [sel.s.size, picked.length]) : picked.length);
+				$b.find('[data-move="to-s"]').prop("disabled", !sel.a.size);
+				$b.find('[data-move="to-a"]').prop("disabled", !sel.s.size);
+			};
+			const send = (where, fs) => {
+				if (where === "s") picked = picked.concat(fs.filter((f) => !picked.includes(f)));
+				else picked = picked.filter((f) => !fs.includes(f));
+				sel.a.clear();
+				sel.s.clear();
+				draw();
+			};
+			$b.on("input", "[data-q]", (e) => {
+				q[e.target.dataset.q] = norm(e.target.value);
+				draw();
+			});
+			$b.on("click", ".nxv-pick-head", (e) => {
+				const k = e.currentTarget.dataset.g;
+				if (open.has(k)) open.delete(k);
+				else open.add(k);
+				draw();
+			});
+			// a tick: the column joins (or leaves) the ones the arrows send; a double click sends it at once
+			$b.on("change", ".nxv-pick-row input", (e) => {
+				const r = e.target.closest(".nxv-pick-row");
+				const s = sel[r.dataset.side];
+				if (e.target.checked) s.add(r.dataset.f);
+				else s.delete(r.dataset.f);
+				draw();
+			});
+			$b.on("dblclick", ".nxv-pick-row", (e) => {
+				const r = e.currentTarget;
+				send(r.dataset.side === "a" ? "s" : "a", [r.dataset.f]);
+			});
+			$b.on("click", "[data-move]", (e) => {
+				const act = e.currentTarget.dataset.move;
+				if (act === "to-s") send("s", listed("a").filter((f) => sel.a.has(f)));
+				if (act === "to-a") send("a", [...sel.s]);
+				if (act === "all-s") send("s", listed("a"));
+				if (act === "all-a") send("a", listed("s"));
+			});
+			// drag on the right: the new order (while nothing is searched, so every row shown is in the list)
+			new Sortable($b.find('[data-side="s"]')[0], {
+				handle: ".sortable-handle",
+				draggable: ".sortable",
+				animation: 150,
+				onUpdate: () => {
+					if (q.s) return draw();
+					picked = $b.find('[data-side="s"] .nxv-pick-row').map((i, el) => el.dataset.f).get();
+				},
+			});
+			draw();
+			dialog.show();
 		}
 
-		dual_move(dir, list) {
+		// ---------------------------------------------------------------- Sort
+		sort_panel(p) {
 			const d = this.draft;
-			if (dir === "to-sel") {
-				const fs = list || [...this.sel.a];
-				if (!fs.length) return frappe.show_alert({ message: __("Pick a column on the left first"), indicator: "orange" });
-				fs.forEach((f) => {
-					this.add_field(f);
-					d.hidden.delete(f);
-					d.order = d.order.filter((x) => x !== f);
-					const vis = d.order.filter((x) => !d.hidden.has(x));
-					const at = vis.length ? d.order.indexOf(vis[vis.length - 1]) + 1 : 0;
-					d.order.splice(at, 0, f);
-				});
-				this.sel = { a: new Set(), s: new Set(fs) };
-			} else {
-				const fs = list || [...this.sel.s];
-				if (!fs.length) return frappe.show_alert({ message: __("Pick a column on the right first"), indicator: "orange" });
-				if (this.lists().selected.filter((f) => !fs.includes(f)).length < 1) return frappe.show_alert({ message: __("Keep at least one column"), indicator: "orange" });
-				fs.forEach((f) => {
-					if (d.added.find((x) => x.f === f)) {
-						d.added = d.added.filter((x) => x.f !== f);
-						d.order = d.order.filter((x) => x !== f);
-					} else d.hidden.add(f);
-				});
-				this.sel = { a: new Set(fs), s: new Set() };
-			}
-			this.render();
-		}
-
-		// drop the columns in `fs` on the right, before or after `target`
-		dual_place(fs, target, after) {
-			const d = this.draft;
-			let vis = this.lists().selected.filter((f) => !fs.includes(f));
-			let at = vis.length;
-			if (target && vis.includes(target)) at = vis.indexOf(target) + (after ? 1 : 0);
-			vis.splice(at, 0, ...fs);
-			d.order = vis.concat(d.order.filter((f) => !vis.includes(f)));
-			this.sel = { a: new Set(), s: new Set(fs) };
-			this.render();
-		}
-
-		dual_order(act) {
-			const d = this.draft;
-			let vis = this.lists().selected;
-			const picked = vis.filter((f) => this.sel.s.has(f));
-			if (!picked.length) return frappe.show_alert({ message: __("Pick a column on the right first"), indicator: "orange" });
-			if (act === "top") vis = picked.concat(vis.filter((f) => !this.sel.s.has(f)));
-			else if (act === "bottom") vis = vis.filter((f) => !this.sel.s.has(f)).concat(picked);
-			else if (act === "up") {
-				for (let i = 1; i < vis.length; i++) if (this.sel.s.has(vis[i]) && !this.sel.s.has(vis[i - 1])) [vis[i - 1], vis[i]] = [vis[i], vis[i - 1]];
-			} else {
-				for (let i = vis.length - 2; i >= 0; i--) if (this.sel.s.has(vis[i]) && !this.sel.s.has(vis[i + 1])) [vis[i + 1], vis[i]] = [vis[i], vis[i + 1]];
-			}
-			d.order = vis.concat(d.order.filter((f) => !vis.includes(f)));
-			this.render();
-			const it = this.dialog.fields_dict.body.$wrapper.find('.nxv-dual-list[data-side="s"] .nxv-dual-item.on')[0];
-			if (it) it.scrollIntoView({ block: "nearest" });
-		}
-
-		// ---------------------------------------------------------------- Sort, Filter, Group
-		sort_html() {
-			const rows = this.draft.sorts
-				.map(
-					(x, i) => `<div class="nxv-st-row"><span class="nxv-st-lane">${i === 0 ? __("Sort by") : __("Then by")}</span>
-					<select class="form-control" data-ssort="${i}">${this.col_opts(x.key)}</select>
-					<select class="form-control nxv-st-narrow" data-sdir="${i}"><option value="1" ${x.dir > 0 ? "selected" : ""}>${__("Ascending")}</option><option value="-1" ${x.dir < 0 ? "selected" : ""}>${__("Descending")}</option></select>
-					<button type="button" class="nxv-icon-btn" data-sact="del-sort" data-i="${i}" title="${__("Remove")}" aria-label="${__("Remove")}">${icon("x")}</button></div>`
+			const first = d.order.find((f) => !d.hidden.has(f)) || d.order[0];
+			p.set_header({
+				title: __("Sort"),
+				description: __("The order of the rows. The first sort counts most."),
+				actions: [{ label: __("Add Sort"), icon: "plus", click: () => (d.sorts.push({ key: first, dir: 1 }), this.apply(), this.redraw("sort")) }],
+			});
+			const tree = this.view.tree_on() ? `<p class="text-muted text-sm">${__("This report is a tree, so it keeps the report's own order.")}</p>` : "";
+			const rows = d.sorts
+				.map((x, i) =>
+					this.line(
+						i === 0 ? __("Sort by") : __("Then by"),
+						`<div class="col"><select class="form-control" data-ssort="${i}">${this.col_opts(x.key)}</select></div>
+						<div class="col-3"><select class="form-control" data-sdir="${i}"><option value="1" ${x.dir > 0 ? "selected" : ""}>${__("Ascending")}</option><option value="-1" ${x.dir < 0 ? "selected" : ""}>${__("Descending")}</option></select></div>`,
+						{ "data-sdel": String(i) }
+					)
 				)
 				.join("");
-			const tree = this.view.tree_on() ? `<p class="nxv-st-note">${__("This report is a tree, so it keeps the report's own order.")}</p>` : "";
-			const empty = `<div class="nxv-st-empty">${icon("arrow-down-up", "md")}<span>${__("No sorting: the rows keep the report's order.")}</span></div>`;
-			return `${tree}<div class="nxv-st-rows">${rows || empty}</div>
-				<button type="button" class="nxv-st-add" data-sact="add-sort">${icon("plus")} ${__("Add sort")}</button>`;
+			p.body.html(tree + (rows || this.empty("arrow-down-up", __("No sorting"), __("The rows keep the report's order."))));
+			this.bind_rows(p, "sort");
 		}
 
-		filter_html() {
-			const rows = this.draft.conds
+		// ---------------------------------------------------------------- Filter
+		filter_panel(p) {
+			const d = this.draft;
+			p.set_header({
+				title: __("Filter"),
+				description: __("Keep or leave out rows of what the report returned. On one column, a row stays when any Include holds."),
+				actions: [
+					{
+						label: __("Add Condition"),
+						icon: "plus",
+						click: () => {
+							// a text column first: picking its values is the most common filter
+							const c = this.view.cols.find((x) => kind_of(x) === "text") || this.view.cols[0];
+							d.conds.push({ f: c.fieldname, op: KIND_OPS[kind_of(c)][0], x: "", x2: "", vals: [], exclude: false });
+							this.redraw("filter");
+						},
+					},
+				],
+			});
+			const rows = d.conds
 				.map((u, i) => {
-					const c = this.view.col_of(u.f);
-					const kind = kind_of(c);
+					const kind = kind_of(this.view.col_of(u.f));
 					const ops = KIND_OPS[kind].map((k) => `<option value="${k}" ${k === u.op ? "selected" : ""}>${esc(OP_LABEL[k])}</option>`).join("");
-					let value;
-					if (NO_VALUE.has(u.op)) value = '<span class="nxv-st-vals"></span>';
-					else if (u.op === "in" || kind === "date") value = `<div class="nxv-st-vals nxv-ctl" data-i="${i}"></div>`;
-					else {
+					let value = "";
+					if (u.op === "in" || (kind === "date" && !NO_VALUE.has(u.op))) value = `<div class="nxv-ctl" data-i="${i}"></div>`;
+					else if (!NO_VALUE.has(u.op)) {
 						const type = kind === "num" ? "number" : "text";
-						value = `<div class="nxv-st-vals"><input class="form-control" type="${type}" data-sx="${i}" value="${esc(u.x || "")}" placeholder="${__("Value")}">${
-							u.op === "between" ? `<span class="nxv-st-and">${__("and")}</span><input class="form-control" type="${type}" data-sx2="${i}" value="${esc(u.x2 || "")}" placeholder="${__("Value")}">` : ""
-						}</div>`;
+						const input = (k, val) => `<input class="form-control" type="${type}" data-${k}="${i}" value="${esc(val || "")}" placeholder="${__("Value")}">`;
+						value = u.op === "between" ? `<div class="flex gap-1 items-center">${input("sx", u.x)}<span class="text-muted">${__("and")}</span>${input("sx2", u.x2)}</div>` : input("sx", u.x);
 					}
-					return `<div class="nxv-st-row">
-						<select class="form-control nxv-st-lane-sel" data-sinc="${i}"><option value="0" ${u.exclude ? "" : "selected"}>${__("Include")}</option><option value="1" ${u.exclude ? "selected" : ""}>${__("Exclude")}</option></select>
-						<select class="form-control nxv-st-field" data-scf="${i}">${this.col_opts(u.f)}</select>
-						<select class="form-control nxv-st-narrow" data-sop="${i}">${ops}</select>
-						${value}
-						<button type="button" class="nxv-icon-btn" data-sact="del-cond" data-i="${i}" title="${__("Remove")}" aria-label="${__("Remove")}">${icon("x")}</button></div>`;
+					return this.line(
+						null,
+						`<div class="col-2"><select class="form-control" data-sinc="${i}"><option value="0" ${u.exclude ? "" : "selected"}>${__("Include")}</option><option value="1" ${u.exclude ? "selected" : ""}>${__("Exclude")}</option></select></div>
+						<div class="col-3"><select class="form-control" data-scf="${i}">${this.col_opts(u.f)}</select></div>
+						<div class="col-3"><select class="form-control" data-sop="${i}">${ops}</select></div>
+						<div class="col">${value}</div>`,
+						{ "data-cdel": String(i) }
+					);
 				})
 				.join("");
-			const empty = `<div class="nxv-st-empty">${icon("filter", "md")}<span>${__("No conditions: every row the report returned shows.")}</span></div>`;
-			return `<div class="nxv-st-rows">${rows || empty}</div>
-				<button type="button" class="nxv-st-add" data-sact="add-cond">${icon("plus")} ${__("Add condition")}</button>`;
+			p.body.html(rows || this.empty("funnel", __("No conditions"), __("Every row the report returned shows.")));
+			this.mount_controls(p.body);
+			this.bind_rows(p, "filter");
 		}
 
 		// the values a text column holds in this report's rows, the most used first, as the report shows them
@@ -2310,13 +2329,13 @@ frappe.provide("nexlify.report_view");
 		}
 
 		// Frappe's own controls for the values: a list to tick for "is any of", a calendar for a date
-		mount_controls() {
-			const $b = this.dialog.fields_dict.body.$wrapper;
-			$b.find(".nxv-ctl").each((n, el) => {
+		mount_controls($root) {
+			$root.find(".nxv-ctl").each((n, el) => {
 				const i = +el.dataset.i;
 				const u = this.draft.conds[i];
 				if (!u) return;
 				const make = (df) => frappe.ui.form.make_control({ parent: $(el), df: Object.assign({ fieldname: "nxv_" + i + "_" + df.fieldtype.toLowerCase() }, df), render_input: true, only_input: true });
+				const done = () => this.apply();
 				if (u.op === "in") {
 					const all = this.column_values(u.f);
 					const ctl = make({
@@ -2326,7 +2345,10 @@ frappe.provide("nexlify.report_view");
 							const q = String(txt || "").toLowerCase();
 							return all.filter((x) => !q || x.label.toLowerCase().includes(q) || x.value.toLowerCase().includes(q)).slice(0, 200);
 						},
-						onchange: () => (u.vals = (ctl.get_value() || []).slice(0, 500)),
+						onchange: () => {
+							u.vals = (ctl.get_value() || []).slice(0, 500);
+							done();
+						},
 					});
 					ctl.set_value((u.vals || []).slice());
 				} else if (u.op === "between") {
@@ -2337,170 +2359,90 @@ frappe.provide("nexlify.report_view");
 							const v = ctl.get_value() || [];
 							u.x = v[0] || "";
 							u.x2 = v[1] || "";
+							done();
 						},
 					});
 					if (u.x && u.x2) ctl.set_value([u.x, u.x2]);
 				} else {
-					const ctl = make({ fieldtype: "Date", placeholder: __("Pick a date"), onchange: () => (u.x = ctl.get_value() || "") });
+					const ctl = make({
+						fieldtype: "Date",
+						placeholder: __("Pick a date"),
+						onchange: () => {
+							u.x = ctl.get_value() || "";
+							done();
+						},
+					});
 					if (u.x) ctl.set_value(u.x);
 				}
 			});
 		}
 
-		group_html() {
-			const levels = this.draft.group_by.length ? this.draft.group_by : [""];
-			const rows = levels
-				.map(
-					(f, i) => `<div class="nxv-st-row"><span class="nxv-st-lane"><span class="nxv-st-level">${i + 1}</span>${i === 0 ? __("Group by") : __("Then by")}</span>
-					<select class="form-control" data-sgroup="${i}">${this.col_opts(f, true)}</select>
-					${i > 0 || this.draft.group_by.length > 1 ? `<button type="button" class="nxv-icon-btn" data-sact="del-group" data-i="${i}" title="${__("Remove")}" aria-label="${__("Remove")}">${icon("x")}</button>` : '<span class="nxv-icon-btn-space"></span>'}</div>`
-				)
-				.join("");
-			const add = levels.length < MAX_LEVELS ? `<button type="button" class="nxv-st-add" data-sact="add-group">${icon("plus")} ${__("Add level")}</button>` : "";
-			const tree = this.view.is_tree
-				? `<p class="nxv-st-note">${__("This report is a tree: grouped, it shows its lowest rows in your groups, so no amount counts twice.")}</p>`
-				: "";
-			return `<div class="nxv-st-rows">${rows}</div>${add}${tree}`;
-		}
-
-		change(el) {
+		// ---------------------------------------------------------------- Group
+		group_panel(p) {
 			const d = this.draft;
-			const ds = el.dataset;
-			if (ds.swidth !== undefined) return (d.widths[ds.swidth] = Math.max(50, +el.value || 50));
-			if (ds.slabel !== undefined) {
-				const c = this.col(ds.slabel);
-				const v = el.value.trim();
-				if (!v || (c && (v === c.label || v === __(c.label)))) delete d.labels[ds.slabel];
-				else d.labels[ds.slabel] = v;
-				return;
-			}
-			if (ds.ssort !== undefined) d.sorts[+ds.ssort].key = el.value;
-			if (ds.sdir !== undefined) d.sorts[+ds.sdir].dir = +el.value;
-			if (ds.sinc !== undefined) d.conds[+ds.sinc].exclude = el.value === "1";
-			if (ds.scf !== undefined) {
-				const u = d.conds[+ds.scf];
-				u.f = el.value;
-				u.op = KIND_OPS[kind_of(this.view.col_of(u.f))][0];
-				u.x = u.x2 = "";
-				u.vals = [];
-				return this.render();
-			}
-			if (ds.sop !== undefined) {
-				const u = d.conds[+ds.sop];
-				// the value stays when it still means something (a date from "on" to "before")
-				if (u.op === "in" || el.value === "in" || u.op === "between" || el.value === "between") u.x = u.x2 = "";
-				if (el.value !== "in") u.vals = [];
-				u.op = el.value;
-				return this.render();
-			}
-
-			if (ds.sx !== undefined) d.conds[+ds.sx].x = el.value;
-			if (ds.sx2 !== undefined) d.conds[+ds.sx2].x2 = el.value;
-			if (ds.sgroup !== undefined) d.group_by[+ds.sgroup] = el.value;
-		}
-
-		action(b) {
-			const d = this.draft;
-			const act = b.dataset.sact;
-			const first = d.order.find((f) => !d.hidden.has(f)) || d.order[0];
-			if (act === "to-sel" || act === "to-avail") return this.dual_move(act);
-			if (["top", "up", "down", "bottom"].includes(act)) return this.dual_order(act);
-			if (act === "add-sort") d.sorts.push({ key: first, dir: 1 });
-			if (act === "del-sort") d.sorts.splice(+b.dataset.i, 1);
-			if (act === "add-cond") {
-				// a text column first: picking its values is the most common filter
-				const c = this.view.cols.find((x) => kind_of(x) === "text") || this.view.col_of(first);
-				d.conds.push({ f: c ? c.fieldname : first, op: KIND_OPS[kind_of(c)][0], x: "", x2: "", vals: [], exclude: false });
-			}
-			if (act === "del-cond") d.conds.splice(+b.dataset.i, 1);
-			if (act === "add-group") {
-				if (!d.group_by.length) d.group_by.push("");
+			// the panel always shows a first level, empty until a column is picked
+			if (!d.group_by.length) d.group_by.push("");
+			const levels = d.group_by;
+			const add = () => {
 				d.group_by.push("");
-			}
-			if (act === "del-group") d.group_by.splice(+b.dataset.i, 1);
-			this.render();
+				this.redraw("group");
+			};
+			const actions = levels.length < MAX_LEVELS ? [{ label: __("Add Level"), icon: "plus", click: add }] : [];
+			p.set_header({ title: __("Group"), description: __("Each group shows a heading, its rows and its total. Up to three levels."), actions });
+			const rows = levels
+				.map((f, i) => this.line(i === 0 ? __("Group by") : __("Then by"), `<div class="col"><select class="form-control" data-sgroup="${i}">${this.col_opts(f, true)}</select></div>`, i > 0 ? { "data-gdel": String(i) } : null))
+				.join("");
+			const notes = [
+				this.view.rows.some((r) => r.is_group) ? __("The report groups its rows too (its own Group By filter): its groups stay outside, these go inside them.") : "",
+				this.view.is_tree ? __("This report is a tree: grouped, it shows its lowest rows in your groups, so no amount counts twice.") : "",
+			]
+				.filter(Boolean)
+				.map((t) => `<p class="text-muted text-sm">${t}</p>`)
+				.join("");
+			p.body.html(rows + notes);
+			this.bind_rows(p, "group");
 		}
 
-		bind() {
-			const $b = this.dialog.fields_dict.body.$wrapper;
-			$b.on("click", "[data-st]", (e) => {
-				this.tab = e.currentTarget.dataset.st;
-				this.render();
-			});
-			$b.on("click", "button[data-sact]", (e) => this.action(e.currentTarget));
-			$b.on("click", "button[data-lact]", (e) => this.layout_action(e.currentTarget));
-			$b.on("change", "input[data-lact]", (e) => this.layout_action(e.currentTarget));
-			$b.on("change", "input:not([data-lact]), select", (e) => this.change(e.target));
-			$b.on("click", ".nxv-dual-group", (e) => {
-				const g = e.currentTarget.dataset.g;
-				if (this.open_groups.has(g)) this.open_groups.delete(g);
-				else this.open_groups.add(g);
-				this.dual_filter("a");
-			});
-			$b.on("click", ".nxv-dual-item", (e) => {
-				if (e.target.closest("input")) return;
-				this.dual_pick(e.currentTarget, e.shiftKey);
-			});
-			$b.on("dblclick", ".nxv-dual-item", (e) => {
-				if (e.target.closest("input")) return;
-				const it = e.currentTarget;
-				this.dual_move(it.dataset.side === "a" ? "to-sel" : "to-avail", [it.dataset.f]);
-			});
-			$b.on("input", ".nxv-dual-search", (e) => {
-				this.q[e.target.dataset.side] = e.target.value.trim().toLowerCase();
-				this.dual_filter(e.target.dataset.side);
-			});
-			// drag and drop: across the two lists, and up and down on the right
-			const clear_drop = () => $b.find(".drop-before, .drop-after, .drop-list, .dragging").removeClass("drop-before drop-after drop-list dragging");
-			$b.on("dragstart", ".nxv-dual-item[draggable]", (e) => {
-				if (e.target.closest && e.target.closest("input")) return e.preventDefault();
-				const it = e.currentTarget;
-				const side = it.dataset.side;
-				const fs = this.sel[side].has(it.dataset.f) ? [...this.sel[side]] : [it.dataset.f];
-				this.drag = { side, fs };
-				const dt = e.originalEvent.dataTransfer;
-				dt.effectAllowed = "move";
-				try {
-					dt.setData("text/plain", fs.join(","));
-				} catch (err) {
-					// some browsers refuse custom drag data
+		// the controls of the Sort, Filter and Group panels: each change goes to the table at once
+		bind_rows(p, id) {
+			const d = this.draft;
+			p.body.off(".nxv");
+			p.body.on("change.nxv", "select, input", (e) => {
+				const ds = e.target.dataset;
+				let again = false;
+				if (ds.ssort !== undefined) d.sorts[+ds.ssort].key = e.target.value;
+				if (ds.sdir !== undefined) d.sorts[+ds.sdir].dir = +e.target.value;
+				if (ds.sinc !== undefined) d.conds[+ds.sinc].exclude = e.target.value === "1";
+				if (ds.scf !== undefined) {
+					const u = d.conds[+ds.scf];
+					u.f = e.target.value;
+					u.op = KIND_OPS[kind_of(this.view.col_of(u.f))][0];
+					u.x = u.x2 = "";
+					u.vals = [];
+					again = true;
 				}
-				$b.find(".nxv-dual-item").filter((i, x) => x.dataset.side === side && fs.includes(x.dataset.f)).addClass("dragging");
-			});
-			$b.on("dragend", ".nxv-dual-item", () => {
-				this.drag = null;
-				clear_drop();
-			});
-			$b.on("dragover", ".nxv-dual-list", (e) => {
-				if (!this.drag) return;
-				e.preventDefault();
-				$b.find(".drop-before, .drop-after, .drop-list").removeClass("drop-before drop-after drop-list");
-				const it = e.target.closest && e.target.closest(".nxv-dual-item");
-				if (e.currentTarget.dataset.side === "s" && it && it.dataset.side === "s") {
-					const r = it.getBoundingClientRect();
-					it.classList.add(e.originalEvent.clientY < r.top + r.height / 2 ? "drop-before" : "drop-after");
-				} else e.currentTarget.classList.add("drop-list");
-			});
-			$b.on("drop", ".nxv-dual-list", (e) => {
-				e.preventDefault();
-				const drag = this.drag;
-				if (!drag) return;
-				const side = e.currentTarget.dataset.side;
-				const mark = $b.find(".drop-before, .drop-after")[0];
-				const target = mark ? mark.dataset.f : null;
-				const after = mark ? mark.classList.contains("drop-after") : false;
-				this.drag = null;
-				clear_drop();
-				if (side === "a") {
-					if (drag.side === "s") this.dual_move("to-avail", drag.fs);
-					return;
+				if (ds.sop !== undefined) {
+					const u = d.conds[+ds.sop];
+					// the value stays when it still means something (a date from "on" to "before")
+					if (u.op === "in" || e.target.value === "in" || u.op === "between" || e.target.value === "between") u.x = u.x2 = "";
+					if (e.target.value !== "in") u.vals = [];
+					u.op = e.target.value;
+					again = true;
 				}
-				if (drag.side === "a")
-					drag.fs.forEach((f) => {
-						this.add_field(f);
-						this.draft.hidden.delete(f);
-					});
-				this.dual_place(drag.fs, target, after);
+				if (ds.sx !== undefined) d.conds[+ds.sx].x = e.target.value;
+				if (ds.sx2 !== undefined) d.conds[+ds.sx2].x2 = e.target.value;
+				if (ds.sgroup !== undefined) d.group_by[+ds.sgroup] = e.target.value;
+				if (!ds.ssort && !ds.sdir && !ds.sinc && !ds.scf && !ds.sop && !ds.sx && !ds.sx2 && !ds.sgroup) return;
+				this.apply();
+				if (again) this.redraw(id);
+			});
+			p.body.on("click.nxv", "[data-sdel], [data-cdel], [data-gdel]", (e) => {
+				const ds = e.currentTarget.dataset;
+				if (ds.sdel !== undefined) d.sorts.splice(+ds.sdel, 1);
+				if (ds.cdel !== undefined) d.conds.splice(+ds.cdel, 1);
+				if (ds.gdel !== undefined) d.group_by.splice(+ds.gdel, 1);
+				this.apply();
+				this.redraw(id);
 			});
 		}
 	}
@@ -2631,8 +2573,6 @@ frappe.provide("nexlify.report_view");
 		v.show();
 		v.loaded_data = qr.data;
 		v.loaded_cols = (qr.columns || []).length;
-		// a level stays while its column does: the report's own, or one the layout added from a linked document
-		v.state.group_by = v.state.group_by.filter((f) => (qr.columns || []).some((c) => c.fieldname === f) || ((v.layout && v.layout.added) || []).some((a) => a.f === f));
 		v.load();
 		// the layout opened with the report is the one "changed since saved" is measured against
 		if (v.saved_json === null) v.mark_saved();

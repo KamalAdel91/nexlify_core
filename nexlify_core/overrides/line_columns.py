@@ -44,7 +44,8 @@ def line_fields(doctype: str) -> list[dict]:
 	for voucher_type in voucher_types(doctype):
 		for table in line_tables(voucher_type):
 			for df in frappe.get_meta(table).fields:
-				if df.fieldtype in SKIP_TYPES or df.hidden or not df.label:
+				# a virtual field is not kept in the database: no value to read
+				if df.fieldtype in SKIP_TYPES or df.hidden or df.is_virtual or not df.label:
 					continue
 				fields.setdefault(df.fieldname, {"field": df.fieldname, "label": df.label, "fieldtype": df.fieldtype, "options": df.options})
 	return sorted(fields.values(), key=lambda f: _(f["label"]))

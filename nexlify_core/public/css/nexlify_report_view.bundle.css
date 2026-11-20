@@ -123,7 +123,6 @@ table.nxv-grid {
 .nxv-grid [data-fz] { position: sticky; z-index: 2; }
 .nxv-grid thead th[data-fz] { z-index: 4; }
 .nxv-grid tfoot td[data-fz] { z-index: 4; }
-.nxv-colmenu-line { height: 1px; margin: 4px 0; background: var(--border-color); }
 
 /* the current cell: moved with the arrow keys */
 /* the theme rings any focused element: the table shows its current cell instead */
@@ -224,46 +223,6 @@ table.nxv-grid {
 [dir="rtl"] .nxv-tw:not(.open) { transform: rotate(180deg); }
 .nxv-tw.leaf { visibility: hidden; }
 
-/* a column's menu */
-.nxv-colmenu,
-.nxr-menu {
-	position: absolute;
-	z-index: 20;
-	min-width: 190px;
-	padding: 4px 0;
-	background: var(--fg-color);
-	border: 1px solid var(--border-color);
-	border-radius: var(--radius, 8px);
-	box-shadow: var(--shadow-md, 0 6px 18px rgba(0, 0, 0, 0.14));
-	font-size: var(--text-base, 13px);
-}
-.nxv-colmenu button,
-.nxr-menu-item {
-	display: flex;
-	align-items: center;
-	gap: 8px;
-	width: 100%;
-	padding: 6px 12px;
-	border: 0;
-	background: none;
-	color: var(--text-color);
-	text-align: start;
-	cursor: pointer;
-}
-.nxv-colmenu button:hover:not([disabled]),
-.nxr-menu-item:hover:not([disabled]) { background: var(--subtle-fg); }
-.nxv-colmenu button[disabled],
-.nxr-menu-item[disabled] { color: var(--text-light, var(--text-muted)); cursor: default; }
-
-/* the Layout menu, under its button in the page header */
-.nxr-menu { position: fixed; z-index: 1050; min-width: 260px; max-width: 380px; max-height: 70vh; overflow-y: auto; }
-.nxr-menu-head { padding: 6px 12px 4px; font-size: var(--text-xs, 11px); color: var(--text-muted); }
-.nxr-menu-mark { width: 12px; flex: none; font-size: 9px; color: var(--primary, var(--text-color)); }
-.nxr-menu-text { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.nxr-menu-item.is-on .nxr-menu-text { font-weight: 600; }
-.nxr-menu-tag { flex: none; font-size: var(--text-xs, 11px); color: var(--text-muted); }
-.nxr-menu-line { height: 1px; margin: 4px 0; background: var(--border-color); }
-
 /* before the table is ready: Frappe's table and loading screen wait, a skeleton of the table shows */
 body.nxv-pending #page-query-report .report-wrapper,
 body.nxv-pending #page-query-report .report-footer,
@@ -295,233 +254,15 @@ body:not(.nxv-pending) .nxv-skel { display: none !important; }
 	.nxv-scroller { height: calc(100vh - 220px); }
 }
 
-/* the Layout and Group By buttons say which layout and grouping are in use, without crowding the header */
+/* the Layout and Group By buttons say which layout and grouping are in use, without crowding the header:
+   a long name ends in an ellipsis (Frappe's buttons center their text, which would cut both ends) */
 .nxr-layout-btn,
-.nxr-group-btn { max-width: 190px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nxr-group-btn { display: inline-block; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-/* ===================== View Settings: layouts, columns, sort, filter, groups ===================== */
-.nxv-settings-dialog .modal-dialog { max-width: min(1060px, 96vw); }
-.nxv-settings-dialog .modal-body { padding-top: 4px; }
-.nxv-settings {
-	--st-line: var(--border-color);
-	--st-soft: var(--subtle-fg);
-	--st-blue: var(--blue-500, #2490ef);
-	--st-pick: color-mix(in srgb, var(--blue-500, #2490ef) 14%, transparent);
-	display: flex;
-	flex-direction: column;
-	gap: 12px;
-	color: var(--text-color);
-	font-size: 13px;
-}
-.nxv-settings svg.icon { flex: none; }
-
-/* tabs: a quiet underline, an icon and a count of what each tab has set */
-.nxv-st-tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--st-line); }
-.nxv-st-tab {
-	display: inline-flex;
-	align-items: center;
-	gap: 6px;
-	padding: 8px 12px 10px;
-	margin-bottom: -1px;
-	border: 0;
-	border-bottom: 2px solid transparent;
-	background: none;
-	color: var(--text-muted);
-	font-size: 13px;
-	font-weight: 500;
-	cursor: pointer;
-}
-.nxv-st-tab:hover { color: var(--text-color); }
-.nxv-st-tab[aria-selected="true"] { color: var(--text-color); border-bottom-color: var(--text-color); font-weight: 600; }
-.nxv-st-badge {
-	min-width: 18px;
-	height: 18px;
-	padding: 0 5px;
-	border-radius: 9px;
-	background: var(--text-color);
-	color: var(--fg-color);
-	font-size: 11px;
-	line-height: 18px;
-	text-align: center;
-}
-.nxv-st-intro { margin: 0; color: var(--text-muted); font-size: 13px; line-height: 18px; }
-.nxv-st-body { height: 440px; display: flex; flex-direction: column; gap: 10px; overflow: auto; }
-.nxv-st-body.nxv-st-columns { overflow: hidden; }
-.nxv-st-note { margin: 0; color: var(--text-muted); font-size: 12px; }
-.nxv-st-hint { margin: 0; color: var(--text-muted); font-size: 12px; }
-.nxv-spacer { flex: 1; }
-
-/* small icon buttons */
-.nxv-icon-btn {
-	flex: none;
-	width: 28px;
-	height: 28px;
-	display: inline-grid;
-	place-items: center;
-	padding: 0;
-	border: 0;
-	border-radius: 6px;
-	background: transparent;
-	color: var(--text-muted);
-	cursor: pointer;
-}
-.nxv-icon-btn:hover { background: var(--st-soft); color: var(--text-color); }
-.nxv-icon-btn[data-lact="delete"]:hover,
-.nxv-icon-btn[data-sact^="del"]:hover { color: var(--red-500, #e03636); }
-.nxv-icon-btn-space { flex: none; width: 28px; }
-
-/* ---------- Layouts: a list, the one in use marked, a star for the one the report opens with ---------- */
-.nxv-lay-list { display: flex; flex-direction: column; border: 1px solid var(--st-line); border-radius: 10px; overflow: hidden; }
-.nxv-lay-row { display: flex; align-items: center; gap: 12px; padding: 10px 14px; border-top: 1px solid var(--st-line); }
-.nxv-lay-row:first-child { border-top: 0; }
-.nxv-lay-row:hover { background: var(--st-soft); }
-.nxv-lay-row.is-on { background: var(--st-pick); }
-.nxv-lay-star {
-	flex: none;
-	width: 28px;
-	height: 28px;
-	display: grid;
-	place-items: center;
-	padding: 0;
-	border: 0;
-	border-radius: 6px;
-	background: none;
-	color: var(--gray-400, #b8bfcc);
-	cursor: pointer;
-}
-.nxv-lay-star:hover { color: var(--yellow-500, #e4a600); }
-.nxv-lay-star.is-def { color: var(--yellow-500, #e4a600); }
-.nxv-lay-star.is-def svg { fill: currentColor; }
-.nxv-lay-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
-.nxv-lay-name { display: flex; align-items: center; gap: 6px; font-weight: 600; font-size: 14px; }
-.nxv-lay-who { color: var(--text-muted); font-size: 12px; }
-.nxv-chip { padding: 1px 8px; border-radius: 10px; background: var(--st-soft); color: var(--text-muted); font-size: 11px; font-weight: 500; }
-.nxv-chip-on { background: var(--text-color); color: var(--fg-color); }
-.nxv-lay-pub { flex: none; width: 80px; margin: 0; display: flex; align-items: center; gap: 6px; color: var(--text-muted); font-size: 12px; font-weight: normal; }
-.nxv-lay-pub input { margin: 0; }
-.nxv-lay-acts { flex: none; width: 96px; display: flex; justify-content: flex-end; align-items: center; gap: 4px; }
-.nxv-lay-foot { display: flex; align-items: center; gap: 8px; padding-top: 4px; }
-.nxv-lay-foot .btn { display: inline-flex; align-items: center; gap: 6px; }
-.nxv-lay-all { color: var(--text-muted); font-size: 12px; text-decoration: underline; text-underline-offset: 3px; }
-
-/* ---------- Columns: two lists, the arrows between them ---------- */
-.nxv-dual { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) 44px minmax(0, 1.15fr); gap: 12px; }
-.nxv-dual-pane { min-height: 0; display: flex; flex-direction: column; gap: 8px; }
-.nxv-dual-hd { display: flex; align-items: center; gap: 8px; height: 28px; }
-.nxv-dual-hd b { font-size: 13px; font-weight: 600; }
-.nxv-dual-count { padding: 0 7px; border-radius: 9px; background: var(--st-soft); color: var(--text-muted); font-size: 11px; line-height: 18px; }
-.nxv-order { display: inline-flex; gap: 2px; }
-.nxv-dual-find { display: flex; align-items: center; gap: 8px; height: 32px; margin: 0; padding: 0 10px; border-radius: 8px; background: var(--control-bg); color: var(--text-muted); font-weight: normal; }
-.nxv-dual-find input { flex: 1; min-width: 0; border: 0; background: transparent; color: var(--text-color); font-size: 13px; outline: none; }
-.nxv-dual-find:focus-within { box-shadow: var(--focus-default); }
-.nxv-dual-list { flex: 1; min-height: 0; overflow: auto; padding: 4px; border: 1px solid var(--st-line); border-radius: 10px; }
-.nxv-dual-loading { padding: 10px; color: var(--text-muted); font-size: 12px; }
-
-/* a linked document's fields under its name; the report's own columns first */
-.nxv-dual-group {
-	position: sticky;
-	top: -4px;
-	z-index: 1;
-	display: flex;
-	align-items: center;
-	gap: 6px;
-	padding: 8px 8px;
-	background: var(--fg-color);
-	border-radius: 6px;
-	cursor: pointer;
-	user-select: none;
-}
-.nxv-dual-group:hover { background: var(--st-soft); }
-.nxv-dual-caret { display: inline-grid; place-items: center; color: var(--text-muted); transition: transform 0.15s; }
-.nxv-dual-group.open .nxv-dual-caret { transform: rotate(90deg); }
-[dir="rtl"] .nxv-dual-group:not(.open) .nxv-dual-caret { transform: rotate(180deg); }
-.nxv-g-name { font-weight: 600; font-size: 13px; }
-.nxv-g-via { color: var(--text-muted); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.nxv-dual-group .nxv-dual-count { margin-inline-start: auto; }
-
-.nxv-dual-item { display: flex; align-items: center; gap: 8px; min-height: 34px; padding: 2px 8px; border-radius: 6px; cursor: pointer; user-select: none; }
-.nxv-dual-list[data-side="a"] .nxv-dual-item { padding-inline-start: 30px; }
-.nxv-dual-item:hover { background: var(--st-soft); }
-.nxv-dual-item.on { background: var(--st-pick); }
-.nxv-dual-item .nxv-dual-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.nxv-dual-item .nxv-lbl { flex: none; width: 92px; color: var(--text-muted); font-size: 12px; text-align: end; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.nxv-dual-check { flex: none; width: 16px; height: 16px; display: grid; place-items: center; border: 1.5px solid var(--gray-400, #b8bfcc); border-radius: 4px; background: var(--fg-color); }
-.nxv-dual-item.on .nxv-dual-check { background: var(--blue-500, #2490ef); border-color: var(--blue-500, #2490ef); }
-.nxv-dual-item.on .nxv-dual-check::after { content: ""; width: 4px; height: 8px; border: solid #fff; border-width: 0 2px 2px 0; transform: rotate(45deg) translate(-1px, -1px); }
-.nxv-dual-grip { flex: none; width: 14px; display: grid; place-items: center; color: var(--gray-400, #b8bfcc); cursor: grab; }
-.nxv-dual-label { flex: 1; min-width: 0; height: 28px; padding: 0 8px; border: 1px solid transparent; border-radius: 6px; background: transparent; color: var(--text-color); font-size: 13px; outline: none; }
-.nxv-dual-item:hover .nxv-dual-label { border-color: var(--st-line); background: var(--fg-color); }
-.nxv-dual-label:focus { border-color: var(--blue-500, #2490ef); background: var(--fg-color); }
-.nxv-dual-wbox { flex: none; width: 74px; height: 28px; display: flex; align-items: center; gap: 2px; padding: 0 6px; border-radius: 6px; background: var(--control-bg); }
-.nxv-dual-wbox input { width: 100%; min-width: 0; border: 0; background: transparent; color: var(--text-color); font-size: 12px; font-feature-settings: "tnum"; outline: none; -moz-appearance: textfield; }
-.nxv-dual-wbox input::-webkit-inner-spin-button { -webkit-appearance: none; }
-.nxv-dual-wbox i { font-style: normal; font-size: 11px; color: var(--text-muted); }
-.nxv-dual-item[draggable="true"] { cursor: grab; }
-.nxv-dual-item.dragging { opacity: 0.4; }
-.nxv-dual-item.drop-before { box-shadow: inset 0 2px 0 var(--blue-500, #2490ef); }
-.nxv-dual-item.drop-after { box-shadow: inset 0 -2px 0 var(--blue-500, #2490ef); }
-.nxv-dual-list.drop-list { outline: 2px dashed var(--blue-500, #2490ef); outline-offset: -3px; }
-
-.nxv-dual-mid { display: flex; flex-direction: column; justify-content: center; gap: 8px; }
-.nxv-move {
-	position: relative;
-	width: 44px;
-	height: 36px;
-	display: grid;
-	place-items: center;
-	padding: 0;
-	border: 1px solid var(--st-line);
-	border-radius: 8px;
-	background: var(--fg-color);
-	color: var(--text-color);
-	cursor: pointer;
-}
-.nxv-move:hover { background: var(--st-soft); }
-[dir="rtl"] .nxv-move svg { transform: scaleX(-1); }
-.nxv-dual-n { position: absolute; top: -7px; inset-inline-end: -7px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: var(--blue-500, #2490ef); color: #fff; font-size: 11px; line-height: 18px; text-align: center; }
-.nxv-dual-n:empty { display: none; }
-
-/* ---------- Sort, Filter, Group: one line a rule, the same lanes on every line ---------- */
-.nxv-st-rows { display: flex; flex-direction: column; gap: 8px; }
-.nxv-st-row { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border: 1px solid var(--st-line); border-radius: 10px; }
-.nxv-st-row .form-control { flex: 1; min-width: 0; height: 32px; }
-.nxv-st-lane { flex: none; width: 104px; display: inline-flex; align-items: center; gap: 8px; color: var(--text-muted); font-size: 13px; }
-.nxv-st-level { width: 20px; height: 20px; display: grid; place-items: center; border-radius: 50%; background: var(--st-soft); color: var(--text-color); font-size: 11px; font-weight: 600; }
-.nxv-st-row .nxv-st-lane-sel { flex: none; width: 112px; }
-.nxv-st-row .nxv-st-narrow { flex: none; width: 160px; }
-.nxv-st-row .nxv-st-val { flex: none; width: 140px; }
-.nxv-st-row span.nxv-st-val { display: block; }
-/* a condition's value: typed, ticked from the column's values, or picked from a calendar */
-.nxv-st-vals { flex: none; width: 320px; display: flex; align-items: center; gap: 6px; min-height: 32px; }
-.nxv-st-vals > input.form-control { flex: 1; width: auto; }
-.nxv-st-and { flex: none; color: var(--text-muted); font-size: 12px; }
-.nxv-st-vals .frappe-control { flex: 1; min-width: 0; margin: 0; }
-.nxv-st-vals .frappe-control .form-group,
-.nxv-st-vals .frappe-control .control-input-wrapper { margin: 0; }
-.nxv-st-vals .help-box { display: none; }
-.nxv-st-add {
-	align-self: flex-start;
-	display: inline-flex;
-	align-items: center;
-	gap: 6px;
-	padding: 6px 12px;
-	border: 1px dashed var(--st-line);
-	border-radius: 8px;
-	background: none;
-	color: var(--text-muted);
-	font-size: 13px;
-	cursor: pointer;
-}
-.nxv-st-add:hover { border-color: var(--text-muted); color: var(--text-color); }
-.nxv-st-empty { display: flex; align-items: center; gap: 10px; padding: 18px 14px; border-radius: 10px; background: var(--st-soft); color: var(--text-muted); }
-
-@media (max-width: 760px) {
-	.nxv-dual { grid-template-columns: minmax(0, 1fr); }
-	.nxv-dual-mid { flex-direction: row; justify-content: center; }
-	.nxv-dual-mid .nxv-move svg { transform: rotate(90deg); }
-	.nxv-st-body { height: auto; max-height: 70vh; }
-	.nxv-st-row { flex-wrap: wrap; }
-}
+/* View Settings > Columns: a column's name reads as text in Frappe's field row, and turns into a box to type in */
+.fields_order .nxv-set-label { height: 22px; padding: 0 4px; border: 0; background: transparent; box-shadow: none; }
+.fields_order .nxv-set-label:focus { background: var(--modal-bg, var(--fg-color)); }
+.fields_order .nxv-set-width { height: 22px; background-color: var(--modal-bg, var(--fg-color)); }
 
 /* ===================== the parts above the table fold: filters to their first row, summary and chart to a bar ===================== */
 .nxv-fhide { display: none !important; }
@@ -605,3 +346,26 @@ body:not(.nxv-pending) .nxv-skel { display: none !important; }
 .nxv-secbtn-chips { display: inline-flex; gap: 12px; min-width: 0; overflow: hidden; text-overflow: ellipsis; padding-inline-start: 8px; border-inline-start: 1px solid var(--border-color); color: var(--text-muted); }
 .nxv-chip-s i { font-style: normal; }
 .nxv-chip-s b { font-weight: 600; font-feature-settings: "tnum"; }
+
+/* View Settings > Filter: Frappe's controls for the values sit on the line, as the selects beside them */
+.nxv-set-line .nxv-ctl .form-group,
+.nxv-set-line .nxv-ctl .control-input-wrapper { margin: 0; }
+
+/* Add / Remove Columns: the two lists side by side, the arrows between them; each list scrolls on its own,
+   up and down only */
+.nxv-pick { display: flex; gap: 12px; align-items: stretch; }
+.nxv-pick-side { flex: 1 1 0; min-width: 0; }
+.nxv-pick-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+.nxv-pick-mid { display: flex; flex-direction: column; justify-content: center; gap: 8px; }
+.nxv-pick-list { height: min(440px, 55vh); overflow-y: auto; overflow-x: hidden; padding-inline-end: 4px; }
+.nxv-pick-row { display: flex; align-items: center; gap: 8px; height: auto; min-height: 30px; margin-bottom: 4px; cursor: pointer; font-weight: normal; }
+.nxv-pick-row input { margin: 0; flex: none; }
+.nxv-pick-row .sortable-handle { flex: none; cursor: grab; }
+.nxv-pick-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nxv-pick-from { flex: none; max-width: 45%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nxv-pick-head { display: flex; align-items: center; justify-content: flex-start; gap: 6px; padding: 6px 2px 4px; cursor: pointer; user-select: none; color: var(--text-color); }
+.nxv-pick-head > svg { margin: 0 !important; flex: none; }
+@media (max-width: 767px) {
+	.nxv-pick { flex-direction: column; }
+	.nxv-pick-mid { flex-direction: row; }
+}

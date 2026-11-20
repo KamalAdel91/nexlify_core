@@ -2631,7 +2631,8 @@ frappe.provide("nexlify.report_view");
 		v.show();
 		v.loaded_data = qr.data;
 		v.loaded_cols = (qr.columns || []).length;
-		v.state.group_by = v.state.group_by.filter((f) => (qr.columns || []).some((c) => c.fieldname === f));
+		// a level stays while its column does: the report's own, or one the layout added from a linked document
+		v.state.group_by = v.state.group_by.filter((f) => (qr.columns || []).some((c) => c.fieldname === f) || ((v.layout && v.layout.added) || []).some((a) => a.f === f));
 		v.load();
 		// the layout opened with the report is the one "changed since saved" is measured against
 		if (v.saved_json === null) v.mark_saved();

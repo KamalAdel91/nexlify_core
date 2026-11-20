@@ -351,21 +351,34 @@ body:not(.nxv-pending) .nxv-skel { display: none !important; }
 .nxv-set-line .nxv-ctl .form-group,
 .nxv-set-line .nxv-ctl .control-input-wrapper { margin: 0; }
 
-/* Add / Remove Columns: the two lists side by side, the arrows between them; each list scrolls on its own,
-   up and down only */
+/* Add / Remove Columns: two boxes side by side, the arrows between them; each box has its title, a tick for
+   all it lists, a search, and a list that scrolls up and down only. Rows are plain lines, as Frappe's lists */
 .nxv-pick { display: flex; gap: 12px; align-items: stretch; }
-.nxv-pick-side { flex: 1 1 0; min-width: 0; }
-.nxv-pick-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+.nxv-pick-side { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; border: 1px solid var(--border-color); border-radius: var(--border-radius-md, 8px); background: var(--fg-color); overflow: hidden; }
+.nxv-pick-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 8px 12px; border-bottom: 1px solid var(--border-color); background: var(--subtle-fg); }
+.nxv-pick-all { display: flex; align-items: center; gap: 8px; margin: 0; font-weight: 600; color: var(--text-color); cursor: pointer; }
+.nxv-pick-all input { margin: 0; }
+.nxv-pick-find { position: relative; padding: 8px 12px 4px; }
+.nxv-pick-find > svg { position: absolute; z-index: 1; inset-inline-start: 22px; top: 50%; margin-top: 2px; transform: translateY(-50%); color: var(--text-muted); pointer-events: none; }
+.nxv-pick-find input { padding-inline-start: 28px; }
 .nxv-pick-mid { display: flex; flex-direction: column; justify-content: center; gap: 8px; }
-.nxv-pick-list { height: min(440px, 55vh); overflow-y: auto; overflow-x: hidden; padding-inline-end: 4px; }
-.nxv-pick-row { display: flex; align-items: center; gap: 8px; height: auto; min-height: 30px; margin-bottom: 4px; cursor: pointer; font-weight: normal; }
+.nxv-pick-list { height: min(420px, 52vh); overflow-y: auto; overflow-x: hidden; padding: 4px 6px 8px; }
+.nxv-pick-row { display: flex; align-items: center; gap: 8px; min-height: 30px; margin: 0; padding: 4px 8px; border-radius: var(--border-radius, 6px); font-weight: normal; color: var(--text-color); cursor: pointer; user-select: none; }
+.nxv-pick-row:hover { background: var(--subtle-fg); }
+.nxv-pick-row.is-ticked { background: var(--subtle-accent, var(--subtle-fg)); }
 .nxv-pick-row input { margin: 0; flex: none; }
-.nxv-pick-row .sortable-handle { flex: none; cursor: grab; }
+.nxv-pick-row .sortable-handle { flex: none; cursor: grab; color: var(--text-muted); }
 .nxv-pick-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .nxv-pick-from { flex: none; max-width: 45%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.nxv-pick-head { display: flex; align-items: center; justify-content: flex-start; gap: 6px; padding: 6px 2px 4px; cursor: pointer; user-select: none; color: var(--text-color); }
+.nxv-pick-head { position: sticky; top: -4px; z-index: 1; display: flex; align-items: center; gap: 6px; margin: 4px 0 2px; padding: 6px 8px; background: var(--fg-color); font-size: var(--text-sm, 12px); font-weight: 600; color: var(--text-muted); cursor: pointer; user-select: none; }
 .nxv-pick-head > svg { margin: 0 !important; flex: none; }
+.nxv-pick-cnt { margin-inline-start: auto; font-weight: normal; font-size: var(--text-xs, 11px); }
 @media (max-width: 767px) {
 	.nxv-pick { flex-direction: column; }
 	.nxv-pick-mid { flex-direction: row; }
 }
+
+/* View Settings > Columns: one grid for the heading and the rows, so nothing pushes the panel sideways */
+.nxv-col-grid { display: grid; grid-template-columns: 20px minmax(0, 1fr) minmax(0, 160px) 90px 20px; align-items: center; gap: 8px; }
+.nxv-col-head { padding: 0 12px 4px; }
+.nxv-set-cols .nxv-col-grid { height: auto; min-height: 30px; margin-bottom: 4px; padding: 2px 12px; }

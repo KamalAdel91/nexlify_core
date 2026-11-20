@@ -44,17 +44,26 @@ frappe.provide("nexlify.report_view");
 
 	// Settings > Filter: the conditions a row is checked against
 	const OPS = [
+		["=", __("equals")],
+		["!=", __("does not equal")],
 		[">", __("greater than")],
+		[">=", __("greater than or equal to")],
 		["<", __("less than")],
-		["=", __("equal to")],
+		["<=", __("less than or equal to")],
 		["between", __("between")],
+		["notbetween", __("not between")],
 		["neg", __("is negative")],
 		["zero", __("is zero")],
 		["contains", __("contains")],
+		["notcontains", __("does not contain")],
+		["starts", __("starts with")],
+		["ends", __("ends with")],
 		["empty", __("is empty")],
 		["notempty", __("is not empty")],
 		["in", __("is any of")],
+		["notin", __("is none of")],
 		["on", __("on")],
+		["noton", __("not on")],
 		["before", __("before")],
 		["after", __("after")],
 		["checked", __("is ticked")],
@@ -62,12 +71,17 @@ frappe.provide("nexlify.report_view");
 	];
 	const OP_KEYS = OPS.map((x) => x[0]);
 	const NO_VALUE = new Set(["neg", "zero", "empty", "notempty", "checked", "unchecked"]);
+	// a condition that is the opposite of another: a row passes it when it fails the other
+	const NOT_OF = { "!=": "=", notbetween: "between", notcontains: "contains", notin: "in", noton: "on" };
+	// the conditions whose values are picked from the column's values, or are two (a range)
+	const PICKS = new Set(["in", "notin"]);
+	const RANGES = new Set(["between", "notbetween"]);
 	const OP_LABEL = Object.fromEntries(OPS);
 	// the operators a column offers, by the kind of its data; the first is the one a new condition gets
 	const KIND_OPS = {
-		text: ["in", "contains", "empty", "notempty"],
-		num: ["=", ">", "<", "between", "neg", "zero", "empty", "notempty"],
-		date: ["on", "before", "after", "between", "empty", "notempty"],
+		text: ["in", "notin", "=", "!=", "contains", "notcontains", "starts", "ends", "empty", "notempty"],
+		num: ["=", "!=", ">", ">=", "<", "<=", "between", "notbetween", "neg", "zero", "empty", "notempty"],
+		date: ["on", "noton", "before", "after", "between", "notbetween", "empty", "notempty"],
 		check: ["checked", "unchecked"],
 	};
 	function kind_of(c) {
@@ -163,7 +177,7 @@ frappe.provide("nexlify.report_view");
 		entry.ready = Promise.all([
 			frappe.db.get_list(LAYOUT, {
 				filters: { report },
-				fields: ["name", "layout_name", "is_public", "owner", "state"],
+				fields: ["name", "layout_name", "is_public", "is_shared", "owner", "state"],
 				order_by: "layout_name asc",
 				limit: 200,
 			}),
@@ -746,11 +760,13 @@ frappe.provide("nexlify.report_view");
 		}
 
 		rule_hit(u, r, c) {
+			if (NOT_OF[u.op]) return !this.rule_hit(Object.assign({}, u, { op: NOT_OF[u.op] }), r, c);
 			const x = r[c.fieldname];
 			const n = to_number(x);
 			const a = parse_num(u.x);
 			const b = parse_num(u.x2);
 			const t = clean(x).toLowerCase();
+			const want = String(u.x || "").toLowerCase();
 			// a date compares as yyyy-mm-dd, whatever the time on it
 			const day = x ? String(x).slice(0, 10) : "";
 			switch (u.op) {
@@ -768,10 +784,14 @@ frappe.provide("nexlify.report_view");
 					return !cint(x);
 				case ">":
 					return n !== null && n > a;
+				case ">=":
+					return n !== null && n >= a - 0.005;
 				case "<":
 					return n !== null && n < a;
+				case "<=":
+					return n !== null && n <= a + 0.005;
 				case "=":
-					return NUM.has(c.fieldtype) ? n !== null && Math.abs(n - a) < 0.005 : t === String(u.x || "").toLowerCase();
+					return NUM.has(c.fieldtype) ? n !== null && Math.abs(n - a) < 0.005 : t === want;
 				case "between":
 					if (kind_of(c) === "date") return !!day && day >= [u.x, u.x2].sort()[0] && day <= [u.x, u.x2].sort()[1];
 					return n !== null && n >= Math.min(a, b) && n <= Math.max(a, b);
@@ -780,7 +800,11 @@ frappe.provide("nexlify.report_view");
 				case "zero":
 					return n !== null && !n;
 				case "contains":
-					return t.includes(String(u.x || "").toLowerCase());
+					return t.includes(want);
+				case "starts":
+					return t.startsWith(want);
+				case "ends":
+					return t.endsWith(want);
 				case "empty":
 					return x === null || x === undefined || x === "";
 				case "notempty":
@@ -1713,10 +1737,11 @@ frappe.provide("nexlify.report_view");
 			selected: (active ? active.name : STANDARD) === (l ? l.name : STANDARD),
 			onclick: () => choose_layout(view, l),
 		});
-		const shared = entry.list.filter((l) => l.is_public && l.owner !== me);
+		// a layout of someone else in the list is one shared with this user (public, or by role, name or group)
+		const shared = entry.list.filter((l) => l.owner !== me);
 		const own = entry.list.filter((l) => l.owner === me);
 		const items = [row(null)];
-		if (shared.length) items.push({ group: __("Public Layouts"), options: shared.map(row) });
+		if (shared.length) items.push({ group: __("Shared With You"), options: shared.map(row) });
 		if (own.length) items.push({ group: __("Your Layouts"), options: own.map(row) });
 		items.push({
 			group: "",
@@ -1756,24 +1781,63 @@ frappe.provide("nexlify.report_view");
 		});
 	}
 
+	// Who a layout is shared with, as Frappe's own fields: everyone who can open the report (Public), or the
+	// roles, users and user groups picked (they must be able to open the report too)
+	const SHARES = [
+		["shared_roles", "role", "Role", __("Roles")],
+		["shared_users", "user", "User", __("Users")],
+		["shared_user_groups", "user_group", "User Group", __("User Groups")],
+	];
+
+	function share_fields(doc) {
+		doc = doc || {};
+		const fields = [
+			{ fieldname: "is_public", fieldtype: "Check", label: __("Available to all users"), default: doc.is_public ? 1 : 0, description: __("Everyone who can open this report can use it") },
+			{ fieldtype: "Section Break", label: __("Share With"), depends_on: "eval:!doc.is_public", description: __("They can use the layout; only you can change it. They must be able to open the report too.") },
+		];
+		SHARES.forEach(([table, field, doctype, label], i) => {
+			if (i) fields.push({ fieldtype: "Column Break" });
+			fields.push({
+				fieldname: table,
+				fieldtype: "MultiSelectList",
+				label,
+				default: (doc[table] || []).map((r) => r[field]),
+				get_data: (txt) => frappe.db.get_link_options(doctype, txt),
+			});
+		});
+		return fields;
+	}
+
+	// the shares picked in the dialog, as the layout's tables keep them (none when it is public)
+	function share_rows(values) {
+		const out = {};
+		SHARES.forEach(([table, field]) => (out[table] = values.is_public ? [] : [...new Set(values[table] || [])].map((v) => ({ [field]: v }))));
+		return out;
+	}
+
+	function shared_now(values) {
+		return SHARES.some(([table]) => !values.is_public && (values[table] || []).length) ? 1 : 0;
+	}
+
 	// a new layout: of the table as it is now, or a copy of another layout (Duplicate)
 	function save_layout_as(view, after, from) {
 		const entry = layouts_of(view.report_name);
 		const d = new frappe.ui.Dialog({
 			title: from ? __("Duplicate Layout") : __("Save Layout As"),
-			fields: [
-				{ fieldname: "layout_name", fieldtype: "Data", label: __("Layout Name"), reqd: 1, default: from ? __("{0} (Copy)", [from.layout_name]) : "" },
-				{ fieldname: "is_public", fieldtype: "Check", label: __("Available to all users"), description: __("Everyone who can open this report can use it") },
-			],
+			fields: [{ fieldname: "layout_name", fieldtype: "Data", label: __("Layout Name"), reqd: 1, default: from ? __("{0} (Copy)", [from.layout_name]) : "" }, ...share_fields()],
 			primary_action_label: __("Save"),
 			primary_action(values) {
 				const name = values.layout_name.trim();
 				if (entry.list.some((l) => l.owner === frappe.session.user && l.layout_name === name)) return frappe.msgprint(__("A layout with this name already exists"));
 				d.disable_primary_action();
-				Promise.resolve(frappe.db.insert({ doctype: LAYOUT, report: view.report_name, layout_name: name, is_public: values.is_public ? 1 : 0, state: from ? from.state : JSON.stringify(view.current_state()) }))
+				const doc = Object.assign(
+					{ doctype: LAYOUT, report: view.report_name, layout_name: name, is_public: values.is_public ? 1 : 0, state: from ? from.state : JSON.stringify(view.current_state()) },
+					share_rows(values)
+				);
+				Promise.resolve(frappe.db.insert(doc))
 					.then((doc) => {
 						d.hide();
-						entry.list.push({ name: doc.name, layout_name: doc.layout_name, is_public: doc.is_public, owner: doc.owner, state: doc.state });
+						entry.list.push({ name: doc.name, layout_name: doc.layout_name, is_public: doc.is_public, is_shared: doc.is_shared, owner: doc.owner, state: doc.state });
 						entry.list.sort((a, b) => a.layout_name.localeCompare(b.layout_name));
 						if (from) choose_layout(view, entry.list.find((l) => l.name === doc.name));
 						else {
@@ -1790,32 +1854,31 @@ frappe.provide("nexlify.report_view");
 		d.show();
 	}
 
-	// a layout's name, and whether everyone can use it
+	// a layout's name, and who it is shared with: read from the saved layout, saved back whole (Frappe's own save)
 	function edit_layout(view, layout, after) {
-		const d = new frappe.ui.Dialog({
-			title: __("Edit Layout"),
-			fields: [
-				{ fieldname: "layout_name", fieldtype: "Data", label: __("Layout Name"), reqd: 1, default: layout.layout_name },
-				{ fieldname: "is_public", fieldtype: "Check", label: __("Available to all users"), default: layout.is_public ? 1 : 0, description: __("Everyone who can open this report can use it") },
-			],
-			primary_action_label: __("Update"),
-			primary_action(values) {
-				const name = values.layout_name.trim();
-				d.disable_primary_action();
-				// Frappe's set_value answers with a jQuery promise: made a real one, so finally() works
-				Promise.resolve(frappe.db.set_value(LAYOUT, layout.name, { layout_name: name, is_public: values.is_public ? 1 : 0 }))
-					.then(() => {
-						d.hide();
-						layout.layout_name = name;
-						layout.is_public = values.is_public ? 1 : 0;
-						update_buttons(view.qr, view);
-						frappe.show_alert({ message: __("Layout {0} updated", [esc(name)]), indicator: "green" });
-						if (after) after();
-					})
-					.finally(() => d.enable_primary_action());
-			},
+		frappe.db.get_doc(LAYOUT, layout.name).then((saved) => {
+			const d = new frappe.ui.Dialog({
+				title: __("Edit Layout"),
+				fields: [{ fieldname: "layout_name", fieldtype: "Data", label: __("Layout Name"), reqd: 1, default: saved.layout_name }, ...share_fields(saved)],
+				primary_action_label: __("Update"),
+				primary_action(values) {
+					const name = values.layout_name.trim();
+					d.disable_primary_action();
+					const doc = Object.assign(saved, { layout_name: name, is_public: values.is_public ? 1 : 0 }, share_rows(values));
+					frappe
+						.xcall("frappe.client.save", { doc })
+						.then((doc) => {
+							d.hide();
+							Object.assign(layout, { layout_name: doc.layout_name, is_public: doc.is_public, is_shared: doc.is_shared });
+							update_buttons(view.qr, view);
+							frappe.show_alert({ message: __("Layout {0} updated", [esc(name)]), indicator: "green" });
+							if (after) after();
+						})
+						.finally(() => d.enable_primary_action());
+				},
+			});
+			d.show();
 		});
-		d.show();
 	}
 
 	function delete_layout(view, layout, after) {
@@ -1895,11 +1958,11 @@ frappe.provide("nexlify.report_view");
 		cond_ready(u) {
 			if (!u.f || !this.view.col_of(u.f)) return false;
 			if (NO_VALUE.has(u.op)) return true;
-			if (u.op === "in") return !!(u.vals && u.vals.length);
+			if (PICKS.has(u.op)) return !!(u.vals && u.vals.length);
 			const kind = kind_of(this.view.col_of(u.f));
 			const has = (v) => String(v || "") !== "";
-			if (kind === "date") return has(u.x) && (u.op !== "between" || has(u.x2));
-			if (kind === "num") return parse_num(u.x) !== null && (u.op !== "between" || parse_num(u.x2) !== null);
+			if (kind === "date") return has(u.x) && (!RANGES.has(u.op) || has(u.x2));
+			if (kind === "num") return parse_num(u.x) !== null && (!RANGES.has(u.op) || parse_num(u.x2) !== null);
 			return has(u.x);
 		}
 
@@ -1983,7 +2046,7 @@ frappe.provide("nexlify.report_view");
 			const button = (icon_name, title, act, disabled) => frappe.ui.button.html({ icon: icon_name, title, variant: "ghost", disabled, attrs: { "data-lact": act } });
 			const row = (l) => {
 				const on = (active ? active.name : STANDARD) === (l ? l.name : STANDARD);
-				const scope = !l ? __("Standard") : l.is_public ? __("Public") : __("Personal");
+				const scope = !l ? __("Standard") : l.is_public ? __("Public") : l.is_shared || l.owner !== me ? __("Shared") : __("Personal");
 				const who = l && l.owner !== me ? `<div class="text-sm text-muted truncate">${esc(frappe.user.full_name(l.owner))}</div>` : "";
 				const acts = l
 					? button("pencil", __("Edit"), "edit", !mine(l)) + button("copy", __("Duplicate"), "duplicate") + button("trash-2", __("Delete"), "delete", !mine(l))
@@ -2029,26 +2092,20 @@ frappe.provide("nexlify.report_view");
 				.map((f) => {
 					const c = this.col(f);
 					const width = d.widths[f] || (this.view.col_of(f) || {}).width || 150;
-					return `<div class="control-input form-control fields_order sortable flex mb-1" data-f="${esc(f)}">
-						<div class="row flex-fill align-items-center">
-							<div class="col-1 flex align-items-center justify-content-center px-1">${frappe.utils.icon("grip", "xs", "", "", "sortable-handle")}</div>
-							<div class="col px-0"><input class="form-control nxv-set-label" data-slabel="${esc(f)}" value="${esc(d.labels[f] || __(c.label))}" title="${__("Type a new name")}" aria-label="${__("Name")}"></div>
-							<div class="col-3 text-muted text-sm truncate">${esc(c.from)}</div>
-							<div class="col-2"><input inputmode="numeric" class="form-control text-right nxv-set-width" data-swidth="${esc(f)}" value="${width}" aria-label="${__("Width (px)")}"></div>
-							<div class="col-1 flex align-items-center justify-content-center px-0">${
-								shown.length > 1 ? `<a class="text-muted" role="button" data-sremove="${esc(f)}" title="${__("Remove")}">${frappe.utils.icon("x", "xs")}</a>` : ""
-							}</div>
-						</div>
+					return `<div class="form-control fields_order sortable nxv-col-grid" data-f="${esc(f)}">
+						${frappe.utils.icon("grip", "xs", "", "", "sortable-handle")}
+						<input class="form-control nxv-set-label" data-slabel="${esc(f)}" value="${esc(d.labels[f] || __(c.label))}" title="${__("Type a new name")}" aria-label="${__("Name")}">
+						<span class="text-muted text-sm truncate">${esc(c.from)}</span>
+						<input inputmode="numeric" class="form-control text-right nxv-set-width" data-swidth="${esc(f)}" value="${width}" aria-label="${__("Width (px)")}">
+						${shown.length > 1 ? `<a class="text-muted" role="button" data-sremove="${esc(f)}" title="${__("Remove")}">${frappe.utils.icon("x", "xs")}</a>` : "<span></span>"}
 					</div>`;
 				})
 				.join("");
-			p.body.html(`<div class="form-group mb-0">
-				<div class="row flex-fill px-1 mb-1 text-muted text-xs">
-					<div class="col-1"></div><div class="col px-0">${__("Column")}</div><div class="col-3">${__("From")}</div>
-					<div class="col-2 text-right pr-2">${__("Width (px)")}</div><div class="col-1"></div>
+			// a grid, not Frappe's .row: its negative margins made the panel scroll sideways
+			p.body.html(`<div class="nxv-col-grid nxv-col-head text-muted text-xs">
+					<span></span><span>${__("Column")}</span><span>${__("From")}</span><span class="text-right">${__("Width (px)")}</span><span></span>
 				</div>
-				<div class="nxv-set-cols">${rows}</div>
-			</div>`);
+				<div class="nxv-set-cols">${rows}</div>`);
 			new Sortable(p.body.find(".nxv-set-cols")[0], {
 				handle: ".sortable-handle",
 				draggable: ".sortable",
@@ -2142,9 +2199,13 @@ frappe.provide("nexlify.report_view");
 			const $b = dialog.get_field("body").$wrapper;
 			// the ticked columns on each side
 			const sel = { a: new Set(), s: new Set() };
+			// a side: a box with its title, a tick to take every column it lists, its count, its search and its list
 			const side = (key, title, holder) => `<div class="nxv-pick-side">
-				<div class="nxv-pick-top"><label class="control-label mb-0">${title}</label><span class="text-muted text-xs" data-n="${key}"></span></div>
-				<input type="text" class="form-control mb-2" data-q="${key}" placeholder="${esc(holder)}" aria-label="${esc(holder)}">
+				<div class="nxv-pick-top">
+					<label class="nxv-pick-all"><input type="checkbox" data-all="${key}" aria-label="${__("Tick all listed")}"><span>${title}</span></label>
+					<span class="text-muted text-xs" data-n="${key}"></span>
+				</div>
+				<div class="nxv-pick-find">${frappe.utils.icon("search", "xs")}<input type="text" class="form-control" data-q="${key}" placeholder="${esc(holder)}" aria-label="${esc(holder)}"></div>
 				<div class="nxv-pick-list" data-side="${key}"></div>
 			</div>`;
 			const move = (act, icon_name, title) => frappe.ui.button.html({ icon: icon_name, title, variant: "subtle", attrs: { "data-move": act } });
@@ -2158,7 +2219,7 @@ frappe.provide("nexlify.report_view");
 				</div>
 				${side("s", __("Shown in the table"), __("Search"))}
 			</div>`);
-			const row = (x, where) => `<label class="form-control nxv-pick-row${where === "s" ? " sortable" : ""}" data-f="${esc(x.f)}" data-side="${where}">
+			const row = (x, where) => `<label class="nxv-pick-row${where === "s" ? " sortable" : ""}${sel[where].has(x.f) ? " is-ticked" : ""}" data-f="${esc(x.f)}" data-side="${where}">
 				${where === "s" ? frappe.utils.icon("grip", "xs", "", "", "sortable-handle") : ""}
 				<input type="checkbox" ${sel[where].has(x.f) ? "checked" : ""} aria-label="${esc(x.label)}">
 				<span class="nxv-pick-name">${esc(x.label)}</span>
@@ -2177,8 +2238,8 @@ frappe.provide("nexlify.report_view");
 						const items = g.list.filter((x) => !on.has(x.f) && hit(x, q.a));
 						if (!items.length) return "";
 						const unfolded = open.has(g.key) || !!q.a;
-						return `<div class="text-sm nxv-pick-head" data-g="${esc(g.key)}" role="button" aria-expanded="${unfolded}">
-								${frappe.utils.icon(unfolded ? "chevron-down" : "chevron-right", "xs")}<span class="truncate">${esc(g.name)}</span><span class="text-muted text-xs">${items.length}</span>
+						return `<div class="nxv-pick-head" data-g="${esc(g.key)}" role="button" aria-expanded="${unfolded}">
+								${frappe.utils.icon(unfolded ? "chevron-down" : "chevron-right", "xs")}<span class="truncate">${esc(g.name)}</span><span class="nxv-pick-cnt">${items.length}</span>
 							</div>` + (unfolded ? items.map((x) => row(x, "a")).join("") : "");
 					})
 					.join("");
@@ -2186,6 +2247,11 @@ frappe.provide("nexlify.report_view");
 				$b.find('[data-side="s"]').html(listed("s").map((f) => row(all.get(f), "s")).join(""));
 				$b.find('[data-n="a"]').text(sel.a.size ? __("{0} of {1} ticked", [sel.a.size, all.size - picked.length]) : all.size - picked.length);
 				$b.find('[data-n="s"]').text(sel.s.size ? __("{0} of {1} ticked", [sel.s.size, picked.length]) : picked.length);
+				["a", "s"].forEach((k) => {
+					const list = listed(k);
+					const n = list.filter((f) => sel[k].has(f)).length;
+					$b.find(`[data-all="${k}"]`).prop({ checked: !!list.length && n === list.length, indeterminate: n > 0 && n < list.length, disabled: !list.length });
+				});
 				$b.find('[data-move="to-s"]').prop("disabled", !sel.a.size);
 				$b.find('[data-move="to-a"]').prop("disabled", !sel.s.size);
 			};
@@ -2207,6 +2273,12 @@ frappe.provide("nexlify.report_view");
 				draw();
 			});
 			// a tick: the column joins (or leaves) the ones the arrows send; a double click sends it at once
+			$b.on("change", "[data-all]", (e) => {
+				const k = e.target.dataset.all;
+				if (e.target.checked) listed(k).forEach((f) => sel[k].add(f));
+				else sel[k].clear();
+				draw();
+			});
 			$b.on("change", ".nxv-pick-row input", (e) => {
 				const r = e.target.closest(".nxv-pick-row");
 				const s = sel[r.dataset.side];
@@ -2287,11 +2359,11 @@ frappe.provide("nexlify.report_view");
 					const kind = kind_of(this.view.col_of(u.f));
 					const ops = KIND_OPS[kind].map((k) => `<option value="${k}" ${k === u.op ? "selected" : ""}>${esc(OP_LABEL[k])}</option>`).join("");
 					let value = "";
-					if (u.op === "in" || (kind === "date" && !NO_VALUE.has(u.op))) value = `<div class="nxv-ctl" data-i="${i}"></div>`;
+					if (PICKS.has(u.op) || (kind === "date" && !NO_VALUE.has(u.op))) value = `<div class="nxv-ctl" data-i="${i}"></div>`;
 					else if (!NO_VALUE.has(u.op)) {
 						const type = kind === "num" ? "number" : "text";
 						const input = (k, val) => `<input class="form-control" type="${type}" data-${k}="${i}" value="${esc(val || "")}" placeholder="${__("Value")}">`;
-						value = u.op === "between" ? `<div class="flex gap-1 items-center">${input("sx", u.x)}<span class="text-muted">${__("and")}</span>${input("sx2", u.x2)}</div>` : input("sx", u.x);
+						value = RANGES.has(u.op) ? `<div class="flex gap-1 items-center">${input("sx", u.x)}<span class="text-muted">${__("and")}</span>${input("sx2", u.x2)}</div>` : input("sx", u.x);
 					}
 					return this.line(
 						null,
@@ -2336,7 +2408,7 @@ frappe.provide("nexlify.report_view");
 				if (!u) return;
 				const make = (df) => frappe.ui.form.make_control({ parent: $(el), df: Object.assign({ fieldname: "nxv_" + i + "_" + df.fieldtype.toLowerCase() }, df), render_input: true, only_input: true });
 				const done = () => this.apply();
-				if (u.op === "in") {
+				if (PICKS.has(u.op)) {
 					const all = this.column_values(u.f);
 					const ctl = make({
 						fieldtype: "MultiSelectList",
@@ -2351,7 +2423,7 @@ frappe.provide("nexlify.report_view");
 						},
 					});
 					ctl.set_value((u.vals || []).slice());
-				} else if (u.op === "between") {
+				} else if (RANGES.has(u.op)) {
 					const ctl = make({
 						fieldtype: "DateRange",
 						placeholder: __("From – To"),
@@ -2424,8 +2496,10 @@ frappe.provide("nexlify.report_view");
 				if (ds.sop !== undefined) {
 					const u = d.conds[+ds.sop];
 					// the value stays when it still means something (a date from "on" to "before")
-					if (u.op === "in" || e.target.value === "in" || u.op === "between" || e.target.value === "between") u.x = u.x2 = "";
-					if (e.target.value !== "in") u.vals = [];
+					const to = e.target.value;
+					const same = (set) => set.has(u.op) === set.has(to);
+					if (!same(PICKS) || !same(RANGES)) u.x = u.x2 = "";
+					if (!PICKS.has(to)) u.vals = [];
 					u.op = e.target.value;
 					again = true;
 				}

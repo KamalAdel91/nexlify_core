@@ -1,7 +1,9 @@
 """Nexlify Report View: saved layouts, and how a report's columns link to other tables.
 
 A layout belongs to the user who made it. A public layout can be read by every user who
-may open its report. Every check runs as the user, on Frappe's own report rules.
+may open its report; a shared one by the roles, users and user groups it names (they must
+be able to open the report too). Only its owner changes it. Every check runs as the user,
+on Frappe's own report rules.
 """
 
 import json
@@ -59,14 +61,41 @@ def is_system_manager(user: str) -> bool:
 	return user == "Administrator" or "System Manager" in frappe.get_roles(user)
 
 
+SHARED = {
+	"role": ("Nexlify Report Layout Role", "shared_roles"),
+	"user": ("Nexlify Report Layout User", "shared_users"),
+	"group": ("Nexlify Report Layout User Group", "shared_user_groups"),
+}
+
+
+def shared_sql(layout: str, user: str) -> str:
+	"""The layout is shared with the user: by one of the user's roles, by name, or by a user group the user is in."""
+	esc = frappe.db.escape
+	roles = ", ".join(esc(r) for r in frappe.get_roles(user)) or "''"
+	part = lambda key, cond: (  # noqa: E731
+		f"exists (select 1 from `tab{SHARED[key][0]}` s where s.`parent` = {layout} "
+		f"and s.`parenttype` = {esc(LAYOUT)} and s.`parentfield` = {esc(SHARED[key][1])} and {cond})"
+	)
+	groups = f"s.`user_group` in (select m.`parent` from `tabUser Group Member` m where m.`user` = {esc(user)})"
+	return " or ".join([part("role", f"s.`role` in ({roles})"), part("user", f"s.`user` = {esc(user)}"), part("group", groups)])
+
+
 def layout_query_conditions(user: str | None = None, doctype: str | None = None) -> str:
 	if doctype not in (None, LAYOUT):
 		return ""
 	user = user or frappe.session.user
 	if is_system_manager(user):
 		return ""
-	own_or_public = f"(`tab{LAYOUT}`.`owner` = {frappe.db.escape(user)} or `tab{LAYOUT}`.`is_public` = 1)"
-	return f"({own_or_public} and {report_in(f'`tab{LAYOUT}`.`report`', allowed_reports(user))})"
+	name = f"`tab{LAYOUT}`.`name`"
+	readable = f"(`tab{LAYOUT}`.`owner` = {frappe.db.escape(user)} or `tab{LAYOUT}`.`is_public` = 1 or {shared_sql(name, user)})"
+	return f"({readable} and {report_in(f'`tab{LAYOUT}`.`report`', allowed_reports(user))})"
+
+
+def shared_with(layout: str, user: str) -> bool:
+	"""The layout, as saved in the database, is shared with the user."""
+	if not layout:
+		return False
+	return bool(frappe.db.sql(f"select 1 from dual where {shared_sql(frappe.db.escape(layout), user)}"))
 
 
 def layout_has_permission(doc, ptype: str | None = None, user: str | None = None, debug: bool = False) -> bool:
@@ -82,7 +111,10 @@ def layout_has_permission(doc, ptype: str | None = None, user: str | None = None
 		return False
 	if not owner or owner == user:
 		return True
-	return ptype == "read" and bool(stored(doc, "is_public"))
+	# the others may only read it: when it is public, or shared with them
+	if ptype != "read":
+		return False
+	return bool(stored(doc, "is_public")) or (not doc.is_new() and shared_with(doc.name, user))
 
 
 def validate_layout_state(state) -> None:

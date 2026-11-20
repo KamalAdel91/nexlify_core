@@ -8,6 +8,8 @@ class NexlifyReportLayout(Document):
 		from nexlify_core.nexlify_core.report_layouts import check_report, validate_layout_state
 
 		check_report(self.report)
+		# the menus tell a shared layout from a private one without reading its tables
+		self.is_shared = 1 if (self.shared_roles or self.shared_users or self.shared_user_groups) else 0
 		validate_layout_state(self.state)
 		# a layout stays its maker's: no save can hand it to another user
 		before = None if self.is_new() else self.get_doc_before_save()

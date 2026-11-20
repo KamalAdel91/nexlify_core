@@ -9,6 +9,9 @@
 	--nxv-muted: var(--text-muted);
 	--nxv-row-h: 35px;
 	position: relative;
+	/* the table's own layers (sticky header, frozen columns, group labels) stay inside it: Frappe's filters
+	   (z-index 5) and their drop-down lists always open over the table */
+	isolation: isolate;
 	margin: 0 var(--padding-md, 15px);
 }
 

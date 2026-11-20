@@ -87,12 +87,13 @@
 			});
 			const type = TYPES.includes(f.fieldtype) ? f.fieldtype : "Data";
 			const index = (qr.columns || []).findIndex((c) => c.fieldname === insert_after);
-			qr.add_custom_column(
-				[{ fieldname, fieldtype: type, options: type === "Link" ? f.options : undefined, label: `${__(f.label)} (${__("Document line")})`, width: 150 }],
-				data,
-				{ fieldname: chosen.fieldname, field: fieldname, doctype: chosen.doctype },
-				index
-			);
+			const column = { fieldname, fieldtype: type, options: type === "Link" ? f.options : undefined, label: `${__(f.label)} (${__("Document line")})`, width: 150 };
+			qr.add_custom_column([column], data, { fieldname: chosen.fieldname, field: fieldname, doctype: chosen.doctype }, index);
+			// Frappe's Export sends these back, and the server fills them (line_columns_export.py); the table's own
+			// column has no link, so Save As leaves it out, as it lasts only until the report runs again
+			qr.custom_columns = (qr.custom_columns || []).concat([
+				Object.assign({}, column, { insert_after_index: index, doctype: chosen.doctype, link_field: { fieldname: chosen.fieldname, names: [] }, nexlify_line: f.field }),
+			]);
 			d.hide();
 			if (added_up)
 				frappe.show_alert(

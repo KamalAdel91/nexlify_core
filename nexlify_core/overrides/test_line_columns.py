@@ -51,3 +51,28 @@ class TestLineColumns(IntegrationTestCase):
 	def test_a_table_without_lines_is_refused(self):
 		with self.assertRaises(frappe.PermissionError):
 			line_columns.line_values("Account", ["x"], "account_name")
+
+
+class TestLineColumnsExport(IntegrationTestCase):
+	def setUp(self):
+		ledger_lines.make_setting_field()
+		frappe.db.set_single_value("Accounts Settings", {ledger_lines.SETTING: 1, ledger_lines.STOPPED: None, ledger_lines.MISSED: 0})
+
+	def test_the_export_fills_line_columns_and_leaves_a_row_of_several_empty(self):
+		from frappe.desk import query_report
+
+		from nexlify_core.overrides import line_columns_export
+
+		invoice, rows = TestLineColumns.posted_invoice(self)
+		column = {"fieldname": "nxline_description_gl_entry", "doctype": "GL Entry", "link_field": {"fieldname": "gl_entry"}, "nexlify_line": "description"}
+		result = [
+			{"gl_entry": rows[0].name, "credit": 100},
+			# a row of the report adding up both lines: its amount is not its ledger row's own
+			{"gl_entry": rows[1].name, "credit": 150},
+		]
+		with line_columns_export.lines_filled():
+			found = query_report.get_data_for_custom_report([column], result)
+		self.assertEqual(found[("GL Entry", column["fieldname"])], {rows[0].name: "Panel repair", rows[1].name: None})
+		# Frappe's own filling is back after the export
+		self.assertIsNot(query_report.get_data_for_custom_report, None)
+		self.assertEqual(query_report.get_data_for_custom_report.__module__, "frappe.desk.query_report")

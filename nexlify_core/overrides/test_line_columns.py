@@ -58,21 +58,36 @@ class TestLineColumnsExport(IntegrationTestCase):
 		ledger_lines.make_setting_field()
 		frappe.db.set_single_value("Accounts Settings", {ledger_lines.SETTING: 1, ledger_lines.STOPPED: None, ledger_lines.MISSED: 0})
 
-	def test_the_export_fills_line_columns_and_leaves_a_row_of_several_empty(self):
+	def fill(self, columns, result):
 		from frappe.desk import query_report
 
 		from nexlify_core.overrides import line_columns_export
 
+		with line_columns_export.columns_filled():
+			found = query_report.get_data_for_custom_report(columns, result)
+		# Frappe's own filling is back after the export
+		self.assertEqual(query_report.get_data_for_custom_report.__module__, "frappe.desk.query_report")
+		return found
+
+	def test_the_export_fills_line_columns_and_leaves_a_row_of_several_empty(self):
 		invoice, rows = TestLineColumns.posted_invoice(self)
-		column = {"fieldname": "nxline_description_gl_entry", "doctype": "GL Entry", "link_field": {"fieldname": "gl_entry"}, "nexlify_line": "description"}
+		column = {"fieldname": "nxline_description_gl_entry", "doctype": "GL Entry", "link_field": {"fieldname": "gl_entry"}, "nexlify_added": {"field": "description", "line": 1}}
 		result = [
 			{"gl_entry": rows[0].name, "credit": 100},
 			# a row of the report adding up both lines: its amount is not its ledger row's own
 			{"gl_entry": rows[1].name, "credit": 150},
 		]
-		with line_columns_export.lines_filled():
-			found = query_report.get_data_for_custom_report([column], result)
+		found = self.fill([column], result)
 		self.assertEqual(found[("GL Entry", column["fieldname"])], {rows[0].name: "Panel repair", rows[1].name: None})
-		# Frappe's own filling is back after the export
-		self.assertIsNot(query_report.get_data_for_custom_report, None)
-		self.assertEqual(query_report.get_data_for_custom_report.__module__, "frappe.desk.query_report")
+
+	def test_the_export_fills_a_linked_documents_field_of_the_views_own(self):
+		invoice, rows = TestLineColumns.posted_invoice(self)
+		column = {
+			"fieldname": "nxlink_sales_invoice_customer_voucher_no",
+			"doctype": "Sales Invoice",
+			"link_field": {"fieldname": "voucher_no"},
+			"nexlify_added": {"field": "customer", "line": 0, "dynamic": "voucher_type"},
+		}
+		result = [{"voucher_no": invoice.name, "voucher_type": "Sales Invoice"}, {"voucher_no": "PE-X", "voucher_type": "Payment Entry"}]
+		found = self.fill([column], result)
+		self.assertEqual(found[("Sales Invoice", column["fieldname"])], {invoice.name: invoice.customer})

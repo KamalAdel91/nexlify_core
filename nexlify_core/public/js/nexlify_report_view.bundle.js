@@ -373,6 +373,48 @@ frappe.provide("nexlify.report_view");
 				this.columns.push({ fieldname: a.f, label: a.label, fieldtype: a.fieldtype || "Data", options: a.options, width: 150, index: 1000 + i, linked: a });
 			});
 			this.put_linked_values();
+			this.send_to_export();
+		}
+
+		// the added columns go into Frappe's Export too, after the report's own (the server fills them:
+		// nexlify_core.overrides.line_columns_export)
+		send_to_export() {
+			const own = (this.qr.custom_columns || []).filter((c) => !c.nexlify_view);
+			const added = (this.layout.added || []).filter((a) => this.columns.find((c) => c.fieldname === a.f));
+			this.qr.custom_columns = own.concat(
+				added.map((a) => ({
+					fieldname: a.f,
+					fieldtype: a.fieldtype || "Data",
+					label: a.label,
+					options: a.options,
+					width: 150,
+					insert_after_index: 9999,
+					doctype: a.doctype,
+					link_field: { fieldname: a.link_field, names: [] },
+					nexlify_view: 1,
+					nexlify_added: { field: a.field, line: a.line ? 1 : 0, dynamic: a.dynamic || "" },
+				}))
+			);
+		}
+
+		// a field Frappe's own Add Column picked: one of this view's added columns, placed where the user
+		// asked, so a layout keeps it; false when the view does not offer that field
+		add_from_frappe(spec) {
+			return this.avail_fields().then((list) => {
+				const a = (list || []).find((x) => x.doctype === spec.doctype && x.field === spec.field && x.link_field === spec.link_field && !!x.line === !!spec.line);
+				if (!a) return false;
+				const st = this.current_state();
+				if (!st.added.some((x) => x.f === a.f))
+					st.added.push({ f: a.f, doctype: a.doctype, field: a.field, link_field: a.link_field, dynamic: a.dynamic, line: a.line ? 1 : 0, label: a.label, fieldtype: a.fieldtype, options: a.options });
+				const order = st.order.filter((f) => f !== a.f);
+				const at = order.indexOf(spec.insert_after);
+				order.splice(at < 0 ? order.length : at + 1, 0, a.f);
+				st.order = order;
+				st.hidden = st.hidden.filter((f) => f !== a.f);
+				this.use_state(st);
+				this.fetch_linked();
+				return true;
+			});
 		}
 
 		// a linked field's value goes on each row, as if the report had it: sort, filter, groups and totals work on it

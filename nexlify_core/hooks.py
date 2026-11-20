@@ -30,8 +30,9 @@ app_include_js = [
 	"nexlify_link_click.bundle.js",
 	# Nexlify Report View: the report table that never shakes, with Layout and Group By; off until ticked in Nexlify Reports Settings
 	"nexlify_report_view.bundle.js",
-	# Keep Each Line in the Ledger: "Document line" choices in Frappe's Add Column of every report, while ticked
-	"nexlify_line_columns.bundle.js",
+	# Frappe's Add Column: added columns stay until the user leaves the report, join the Report View's columns,
+	# and offer "Document line" fields while Keep Each Line in the Ledger is ticked
+	"nexlify_add_column.bundle.js",
 ]
 app_include_css = ["nexlify_themes.bundle.css", "nexlify_reports.bundle.css", "nexlify_report_view.bundle.css"]
 

@@ -134,11 +134,13 @@ frappe.provide("nexlify.report_view");
 				exclude: !!u.exclude,
 			}))
 			.slice(0, 30);
-		// a column from a linked document: its field, and the report column that names the document
+		// a column from a linked document: its field, and the report column that names the document;
+		// nxline_: a field of the document line the linked ledger row was made from
 		out.added = list(s.added)
-			.filter((a) => a && /^nxlink_[A-Za-z0-9_]+$/.test(a.f) && FIELD(a.doctype) && FIELD(a.field) && FIELD(a.link_field))
+			.filter((a) => a && /^nx(link|line)_[A-Za-z0-9_]+$/.test(a.f) && FIELD(a.doctype) && FIELD(a.field) && FIELD(a.link_field))
 			.map((a) => ({
 				f: a.f,
+				line: /^nxline_/.test(a.f) ? 1 : 0,
 				doctype: a.doctype,
 				field: a.field,
 				link_field: a.link_field,
@@ -265,6 +267,11 @@ frappe.provide("nexlify.report_view");
 					// an amount that repeats on each row of a document (see sum_of)
 					once_per: c.once_per || (c.docfield && c.docfield.once_per) || undefined,
 				}));
+			// hidden columns a report keeps for linking (General Ledger's GL Entry): never shown, but the fields
+			// of their documents can be added
+			this.link_sources = (qr.columns || [])
+				.filter((c) => c.hidden && c.fieldtype === "Link" && c.options && c.fieldname)
+				.map((c) => ({ fieldname: c.fieldname, label: c.label || c.fieldname, fieldtype: "Link", options: c.options }));
 			this.infer_links();
 			this.guess_promise = null;
 			this.avail_promise = null;
@@ -362,7 +369,7 @@ frappe.provide("nexlify.report_view");
 			this.columns = this.report_columns.slice();
 			(this.layout.added || []).forEach((a, i) => {
 				if (this.columns.find((c) => c.fieldname === a.f)) return;
-				if (!this.report_columns.find((c) => c.fieldname === a.link_field)) return;
+				if (!this.link_column(a.link_field)) return;
 				this.columns.push({ fieldname: a.f, label: a.label, fieldtype: a.fieldtype || "Data", options: a.options, width: 150, index: 1000 + i, linked: a });
 			});
 			this.put_linked_values();
@@ -371,14 +378,33 @@ frappe.provide("nexlify.report_view");
 		// a linked field's value goes on each row, as if the report had it: sort, filter, groups and totals work on it
 		put_linked_values() {
 			const added = (this.layout.added || []).filter((a) => this.columns.find((c) => c.fieldname === a.f));
+			this.added_up = 0;
 			if (!added.length || !this.rows) return;
 			this.rows.forEach((r) => {
+				let several = false;
 				added.forEach((a) => {
 					const map = this.linked_vals[a.f];
 					const key = r[a.link_field];
 					r[a.f] = map && key !== undefined && key !== null && (!a.dynamic || r[a.dynamic] === a.doctype) ? map[key] ?? null : null;
+					if (a.line && key && this.adds_up(r, a, key)) {
+						r[a.f] = null;
+						several = true;
+					}
 				});
+				if (several) this.added_up++;
 			});
+		}
+
+		// a report row whose amounts are not its ledger row's own adds up several ledger rows (General
+		// Ledger by voucher, consolidated): it has no one line
+		adds_up(r, a, key) {
+			const own = ((this.line_amounts || {})[a.doctype] || {})[key];
+			if (!own) return false;
+			return Object.keys(own).some((f) => f in r && Math.abs(flt(r[f]) - flt(own[f])) > 0.005);
+		}
+
+		link_column(f) {
+			return this.report_columns.find((c) => c.fieldname === f) || (this.link_sources || []).find((c) => c.fieldname === f);
 		}
 
 		// the values of the added fields, read with Frappe's own call for its Add Column (the user's permissions apply)
@@ -390,6 +416,7 @@ frappe.provide("nexlify.report_view");
 					const have = this.linked_vals[a.f] || {};
 					const names = [...new Set(this.rows.filter((r) => !a.dynamic || r[a.dynamic] === a.doctype).map((r) => r[a.link_field]).filter((n) => n && !(n in have)))];
 					if (!names.length) return Promise.resolve();
+					if (a.line) return this.fetch_lines(a, names);
 					return frappe
 						.call({ method: "frappe.desk.query_report.get_data_for_custom_field", args: { doctype: a.doctype, field: a.field, names } })
 						.then((r) => (this.linked_vals[a.f] = Object.assign(this.linked_vals[a.f] || {}, r.message || {})))
@@ -401,7 +428,32 @@ frappe.provide("nexlify.report_view");
 				const fit = this.measure(this.columns.filter((c) => c.linked), this.rows);
 				this.columns.forEach((c) => c.linked && fit[c.fieldname] && (c.width = Math.min(400, fit[c.fieldname])));
 				this.refresh(true);
+				if (this.added_up)
+					frappe.show_alert(
+						{ message: __("Rows that add up several lines: {0}. Their document line columns stay empty; show each line on its own row to see them.", [this.added_up]), indicator: "orange" },
+						10
+					);
 			});
+		}
+
+		// a document line's field, read through the ledger rows the report shows (as the user), with each
+		// ledger row's own amounts of the report's number columns, to tell a row that adds up several
+		fetch_lines(a, names) {
+			const compare = this.report_columns.filter((c) => NUM.has(c.fieldtype) && frappe.meta.has_field(a.doctype, c.fieldname)).map((c) => c.fieldname);
+			const parts = [];
+			for (let i = 0; i < names.length; i += 2000) parts.push(names.slice(i, i + 2000));
+			return Promise.all(
+				parts.map((part) =>
+					frappe.xcall("nexlify_core.overrides.line_columns.line_values", { doctype: a.doctype, names: part, field: a.field, compare }).then((got) => {
+						const values = (got && got.values) || {};
+						// a row the user may not read stays empty, and is not asked again
+						part.forEach((n) => n in values || (values[n] = null));
+						this.linked_vals[a.f] = Object.assign(this.linked_vals[a.f] || {}, values);
+						const amounts = ((this.line_amounts = this.line_amounts || {})[a.doctype] = this.line_amounts[a.doctype] || {});
+						Object.assign(amounts, (got && got.amounts) || {});
+					})
+				)
+			).catch(() => {});
 		}
 
 		// How the columns link to other tables, asked once from the definition of the report's DocType:
@@ -435,7 +487,7 @@ frappe.provide("nexlify.report_view");
 		linked_doctypes() {
 			const out = [];
 			const seen = new Set();
-			this.report_columns.forEach((c) => {
+			this.report_columns.concat(this.link_sources || []).forEach((c) => {
 				if (c.fieldtype === "Link" && c.options && !["Currency", "DocType"].includes(c.options)) {
 					const k = c.options + "|" + c.fieldname;
 					if (!seen.has(k)) out.push({ doctype: c.options, link_field: c.fieldname, label: c.label });
@@ -496,10 +548,44 @@ frappe.provide("nexlify.report_view");
 								});
 							});
 					});
-					return out;
+					return this.line_fields(links).then((lines) => out.concat(lines));
 				});
 			});
 			return this.avail_promise;
+		}
+
+		// the fields of the document line each linked ledger row (GL Entry, Stock Ledger Entry) was made
+		// from: one column a field, filled from whichever document the row is of
+		line_fields(links) {
+			const ledgers = links.filter((l) => ["voucher_type", "voucher_no", "voucher_detail_no"].every((f) => frappe.meta.has_field(l.doctype, f)));
+			const kind = __("Document line");
+			return Promise.all(
+				ledgers.map((l) =>
+					frappe
+						.xcall("nexlify_core.overrides.line_columns.line_fields", { doctype: l.doctype })
+						.catch(() => [])
+						.then((fields) =>
+							(fields || []).map((df) => {
+								const type = ["Currency", "Float", "Int", "Percent", "Date", "Link", "Check"].includes(df.fieldtype) ? df.fieldtype : "Data";
+								return {
+									f: "nxline_" + df.field + "_" + l.link_field,
+									doctype: l.doctype,
+									field: df.field,
+									link_field: l.link_field,
+									dynamic: l.dynamic || "",
+									line: 1,
+									label: `${__(df.label)} (${kind})`,
+									short: __(df.label),
+									from: `${kind} (${__(l.doctype)})`,
+									dt: kind,
+									via: __(l.doctype),
+									fieldtype: type,
+									options: type === "Link" ? df.options : undefined,
+								};
+							})
+						)
+				)
+			).then((groups) => [].concat(...groups));
 		}
 
 		// how wide each column's text is: its header and its first rows, as the report formats them
@@ -1774,7 +1860,7 @@ frappe.provide("nexlify.report_view");
 			const c = this.view.report_columns.find((x) => x.fieldname === f);
 			if (c) return { f, label: c.label, type: __(c.fieldtype) };
 			const a = this.draft.added.find((x) => x.f === f) || (this.avail || []).find((x) => x.f === f);
-			return a ? { f, label: a.label, type: __(a.doctype), linked: true } : null;
+			return a ? { f, label: a.label, type: a.line ? __("Document line") : __(a.doctype), linked: true } : null;
 		}
 
 		show() {
@@ -2028,7 +2114,7 @@ frappe.provide("nexlify.report_view");
 			if (this.view.report_columns.find((c) => c.fieldname === f) || d.added.find((x) => x.f === f)) return;
 			const a = (this.avail || []).find((x) => x.f === f);
 			if (!a) return;
-			d.added.push({ f, doctype: a.doctype, field: a.field, link_field: a.link_field, dynamic: a.dynamic, label: a.label, fieldtype: a.fieldtype, options: a.options });
+			d.added.push({ f, doctype: a.doctype, field: a.field, link_field: a.link_field, dynamic: a.dynamic, line: a.line ? 1 : 0, label: a.label, fieldtype: a.fieldtype, options: a.options });
 		}
 
 		dual_pick(el, range) {

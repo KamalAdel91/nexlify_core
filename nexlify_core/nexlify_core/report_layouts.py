@@ -209,3 +209,17 @@ def guess_links(report: str, columns: str | list, dynamic: str | list | None = N
 		if targets:
 			result[fieldname] = {"dynamic": type_fieldname, "targets": targets}
 	return result
+
+
+@frappe.whitelist()
+def user_info(users: str | list) -> dict:
+	"""Full names (and avatars) of the users a grouped table names in its headings: the same details Frappe's
+	own list and report views send with their rows (frappe.utils.add_user_info)."""
+	from frappe.utils import add_user_info
+
+	users = frappe.parse_json(users) if isinstance(users, str) else users
+	if not isinstance(users, list):
+		frappe.throw(_("Users must be a list"), frappe.ValidationError)
+	out = {}
+	add_user_info({u for u in users[:500] if isinstance(u, str) and u}, out)
+	return out

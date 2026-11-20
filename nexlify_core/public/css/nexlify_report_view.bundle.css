@@ -58,9 +58,11 @@ table.nxv-grid {
 .nxv-grid th.nxv-idx { text-align: center; color: var(--nxv-muted); padding: 0 4px; }
 
 /* the header and the filter row stay on top */
+/* above every cell of the rows, frozen or a group's label that runs into the next columns: a row scrolled under
+   the header never shows over it */
 .nxv-grid thead th {
 	position: sticky;
-	z-index: 3;
+	z-index: 5;
 	background: var(--nxv-head);
 	font-weight: normal;
 	color: var(--nxv-ink);
@@ -121,8 +123,8 @@ table.nxv-grid {
 
 /* frozen columns: the row numbers and the first columns stay on the left while the table scrolls sideways */
 .nxv-grid [data-fz] { position: sticky; z-index: 2; }
-.nxv-grid thead th[data-fz] { z-index: 4; }
-.nxv-grid tfoot td[data-fz] { z-index: 4; }
+.nxv-grid thead th[data-fz] { z-index: 6; }
+.nxv-grid tfoot td[data-fz] { z-index: 6; }
 
 /* the current cell: moved with the arrow keys */
 /* the theme rings any focused element: the table shows its current cell instead */
@@ -142,7 +144,7 @@ table.nxv-grid {
 
 /* the total: at the bottom, bold, as in Frappe's table; a total in several currencies takes several lines,
    so the whole block stays at the bottom (not each cell, or the lines would lie on one another) */
-.nxv-grid tfoot { position: sticky; bottom: 0; z-index: 3; }
+.nxv-grid tfoot { position: sticky; bottom: 0; z-index: 5; }
 .nxv-grid tfoot td {
 	font-weight: bold;
 	background: var(--nxv-head);

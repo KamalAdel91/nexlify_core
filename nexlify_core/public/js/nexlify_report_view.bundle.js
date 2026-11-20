@@ -309,13 +309,12 @@ frappe.provide("nexlify.report_view");
 			const fit = this.measure(this.columns, this.rows);
 			this.columns.forEach((c) => (c.width = Math.min(400, fit[c.fieldname] || c.width)));
 			this.refresh();
-			// the totals at the bottom are bold and can be longer than any row: their columns grow to show them whole
-			if (this.fit_totals()) this.refresh(true);
 			this.fetch_linked();
 		}
 
+		// the total lines (the table's and the groups'): their columns grow to show the bold sums whole
 		fit_totals() {
-			const lines = this.foot_row() || [];
+			const lines = (this.view || []).filter((r) => r.__nxfoot || r.__nxg === "total" || (r.__nxg === "head" && r.__nxclosed));
 			if (!lines.length) return false;
 			const ctx = (this.canvas = this.canvas || document.createElement("canvas")).getContext("2d");
 			const cs = getComputedStyle(this.grid);
@@ -326,9 +325,11 @@ frappe.provide("nexlify.report_view");
 				lines.forEach((line) => {
 					if (line.__nxpart === "other" && this.currency_field(c)) return;
 					if (line.__nxpart === "own" && !this.currency_field(c)) return;
-					const text = $("<div>").html(this.sum_html(line.__nxrows, c)).text();
-					const w = Math.ceil(ctx.measureText(text).width * 1.08 + 24);
-					if (w > c.width && w <= 400) {
+					const html = this.sum_html(line.__nxrows, c);
+					// the room between the currencies counts too
+					const gaps = (html.match(/nxv-sum-sep/g) || []).length * 16;
+					const w = Math.min(400, Math.ceil(ctx.measureText($("<div>").html(html).text()).width * 1.08 + 24 + gaps));
+					if (w > c.width) {
 						c.width = w;
 						grew = true;
 					}
@@ -832,7 +833,6 @@ frappe.provide("nexlify.report_view");
 		}
 
 		compute_view() {
-			this.own_groups = false;
 			this.grouped_by = [];
 			const filtering = this.filtering();
 			if (this.tree_on()) {
@@ -860,12 +860,12 @@ frappe.provide("nexlify.report_view");
 			const source = this.is_tree ? this.rows.filter((r) => !r.__nxkids) : this.rows;
 			let list = filtering ? source.filter((r) => this.pass_filters(r)) : source;
 			const sorts = this.state.sorts.map((x) => ({ c: this.col_of(x.key), dir: x.dir })).filter((x) => x.c);
-			// The groups the table makes itself: the user's levels. When the report made groups too (its own Group By
-			// filter), they stay the outer level and the user's go inside them; and when the user filters or sorts, the
-			// report's heading and total lines are for all its rows, so the table puts the rows shown under the same
-			// headings and adds them up itself
+			// The groups the table makes: the user's levels. When the report made groups too (its own Group By filter),
+			// they are the outer level and the user's go inside them. Either way the table adds up each group itself,
+			// by one rule (one total line, each currency's sum side by side): the report's own heading and total
+			// lines are not shown, as each report writes them its own way
 			let levels = this.groups_now();
-			if (!this.is_tree && source.some((r) => r.is_group) && (levels.length || filtering || sorts.length)) levels = [HEADS, ...levels];
+			if (!this.is_tree && source.some((r) => r.is_group)) levels = [HEADS, ...levels];
 			this.grouped_by = levels;
 			if (sorts.length) {
 				// sorted: the report's own total lines stay after the rows
@@ -881,40 +881,7 @@ frappe.provide("nexlify.report_view");
 				if (!levels.length) list = list.concat(totals);
 			}
 			if (levels.length) return this.group_rows(list.filter((r) => !this.own_line(r)), levels);
-			// the report's own groups (a heading it marks is_group, its rows, its is_total line): they open and close
-			// too, while the rows keep the report's order
-			this.own_groups = !sorts.length && list.some((r) => r.is_group);
-			if (this.own_groups) return this.fold_own_groups(list);
 			return list;
-		}
-
-		// a closed group of the report's own shows its heading and its total line; the rows between them go
-		fold_own_groups(list) {
-			const out = [];
-			this.group_keys = [];
-			let head = null;
-			list.forEach((r) => {
-				// how the line looks: a group's heading and total as the view's, the report's last totals as its total
-				r.__nxown = r.is_group ? "head" : this.own_total(r) ? (head ? "total" : "foot") : "";
-				if (r.is_group) {
-					head = r;
-					r.__nxkey = "own\u241f" + r.__nxi;
-					r.__nxcount = 0;
-					this.group_keys.push(r.__nxkey);
-					return out.push(r);
-				}
-				if (head && this.own_total(r)) {
-					out.push(r);
-					head = null;
-					return;
-				}
-				if (head) {
-					head.__nxcount += 1;
-					if (this.closed.has(head.__nxkey)) return;
-				}
-				out.push(r);
-			});
-			return out;
 		}
 
 		compare(a, b, c) {
@@ -949,14 +916,16 @@ frappe.provide("nexlify.report_view");
 				});
 				keys.forEach((k) => {
 					const rs = groups.get(k);
-					const shown = c === HEADS ? this.head_label(Number(k)) : k ? this.plain(rs[0], c) : __("Not Set");
+					const shown = c === HEADS ? this.head_name(Number(k)) : k ? this.group_name(rs[0], c) : __("Not Set");
+					// what the level groups by: the column's name, or (for the report's own groups) its Group By filter
+					const by = c === HEADS ? this.head_by() : __(c.label);
 					// a report's group keeps its key, so it stays open or closed as it was
 					const key = (c === HEADS ? "own" : parent) + "\u241f" + k;
 					const closed = this.closed.has(key);
 					this.group_keys.push(key);
 					// a group: its heading (name and count), its rows (or inner groups), its total line under them;
 					// a closed group is its heading alone, with the totals on it
-					out.push({ __nxg: "head", __nxlevel: depth, __nxlabel: c === HEADS ? shown : `${__(c.label)}: ${shown}`, __nxkey: key, __nxclosed: closed, __nxrows: rs });
+					out.push({ __nxg: "head", __nxlevel: depth, __nxlabel: by ? `${by}: ${shown}` : shown, __nxkey: key, __nxclosed: closed, __nxrows: rs });
 					if (closed) return;
 					if (depth + 1 < levels.length) build(rs, depth + 1, key);
 					else out.push(...rs);
@@ -964,15 +933,62 @@ frappe.provide("nexlify.report_view");
 				});
 			};
 			build(list, 0, "");
+			this.ask_user_names(list, levels);
 			return out;
 		}
 
+		// the users a level names (a Link to User) and the page does not know yet: their full names are asked once,
+		// as Frappe's own views send them with their rows, and the headings read them when they come
+		ask_user_names(rows, levels) {
+			const known = frappe.boot.user_info || {};
+			this.asked_users = this.asked_users || new Set();
+			const users = new Set();
+			levels.forEach((c) => {
+				if (c === HEADS) return;
+				rows.forEach((r) => {
+					const dt = c.fieldtype === "Link" ? c.options : c.fieldtype === "Dynamic Link" ? r[c.options] : null;
+					const u = clean(r[c.fieldname]);
+					if (dt === "User" && u && !known[u] && !this.asked_users.has(u)) users.add(u);
+				});
+			});
+			if (!users.size) return;
+			users.forEach((u) => this.asked_users.add(u));
+			frappe
+				.xcall("nexlify_core.nexlify_core.report_layouts.user_info", { users: [...users] })
+				.then((info) => {
+					if (!info || !Object.keys(info).length) return;
+					frappe.update_user_info(info);
+					this.refresh(true);
+				})
+				.catch(() => {});
+		}
+
 		// a report's group heading as the report shows it: its first column
-		head_label(i) {
+		// a report's group as the report names it: its group_label, else its heading's first column
+		head_name(i) {
 			const h = this.rows[i];
 			if (!h) return __("Not Set");
 			const c = this.cols[0];
-			return (c && this.plain(h, c)) || clean(h.group_label || h.name) || __("Not Set");
+			return clean(h.group_label) || (c && this.plain(h, c)) || clean(h.name) || __("Not Set");
+		}
+
+		// what the report groups by, as its Group By filter says ("Salesperson"), so its groups are headed like the
+		// table's own
+		head_by() {
+			const f = this.qr.get_filter && this.qr.get_filter("group_by");
+			const v = f && f.get_value();
+			return v ? __(v) : "";
+		}
+
+		// a group's name: a user by their full name, a linked document by the title Frappe shows for it (when it
+		// knows one), anything else as its cell reads
+		group_name(r, c) {
+			const v = clean(r[c.fieldname]);
+			const dt = c.fieldtype === "Link" ? c.options : c.fieldtype === "Dynamic Link" ? r[c.options] : null;
+			let name = null;
+			if (dt === "User") name = ((frappe.boot.user_info || {})[v] || {}).fullname;
+			else if (dt && frappe.utils.get_link_title) name = frappe.utils.get_link_title(dt, v);
+			return name && name !== v ? String(name) : this.plain(r, c);
 		}
 
 		// a value as the user reads it, without its link
@@ -1006,8 +1022,11 @@ frappe.provide("nexlify.report_view");
 				});
 				[...by.keys()].sort().forEach((k) => parts.push([this.sum_of(by.get(k), c, true), by.get(k)[0]]));
 			} else parts.push([this.sum_of(rows, c), rows[0]]);
-			return parts
-				.filter(([v]) => v !== null && v !== undefined)
+			// a currency that adds up to nothing is left out when others have an amount (one dash, not one each)
+			let shown = parts.filter(([v]) => v !== null && v !== undefined);
+			if (shown.length > 1 && shown.some(([v]) => Math.abs(v) > 1e-9)) shown = shown.filter(([v]) => Math.abs(v) > 1e-9);
+			else if (shown.length > 1) shown = shown.slice(0, 1);
+			return shown
 				.map(([v, proxy]) => {
 					let html;
 					try {
@@ -1046,12 +1065,13 @@ frappe.provide("nexlify.report_view");
 		// The table's total, at the bottom: when the report asks Frappe for one, when the view groups the rows,
 		// and for any report with amounts that does not add its own total lines ('Total', 'Closing', a group's
 		// total) and is not a tree (a statement's tree would add income and expenses together)
-		// The lines a total takes. Rows in one currency: one line. Rows in several: a line for the columns that do
-		// not follow the row's currency (counts, amounts in the company's currency), then one line per currency for
-		// the amounts in the rows' own currency ("Total · EGP"), as the reports themselves show them
-		total_lines(rows, label) {
+		// A group's total is one line: an amount in several currencies shows each currency's sum side by side in its
+		// cell (sum_html). The table's total at the bottom (split) adds up every currency: there a line for the
+		// columns that do not follow the row's currency (counts, amounts in the company's currency), then one line
+		// per currency ("Total · EGP"), so no column has to hold every currency
+		total_lines(rows, label, split) {
 			const own = this.columns.filter((c) => SUMMED.has(c.fieldtype) && this.currency_field(c));
-			const field = own.length ? this.currency_field(own[0]) : null;
+			const field = split && own.length ? this.currency_field(own[0]) : null;
 			const codes = field ? [...new Set(rows.map((r) => r[field] || ""))].sort() : [];
 			if (codes.length < 2) return [{ __nxlabel: label, __nxrows: rows }];
 			const lines = [];
@@ -1069,7 +1089,7 @@ frappe.provide("nexlify.report_view");
 			const rows = this.is_tree
 				? this.rows.filter((r) => !r.__nxkids && (!this.filtering() || this.pass_filters(r)))
 				: this.view.flatMap((r) => (r.__nxg === "head" && r.__nxclosed ? r.__nxrows : r.__nxg || r.__nxfoot ? [] : [r])).filter((r) => !this.own_total(r));
-			return this.total_lines(rows, __("Total")).map((t) => Object.assign(t, { __nxfoot: true }));
+			return this.total_lines(rows, __("Total"), true).map((t) => Object.assign(t, { __nxfoot: true }));
 		}
 
 		// the rows shown, and the table's total lines after them: plain bold lines at the end of the table,
@@ -1083,6 +1103,9 @@ frappe.provide("nexlify.report_view");
 		refresh(keep_scroll) {
 			this.cols = this.build_cols();
 			this.set_view(this.compute_view());
+			// a total in several currencies is longer than the rows: its columns grow to show it whole (the user's
+			// own widths stay)
+			if (this.fit_totals()) this.cols = this.build_cols();
 			if (!keep_scroll) this.scroller.scrollTop = 0;
 			this.render_head();
 			this.render_body(true);
@@ -1134,7 +1157,7 @@ frappe.provide("nexlify.report_view");
 			const idx = this.fz_idx('<th class="nxv-idx"></th>');
 			// open or close every group (or every level of a tree) at once: always in their place, dimmed
 			// when the table has nothing to open or close
-			const can = !!((this.grouped_by || []).length || this.tree_on() || this.own_groups);
+			const can = !!((this.grouped_by || []).length || this.tree_on());
 			const off = can ? "" : " disabled";
 			const xtip = (t) => (can ? t : __("Group the rows to open or close them"));
 			const corner = this.fz_idx(
@@ -1177,23 +1200,12 @@ frappe.provide("nexlify.report_view");
 				if (ci === 0 && r.__nxfoot) return `<td class="nxv-glabel"><span>${esc(r.__nxlabel)}</span></td>`;
 				if (ci === 0 && r.__nxg === "total") return `<td class="nxv-glabel"><span style="padding-inline-start:${r.__nxlevel * 16 + 22}px">${esc(r.__nxlabel)}</span></td>`;
 				if (!NUM.has(c.fieldtype) || (r.__nxg === "head" && !r.__nxclosed)) return "<td></td>";
-				// a line of a total in several currencies: each amount on its own line, once
+				// a line of the table's total in several currencies: each amount on its own line, once
 				if (r.__nxpart === "other" && this.currency_field(c)) return "<td></td>";
 				if (r.__nxpart === "own" && !this.currency_field(c)) return "<td></td>";
 				const html = this.sum_html(r.__nxrows, c);
 				const tip = html.includes("nxv-sum-sep") ? ` title="${esc($("<div>").html(html.replace(/<span class="nxv-sum-sep"><\/span>/g, " · ")).text())}"` : "";
 				return `<td class="${num}"${tip}>${html}</td>`;
-			}
-			// a heading or a total line the report made: empty where it has nothing, as the view's own lines
-			if (ci > 0 && this.own_groups && r.__nxown && (r.__nxown === "head" || !NUM.has(c.fieldtype))) return "<td></td>";
-			// and its name as the view's own lines show theirs: plain, the total's under the heading's name
-			if (ci === 0 && this.own_groups && r.__nxown) {
-				const name = esc(this.plain(r, c));
-				if (r.__nxown === "head" && r.__nxkey) {
-					const tw = `<span class="nxv-tw ${this.closed.has(r.__nxkey) ? "" : "open"}" data-g="${esc(r.__nxkey)}" role="button" aria-label="${__("Expand or collapse")}">${CHEVRON}</span>`;
-					return `<td class="nxv-glabel"><span class="nxv-acc">${tw}<span>${name}</span><span class="nxv-cnt">${r.__nxcount}</span></span></td>`;
-				}
-				return `<td class="nxv-glabel"><span${r.__nxown === "total" ? ' style="padding-inline-start:22px"' : ""}>${name}</span></td>`;
 			}
 			const raw = r[c.fieldname];
 			let html;
@@ -1211,13 +1223,10 @@ frappe.provide("nexlify.report_view");
 		}
 
 		row_html(r, v, no) {
-			const own = this.own_groups && r.__nxown;
 			const cls = r.__nxg
 				? `nxv-g nxv-g-${r.__nxg} nxv-l${Math.min(r.__nxlevel, 2)}`
-				: r.__nxfoot || own === "foot"
+				: r.__nxfoot
 				? "nxv-foot"
-				: own
-				? `nxv-g nxv-g-${own} nxv-l0`
 				: this.own_total(r)
 				? "nxv-tot"
 				: "";
@@ -1230,7 +1239,7 @@ frappe.provide("nexlify.report_view");
 			const n = this.view.length;
 			if (!this.numbers || force) {
 				let k = 0;
-				this.numbers = this.view.map((r) => (r.__nxg || r.__nxfoot || (this.own_groups && r.__nxown) ? "" : ++k));
+				this.numbers = this.view.map((r) => (r.__nxg || r.__nxfoot ? "" : ++k));
 			}
 			let s = 0;
 			let e = n;
@@ -1568,7 +1577,7 @@ frappe.provide("nexlify.report_view");
 				const x = e.target.closest("[data-xall]");
 				if (x) {
 					const open = x.dataset.xall === "1";
-					if ((this.grouped_by || []).length || this.own_groups) this.closed = open ? new Set() : new Set(this.group_keys || []);
+					if ((this.grouped_by || []).length) this.closed = open ? new Set() : new Set(this.group_keys || []);
 					else (this.rows || []).forEach((r) => r.__nxkids && (r.__nxopen = open));
 					return this.refresh(true);
 				}

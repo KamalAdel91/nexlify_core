@@ -26,14 +26,14 @@ THEMES = BUSINESS + STYLES + SCENES + (NONE,)
 def boot_settings():
 	"""What the desk needs to know before it draws: are the themes on, and the site's default."""
 	settings = frappe.get_cached_doc("Nexlify Theme Settings")
-	# settings never saved have no value: the themes stay on
+	# settings never saved have no value: the themes stay off
 	enabled = settings.get("enabled")
 	default = settings.get("default_theme") or DEFAULT
 	dock_labels = settings.get("dock_labels")
 	return {
-		"enabled": 1 if enabled is None else int(enabled),
+		"enabled": int(enabled or 0),
 		"default": default if default in THEMES else DEFAULT,
-		"dock_labels": 1 if dock_labels is None else int(dock_labels),
+		"dock_labels": int(dock_labels or 0),
 	}
 
 

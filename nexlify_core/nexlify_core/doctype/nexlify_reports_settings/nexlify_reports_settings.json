@@ -13,7 +13,6 @@
    "fieldname": "enabled",
    "fieldtype": "Check",
    "label": "Enabled",
-   "default": "1",
    "description": "The report views' layout fixes, in the colors of the user's Nexlify theme. Off: reports look as Frappe draws them."
   },
   {

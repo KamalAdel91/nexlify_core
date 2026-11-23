@@ -14,7 +14,6 @@
    "fieldname": "enabled",
    "fieldtype": "Check",
    "label": "Enable Nexlify Themes",
-   "default": "1",
    "description": "Off: no Nexlify theme is put on the desk, and Switch Theme shows only Frappe's own themes."
   },
   {
@@ -35,7 +34,6 @@
    "fieldname": "dock_labels",
    "fieldtype": "Check",
    "label": "Show Names Under the Dock's Icons",
-   "default": "1",
    "description": "The icon bar at the far left: each module's name under its icon, the bar a little wider. Works with or without a theme."
   }
  ],

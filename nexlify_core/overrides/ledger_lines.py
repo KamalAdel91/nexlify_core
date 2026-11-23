@@ -61,6 +61,9 @@ def tag_row(doc, gl_dict):
 		if line is None or args.get("party") or args.get("voucher_detail_no"):
 			return
 		gl_dict.voucher_detail_no = line.name
+		if "voucher_detail_no" in args:
+			# ERPNext lays the args over the row after the hook: the empty one there must carry the line too
+			args["voucher_detail_no"] = line.name
 		if plain_remark(doc, args):
 			gl_dict[WORDS] = line_words(line)
 	except Exception:

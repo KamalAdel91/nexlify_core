@@ -56,7 +56,9 @@ def tag_row(doc, gl_dict):
 			return
 		args, item = gl_dict_call(doc)
 		line = line_of(doc, item)
-		if line is None or args.get("party") or "voucher_detail_no" in args:
+		# ERPNext ties a row to a line itself by giving it a voucher_detail_no; an empty one (a Sales
+		# Invoice's income rows since ERPNext 16.60) ties it to nothing, so the row takes its line
+		if line is None or args.get("party") or args.get("voucher_detail_no"):
 			return
 		gl_dict.voucher_detail_no = line.name
 		if plain_remark(doc, args):

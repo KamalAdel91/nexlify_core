@@ -26,6 +26,8 @@ app_include_js = [
 	"nexlify_whatsapp.bundle.js",
 	# Search box in every page's header, off until ticked in Nexlify Core Settings
 	"nexlify_page_search.bundle.js",
+	# Full Screen button in every page's header, off until ticked in Nexlify Core Settings
+	"nexlify_focus_mode.bundle.js",
 	# Link fields as buttons with a search panel, off until ticked in Nexlify Core Settings
 	"nexlify_link_click.bundle.js",
 	# Nexlify Report View: the report table that never shakes, with Layout and Group By; off until ticked in Nexlify Reports Settings
@@ -34,7 +36,7 @@ app_include_js = [
 	# and offer "Document line" fields while Keep Each Line in the Ledger is ticked
 	"nexlify_add_column.bundle.js",
 ]
-app_include_css = ["nexlify_themes.bundle.css", "nexlify_reports.bundle.css", "nexlify_report_view.bundle.css"]
+app_include_css = ["nexlify_themes.bundle.css", "nexlify_reports.bundle.css", "nexlify_report_view.bundle.css", "nexlify_focus_mode.bundle.css"]
 
 doctype_js = {
 }

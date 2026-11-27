@@ -1,0 +1,20 @@
+/* Full Screen (nexlify_focus_mode.bundle.js): the side menus are hidden only while the user has full screen on.
+   Phones and small screens keep Frappe's own drawer, so nothing here applies below 768px. */
+@media (min-width: 768px) {
+	body.nexlify-full-screen:not(.nexlify-full-screen-show-dock) .dock,
+	body.nexlify-full-screen:not(.nexlify-full-screen-show-sidebar) .body-sidebar-container,
+	body.nexlify-full-screen:not(.nexlify-full-screen-show-page_sidebar) .layout-side-section {
+		display: none !important;
+	}
+}
+
+.nexlify-full-screen-btn .dropdown-item {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.nexlify-full-screen-check {
+	display: inline-flex;
+	width: 16px;
+}
